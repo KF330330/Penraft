@@ -18,6 +18,7 @@ interface TabBarProps {
   onRename: (path: string, newStem: string) => void;
   onDelete: (path: string) => void;
   onSaveAs: (path: string) => void;
+  onRevealInFinder: (path: string) => void;
   onOpenSearch: () => void;
   onToggleMode: () => void;
 }
@@ -39,6 +40,7 @@ export function TabBar({
   onRename,
   onDelete,
   onSaveAs,
+  onRevealInFinder,
   onOpenSearch,
   onToggleMode,
 }: TabBarProps) {
@@ -207,6 +209,16 @@ export function TabBar({
             }}
           >
             另存为…
+          </button>
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              const path = menu.path;
+              setMenu(null);
+              onRevealInFinder(path);
+            }}
+          >
+            在 Finder 中显示
           </button>
           <button
             className="tab-context-menu-item danger"

@@ -29,6 +29,10 @@ export async function deleteNote(path: string): Promise<void> {
   return invoke("delete_note", { path });
 }
 
+export async function revealInFinder(path: string): Promise<void> {
+  return invoke("reveal_in_finder", { path });
+}
+
 export async function searchNotes(query: string): Promise<NoteSummary[]> {
   return invoke("search_notes", { query });
 }

@@ -4,6 +4,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use tempfile::NamedTempFile;
 use walkdir::WalkDir;
 
@@ -85,6 +86,31 @@ pub fn delete_note(path: String) -> CommandResult<()> {
     }
     fs::remove_file(&target_canonical).map_err(to_err)?;
     Ok(())
+}
+
+pub fn reveal_in_finder(path: String) -> CommandResult<()> {
+    let target = PathBuf::from(&path);
+    if !target.exists() {
+        return Err("文件不存在".to_string());
+    }
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open").arg("-R").arg(&target).status().map_err(to_err)?;
+        return Ok(());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer").arg("/select,").arg(&target).status().map_err(to_err)?;
+        return Ok(());
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        let parent = target.parent().ok_or_else(|| "无法定位父目录".to_string())?;
+        Command::new("xdg-open").arg(parent).status().map_err(to_err)?;
+        return Ok(());
+    }
+    #[allow(unreachable_code)]
+    Err("当前平台不支持".to_string())
 }
 
 pub fn search_notes(query: String) -> CommandResult<Vec<NoteSummary>> {

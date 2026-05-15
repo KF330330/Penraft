@@ -10,6 +10,7 @@ import {
   loadTabs,
   readNote,
   renameNote,
+  revealInFinder,
   saveNote,
   saveTabs,
 } from "./lib/tauri";
@@ -293,6 +294,14 @@ export default function App() {
     }
   }, [handleCreate, showToast]);
 
+  const handleRevealInFinder = useCallback(async (path: string) => {
+    try {
+      await revealInFinder(path);
+    } catch (err) {
+      showToast(`打开 Finder 失败：${String(err)}`);
+    }
+  }, [showToast]);
+
   const handleSaveAs = useCallback(async (path: string) => {
     const target = docsRef.current.find((d) => d.document.summary.path === path);
     if (!target) return;
@@ -387,6 +396,7 @@ export default function App() {
           onRename={(p, n) => handleRename(p, n).catch(() => {})}
           onDelete={(p) => handleDelete(p).catch(() => {})}
           onSaveAs={(p) => handleSaveAs(p).catch(() => {})}
+          onRevealInFinder={(p) => handleRevealInFinder(p).catch(() => {})}
           onOpenSearch={() => setSearchOpen(true)}
           onToggleMode={() => setMode((m) => (m === "render" ? "source" : "render"))}
         />

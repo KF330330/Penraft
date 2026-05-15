@@ -40,6 +40,11 @@ fn delete_note(path: String) -> CommandResult<()> {
 }
 
 #[tauri::command]
+fn reveal_in_finder(path: String) -> CommandResult<()> {
+    vault::reveal_in_finder(path)
+}
+
+#[tauri::command]
 fn search_notes(query: String) -> CommandResult<Vec<NoteSummary>> {
     vault::search_notes(query)
 }
@@ -65,6 +70,7 @@ pub fn run() {
             export_note,
             rename_note,
             delete_note,
+            reveal_in_finder,
             search_notes,
             load_tabs,
             save_tabs,
