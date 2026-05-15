@@ -204,6 +204,17 @@ export function TabBar({
             className="tab-context-menu-item"
             onClick={() => {
               const path = menu.path;
+              const target = tabs.find((t) => t.path === path);
+              setMenu(null);
+              if (target) beginRename(target);
+            }}
+          >
+            重命名
+          </button>
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              const path = menu.path;
               setMenu(null);
               onSaveAs(path);
             }}
