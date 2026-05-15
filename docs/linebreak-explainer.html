@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>你按下 Enter，发生了什么？— Penraft 换行对比说明</title>
+<style>
+  :root {
+    --bg: #fafafa;
+    --fg: #24292e;
+    --muted: #6a737d;
+    --border: #e1e4e8;
+    --card: #ffffff;
+    --hi: #0969da;
+    --hi-soft: #ddf4ff;
+    --warn: #fff8c5;
+    --warn-bd: #d4a72c;
+    --ok: #dafbe1;
+    --ok-bd: #2da44e;
+    --bad: #ffebe9;
+    --bad-bd: #cf222e;
+    --font: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--fg); font-family: var(--font); }
+  body { padding: 48px 24px 96px; }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 30px; font-weight: 700; margin: 0 0 8px; letter-spacing: 0.5px; }
+  .lede { color: var(--muted); font-size: 16px; line-height: 1.7; margin: 0 0 36px; }
+  h2 { font-size: 22px; font-weight: 700; margin: 48px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 18px; font-weight: 600; margin: 24px 0 12px; }
+  p { line-height: 1.75; }
+  .tag { display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 999px; font-weight: 600; vertical-align: middle; margin-right: 8px; }
+  .tag-soft { background: #eff7ff; color: #0550ae; }
+  .tag-hard { background: #fff1e5; color: #9a4f00; }
+  .tag-para { background: #f0f0ff; color: #4b3bcc; }
+
+  /* 对比卡片 */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin: 16px 0 28px;
+    overflow: hidden;
+  }
+  .card-head {
+    padding: 12px 16px;
+    background: #f6f8fa;
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+  .card-body { padding: 18px 20px; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .row > div { padding: 18px 20px; }
+  .row > div:first-child { border-right: 1px solid var(--border); background: #fbfbfb; }
+  .row .col-title { font-size: 12px; color: var(--muted); margin: 0 0 10px; text-transform: uppercase; letter-spacing: 1px; }
+
+  /* 用来"演示" Markdown 源码的小框 */
+  pre.src {
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 14px 16px;
+    border-radius: 6px;
+    white-space: pre;
+    overflow: auto;
+  }
+  pre.src .ws { color: #ff7b72; }       /* 标红两个空格 */
+  pre.src .blank { color: #58a6ff; }    /* 标蓝空行 */
+  pre.src .arrow { color: #8b949e; }
+
+  /* 用来"演示"渲染结果的预览框 */
+  .preview {
+    font-family: var(--font);
+    font-size: 17px;
+    line-height: 1.7;
+    color: #24292e;
+  }
+  .preview p { margin: 0 0 16px; }
+  .preview p:last-child { margin-bottom: 0; }
+
+  /* 标注图：把截图三段还原 + 标注 */
+  .annotated {
+    position: relative;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 30px 36px;
+    margin: 16px 0 24px;
+  }
+  .annotated .h {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 6px;
+  }
+  .annotated .rule { height: 1px; background: #eaecef; margin: 0 0 18px; }
+  .annotated .p1, .annotated .p3 { margin: 0 0 16px; font-size: 18px; }
+  .annotated .p2 { margin: 0 0 16px; font-size: 18px; }
+  .annotated .p2 .br { display: block; }
+  .annotated .label {
+    display: inline-block;
+    margin-left: 12px;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    vertical-align: middle;
+  }
+  .annotated .label.wide { background: var(--bad); color: #82071e; border: 1px solid var(--bad-bd); }
+  .annotated .label.narrow { background: var(--ok); color: #14532d; border: 1px solid var(--ok-bd); }
+
+  /* 三种方案对比 */
+  .three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin: 14px 0 8px;
+  }
+  .three .opt {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .three .opt h4 { margin: 0; padding: 10px 14px; background: #f6f8fa; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; }
+  .three .opt .demo { padding: 14px; font-size: 14px; line-height: 1.6; min-height: 140px; }
+  .three .opt .desc { padding: 10px 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+  /* 演示用 */
+  .demo-tight p { margin: 0; }
+  .demo-medium p { margin: 0 0 8px; }
+  .demo-medium p:last-child { margin: 0; }
+  .demo-loose p { margin: 0 0 16px; }
+  .demo-loose p:last-child { margin: 0; }
+
+  .callout {
+    border-left: 4px solid var(--hi);
+    background: var(--hi-soft);
+    padding: 14px 18px;
+    border-radius: 4px;
+    margin: 18px 0;
+    line-height: 1.7;
+  }
+  .callout.warn { border-color: var(--warn-bd); background: var(--warn); }
+
+  .kbd {
+    display: inline-block;
+    padding: 1px 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    background: #f6f8fa;
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: 4px;
+    color: #24292e;
+  }
+  .mono { font-family: var(--mono); background: #f6f8fa; padding: 1px 6px; border-radius: 4px; font-size: 0.92em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>你按下 Enter，发生了什么？</h1>
+  <p class="lede">这份文档用「源码 ↔ 实际渲染」一一对比，帮你看清 Markdown 里的换行差异，再决定要不要把它们的视觉间距统一起来。</p>
+
+  <h2>1. Markdown 其实有 <em>三种</em>「换行」</h2>
+
+  <p>同一份文字，写法的细微差别会产生完全不同的视觉效果。先看三种写法：</p>
+
+  <!-- 软换行 -->
+  <div class="card">
+    <div class="card-head"><span class="tag tag-soft">软换行</span>单按一次 Enter，下一行立刻写字</div>
+    <div class="row">
+      <div>
+        <p class="col-title">你写的源码</p>
+        <pre class="src">哈哈
+好像</pre>
+      </div>
+      <div>
+        <p class="col-title">标准 Markdown 渲染</p>
+        <div class="preview"><p>哈哈 好像</p></div>
+        <p style="color:var(--muted); font-size:13px; margin:12px 0 0;">⚠ 在标准 CommonMark 里，这种「单 Enter」会被当作<strong>空格</strong>接成一行——根本不换行。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 硬换行 -->
+  <div class="card">
+    <div class="card-head"><span class="tag tag-hard">硬换行</span>行尾打两个空格再 Enter，或写 <span class="mono">&lt;br&gt;</span></div>
+    <div class="row">
+      <div>
+        <p class="col-title">你写的源码</p>
+        <pre class="src">哈哈<span class="ws">··</span>
+好像</pre>
+        <p style="color:var(--muted); font-size:12px; margin:10px 0 0;"><span class="ws">··</span> 表示两个空格</p>
+      </div>
+      <div>
+        <p class="col-title">渲染结果</p>
+        <div class="preview"><p>哈哈<br />好像</p></div>
+        <p style="color:var(--muted); font-size:13px; margin:12px 0 0;">在<strong>同一段落内</strong>强制换行，没有段间距，紧贴。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 段落 -->
+  <div class="card">
+    <div class="card-head"><span class="tag tag-para">段落分隔</span>按 Enter 两次（中间留一空行）</div>
+    <div class="row">
+      <div>
+        <p class="col-title">你写的源码</p>
+        <pre class="src">哈哈
+<span class="blank">↵ (空行)</span>
+好像</pre>
+      </div>
+      <div>
+        <p class="col-title">渲染结果</p>
+        <div class="preview"><p>哈哈</p><p>好像</p></div>
+        <p style="color:var(--muted); font-size:13px; margin:12px 0 0;">两个独立段落，段间有 <strong>16px</strong> 间距。</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>2. Penraft 现在的特殊行为</h2>
+
+  <p>Penraft 为了让 WYSIWYG 模式下「按一次 Enter 真的换一行」更直觉，做了一个偷偷的处理：</p>
+
+  <div class="callout">
+    <strong>自动加硬换行（<span class="mono">applyHardBreaks</span>）</strong><br>
+    当你在 Milkdown（渲染模式）里只按一次 Enter，Penraft 会自动在行尾追加两个空格 <span class="ws" style="color:#cf222e">··</span>，把它升级成<strong>硬换行</strong>。<br>
+    所以单 Enter 在 Penraft 里 = <span class="tag tag-hard" style="margin:0">硬换行</span>（紧贴），而不是标准 Markdown 的「忽略 / 接成一行」。
+  </div>
+
+  <h2>3. 你截图里到底发生了什么</h2>
+
+  <p>把你截图的内容用 HTML 重画一遍，并标注每个间距属于哪种：</p>
+
+  <div class="annotated">
+    <div class="h">打哈</div>
+    <div class="rule"></div>
+    <div class="p1">
+      哈哈哈
+      <span class="label wide">↓ 这里是「段落间距」16px</span>
+    </div>
+    <div class="p2">
+      哈哈
+      <span class="br">好像 <span class="label narrow">↑ 这里是「硬换行」紧贴</span></span>
+    </div>
+    <div class="p3">
+      <span class="label wide" style="margin-left:0">↑ 这里又是「段落间距」16px</span><br>
+      哈哈
+    </div>
+    <p style="color:var(--muted); font-size:13px; margin:8px 0 0;">"哈哈 / 好像"中间紧贴 → 你只按了 1 次 Enter，Penraft 自动转成了硬换行。<br>另外两处宽间距 → 你按了 2 次 Enter，是真正的段落分隔。</p>
+  </div>
+
+  <h2>4. 要不要把间距「统一」？三种方向的视觉对比</h2>
+
+  <p>下面三个方框，每个都包含「段落 + 段内换行」混合的同一段文字。区别是<strong>段落 vs 换行 的视觉间距</strong>：</p>
+
+  <div class="three">
+    <div class="opt">
+      <h4>方案 A：紧凑统一（都像换行）</h4>
+      <div class="demo demo-tight">
+        <p>哈哈哈</p>
+        <p>哈哈<br>好像</p>
+        <p>哈哈</p>
+      </div>
+      <div class="desc">所有行都紧贴。<strong>看不出哪里是段</strong>，写长文阅读累；适合极短的便签。</div>
+    </div>
+    <div class="opt">
+      <h4>方案 B：折中统一（≈ 8px）</h4>
+      <div class="demo demo-medium">
+        <p>哈哈哈</p>
+        <p>哈哈<br>好像</p>
+        <p>哈哈</p>
+      </div>
+      <div class="desc">段落和换行都加一点距离，视觉折中。代价：导出别处后这种"软统一"消失。</div>
+    </div>
+    <div class="opt">
+      <h4>方案 C：保持现状（你截图的样子）</h4>
+      <div class="demo demo-loose">
+        <p>哈哈哈</p>
+        <p>哈哈<br>好像</p>
+        <p>哈哈</p>
+      </div>
+      <div class="desc">段落 16px，换行 0px。<strong>语义清晰</strong>：宽 = 新段；窄 = 同段续写。</div>
+    </div>
+  </div>
+
+  <h2>5. 我的建议</h2>
+
+  <div class="callout warn">
+    <strong>我不建议把视觉间距完全统一，原因有三：</strong>
+    <ol style="margin:8px 0 0; padding-left:20px; line-height:1.75;">
+      <li><strong>段落 vs 换行 是 Markdown 的真实语义</strong>，不是可有可无的样式。导出到 Typora、Obsidian、GitHub 时，那里就是用这两种间距来表达「这是新段」还是「这是同段续写」的。Penraft 强行抹平，到了别的工具又会显示出来。</li>
+      <li><strong>抹平成紧贴（方案 A）= 阅读体验差</strong>，长文里完全分不清段落边界。</li>
+      <li><strong>抹平成宽间距 = 把硬换行 <span class="mono">&lt;br&gt;</span> 变没用</strong>，因为它和段落看起来一样了。</li>
+    </ol>
+  </div>
+
+  <h3>真正值得讨论的一个改动</h3>
+  <p>Penraft 那个<strong>自动加硬换行</strong>的行为（<span class="mono">applyHardBreaks</span>），其实有点偏离 Markdown 标准。它让你「单按 Enter」变成 <span class="mono">&lt;br&gt;</span>（紧贴），但标准 Markdown 里这种写法应该被忽略或当成空格。</p>
+  <p>如果<strong>关掉这个自动行为</strong>，那么在 Milkdown 里：</p>
+  <ul style="line-height:1.8;">
+    <li>按 <span class="kbd">Enter</span> 一次 = 新段落（Milkdown 默认行为）</li>
+    <li>所有 Enter 都产生一致的 16px 段落间距</li>
+    <li>「间距」自然就统一了，并且 Markdown 是干净的标准格式</li>
+    <li>代价：你之前以为是「同段续写」的地方，会被分成两个段</li>
+  </ul>
+
+  <h3>你需要做的决定</h3>
+  <ol style="line-height:1.85;">
+    <li><strong>保持现状</strong>（推荐 → 语义清晰，跨工具一致）</li>
+    <li><strong>关掉 <span class="mono">applyHardBreaks</span></strong>，让所有 Enter 都变段落，间距自然统一</li>
+    <li><strong>强行用 CSS 抹平间距</strong>（A / B / C 之一），不改 Markdown 行为</li>
+  </ol>
+
+  <p style="color:var(--muted); font-size:13px; margin-top:36px; border-top:1px solid var(--border); padding-top:16px;">
+    本文档仅用于决策说明，未修改任何代码。位置：<span class="mono">docs/linebreak-explainer.html</span>
+  </p>
+
+</div>
+</body>
+</html>

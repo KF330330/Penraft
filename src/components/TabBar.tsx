@@ -1,0 +1,225 @@
+import { Code2, Eye, Plus, Search, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+export interface TabItem {
+  path: string;
+  label: string;
+  dirty: boolean;
+}
+
+interface TabBarProps {
+  tabs: TabItem[];
+  activePath: string | null;
+  mode: "render" | "source";
+  onSelect: (path: string) => void;
+  onClose: (path: string) => void;
+  onCreate: () => void;
+  onReorder: (from: number, to: number) => void;
+  onRename: (path: string, newStem: string) => void;
+  onDelete: (path: string) => void;
+  onSaveAs: (path: string) => void;
+  onOpenSearch: () => void;
+  onToggleMode: () => void;
+}
+
+interface ContextMenuState {
+  path: string;
+  x: number;
+  y: number;
+}
+
+export function TabBar({
+  tabs,
+  activePath,
+  mode,
+  onSelect,
+  onClose,
+  onCreate,
+  onReorder,
+  onRename,
+  onDelete,
+  onSaveAs,
+  onOpenSearch,
+  onToggleMode,
+}: TabBarProps) {
+  const [editingPath, setEditingPath] = useState<string | null>(null);
+  const [editingValue, setEditingValue] = useState("");
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [menu, setMenu] = useState<ContextMenuState | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!menu) return;
+    const close = () => setMenu(null);
+    window.addEventListener("click", close);
+    window.addEventListener("blur", close);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("click", close);
+      window.removeEventListener("blur", close);
+      window.removeEventListener("resize", close);
+    };
+  }, [menu]);
+
+  useEffect(() => {
+    if (editingPath && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editingPath]);
+
+  const beginRename = (tab: TabItem) => {
+    setEditingPath(tab.path);
+    setEditingValue(tab.label);
+  };
+
+  const commitRename = () => {
+    if (editingPath == null) return;
+    const target = tabs.find((t) => t.path === editingPath);
+    const next = editingValue.trim();
+    if (target && next && next !== target.label) {
+      onRename(editingPath, next);
+    }
+    setEditingPath(null);
+    setEditingValue("");
+  };
+
+  const cancelRename = () => {
+    setEditingPath(null);
+    setEditingValue("");
+  };
+
+  return (
+    <div className="tab-bar">
+      <button className="tab-bar-icon" onClick={onOpenSearch} title="搜索文档">
+        <Search size={16} />
+      </button>
+
+      <div className="tab-bar-tabs">
+        {tabs.map((tab, idx) => {
+          const isActive = tab.path === activePath;
+          const isDragOver = dropIndex === idx && dragIndex !== null && dragIndex !== idx;
+          const isEditing = editingPath === tab.path;
+          return (
+            <div
+              key={tab.path}
+              className={`tab-item${isActive ? " active" : ""}${isDragOver ? " drop-target" : ""}`}
+              draggable={!isEditing}
+              onDragStart={(e) => {
+                setDragIndex(idx);
+                e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (dragIndex !== null && dragIndex !== idx) {
+                  setDropIndex(idx);
+                  e.dataTransfer.dropEffect = "move";
+                }
+              }}
+              onDragLeave={() => {
+                if (dropIndex === idx) setDropIndex(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragIndex !== null && dragIndex !== idx) {
+                  onReorder(dragIndex, idx);
+                }
+                setDragIndex(null);
+                setDropIndex(null);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setDropIndex(null);
+              }}
+              onClick={() => {
+                if (!isEditing) onSelect(tab.path);
+              }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                beginRename(tab);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (isEditing) return;
+                setMenu({ path: tab.path, x: e.clientX, y: e.clientY });
+              }}
+            >
+              {isEditing ? (
+                <input
+                  ref={inputRef}
+                  className="tab-rename-input"
+                  value={editingValue}
+                  onChange={(e) => setEditingValue(e.target.value)}
+                  onBlur={commitRename}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commitRename();
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      cancelRename();
+                    }
+                  }}
+                />
+              ) : (
+                <>
+                  <span className="tab-label">{tab.label}</span>
+                  {tab.dirty ? <span className="tab-dirty" /> : null}
+                  <button
+                    className="tab-close"
+                    title="关闭"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose(tab.path);
+                    }}
+                  >
+                    <X size={12} />
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })}
+        <button className="tab-bar-icon tab-bar-add" onClick={onCreate} title="新建文档 (⌘+N)">
+          <Plus size={16} />
+        </button>
+      </div>
+
+      <button className="tab-bar-icon" onClick={onToggleMode} title={mode === "render" ? "切到源码 (⌘+/)" : "切到渲染 (⌘+/)"}>
+        {mode === "render" ? <Code2 size={16} /> : <Eye size={16} />}
+      </button>
+
+      {menu ? (
+        <div
+          className="tab-context-menu"
+          style={{ left: menu.x, top: menu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="tab-context-menu-item"
+            onClick={() => {
+              const path = menu.path;
+              setMenu(null);
+              onSaveAs(path);
+            }}
+          >
+            另存为…
+          </button>
+          <button
+            className="tab-context-menu-item danger"
+            onClick={() => {
+              const path = menu.path;
+              setMenu(null);
+              onDelete(path);
+            }}
+          >
+            删除文件
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
