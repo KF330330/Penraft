@@ -37,10 +37,10 @@ export async function searchNotes(query: string): Promise<NoteSummary[]> {
   return invoke("search_notes", { query });
 }
 
-export async function loadTabs(): Promise<TabsState> {
-  return invoke("load_tabs");
+export async function loadTabs(label: string): Promise<TabsState> {
+  return invoke("load_tabs", { label });
 }
 
-export async function saveTabs(state: TabsState): Promise<void> {
-  return invoke("save_tabs", { state });
+export async function saveTabs(label: string, state: TabsState): Promise<void> {
+  return invoke("save_tabs", { label, state });
 }

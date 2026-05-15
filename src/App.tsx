@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { EditorPane } from "./components/EditorPane";
 import { SearchPanel } from "./components/SearchPanel";
 import { TabBar } from "./components/TabBar";
@@ -43,6 +45,25 @@ function makeOpenDoc(doc: NoteDocument): OpenDoc {
     savingStatus: "idle",
   };
 }
+
+function getWindowLabel(): string {
+  try {
+    return getCurrentWindow().label;
+  } catch {
+    return "main";
+  }
+}
+
+function getInitialPathFromUrl(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get("path");
+  } catch {
+    return null;
+  }
+}
+
+const WINDOW_LABEL = getWindowLabel();
+const INITIAL_PATH = getInitialPathFromUrl();
 
 export default function App() {
   const [docs, setDocs] = useState<OpenDoc[]>([]);
@@ -113,8 +134,12 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const tabsState = await loadTabs();
-        const paths = tabsState.paths;
+        const tabsState = await loadTabs(WINDOW_LABEL);
+        let paths = tabsState.paths;
+        // 撕出窗口首次打开：URL 带 path 且本地还没 tabs-{label}.json
+        if (paths.length === 0 && INITIAL_PATH) {
+          paths = [INITIAL_PATH];
+        }
         if (paths.length === 0) {
           const doc = await createNote();
           setDocs([makeOpenDoc(doc)]);
@@ -156,7 +181,7 @@ export default function App() {
         paths: docsRef.current.map((d) => d.document.summary.path),
         active: activePathRef.current,
       };
-      saveTabs(state).catch((err) => showToast(`Tab 状态保存失败：${String(err)}`));
+      saveTabs(WINDOW_LABEL, state).catch((err) => showToast(`Tab 状态保存失败：${String(err)}`));
     }, 180);
     return () => {
       if (tabsSaveTimer.current) window.clearTimeout(tabsSaveTimer.current);
@@ -302,6 +327,30 @@ export default function App() {
     }
   }, [showToast]);
 
+  const handleTearOut = useCallback(async (path: string, screenX: number, screenY: number) => {
+    try {
+      await persistDoc(path);
+    } catch {
+      // ignore save errors; still tear out
+    }
+    const label = `torn-${Date.now()}`;
+    const url = `index.html?path=${encodeURIComponent(path)}`;
+    try {
+      new WebviewWindow(label, {
+        url,
+        title: "Penraft",
+        width: 1280,
+        height: 820,
+        x: Math.round(screenX - 100),
+        y: Math.round(screenY - 20),
+      });
+    } catch (err) {
+      showToast(`新建窗口失败：${String(err)}`);
+      return;
+    }
+    await handleClose(path);
+  }, [persistDoc, handleClose, showToast]);
+
   const handleSaveAs = useCallback(async (path: string) => {
     const target = docsRef.current.find((d) => d.document.summary.path === path);
     if (!target) return;
@@ -397,6 +446,7 @@ export default function App() {
           onDelete={(p) => handleDelete(p).catch(() => {})}
           onSaveAs={(p) => handleSaveAs(p).catch(() => {})}
           onRevealInFinder={(p) => handleRevealInFinder(p).catch(() => {})}
+          onTearOut={(p, x, y) => handleTearOut(p, x, y).catch(() => {})}
           onOpenSearch={() => setSearchOpen(true)}
           onToggleMode={() => setMode((m) => (m === "render" ? "source" : "render"))}
         />

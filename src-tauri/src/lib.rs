@@ -50,13 +50,13 @@ fn search_notes(query: String) -> CommandResult<Vec<NoteSummary>> {
 }
 
 #[tauri::command]
-fn load_tabs() -> CommandResult<TabsState> {
-    vault::load_tabs()
+fn load_tabs(label: String) -> CommandResult<TabsState> {
+    vault::load_tabs(label)
 }
 
 #[tauri::command]
-fn save_tabs(state: TabsState) -> CommandResult<()> {
-    vault::save_tabs(state)
+fn save_tabs(label: String, state: TabsState) -> CommandResult<()> {
+    vault::save_tabs(label, state)
 }
 
 pub fn run() {

@@ -132,8 +132,16 @@ pub fn search_notes(query: String) -> CommandResult<Vec<NoteSummary>> {
     Ok(matched)
 }
 
-pub fn load_tabs() -> CommandResult<TabsState> {
-    let path = tabs_path();
+pub fn load_tabs(label: String) -> CommandResult<TabsState> {
+    ensure_vault_dirs()?;
+    let path = tabs_path(&label);
+    // 一次性迁移：旧 tabs.json → tabs-main.json
+    if label == "main" && !path.exists() {
+        let legacy = penraft_dir().join("tabs.json");
+        if legacy.exists() {
+            let _ = fs::rename(&legacy, &path);
+        }
+    }
     let mut state: TabsState = if path.exists() {
         let raw = fs::read_to_string(&path).map_err(to_err)?;
         serde_json::from_str(&raw).unwrap_or_default()
@@ -154,9 +162,9 @@ pub fn load_tabs() -> CommandResult<TabsState> {
     Ok(state)
 }
 
-pub fn save_tabs(state: TabsState) -> CommandResult<()> {
+pub fn save_tabs(label: String, state: TabsState) -> CommandResult<()> {
     ensure_vault_dirs()?;
-    let path = tabs_path();
+    let path = tabs_path(&label);
     let json = serde_json::to_string_pretty(&state).map_err(to_err)?;
     atomic_write(&path, json.as_bytes())
 }
@@ -199,8 +207,8 @@ fn penraft_dir() -> PathBuf {
     vault_root().join(".penraft")
 }
 
-fn tabs_path() -> PathBuf {
-    penraft_dir().join("tabs.json")
+fn tabs_path(label: &str) -> PathBuf {
+    penraft_dir().join(format!("tabs-{}.json", label))
 }
 
 fn default_vault_path() -> CommandResult<PathBuf> {

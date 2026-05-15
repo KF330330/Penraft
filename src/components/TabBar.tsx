@@ -1,5 +1,6 @@
 import { Code2, Eye, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 export interface TabItem {
   path: string;
@@ -19,6 +20,7 @@ interface TabBarProps {
   onDelete: (path: string) => void;
   onSaveAs: (path: string) => void;
   onRevealInFinder: (path: string) => void;
+  onTearOut: (path: string, screenX: number, screenY: number) => void;
   onOpenSearch: () => void;
   onToggleMode: () => void;
 }
@@ -41,6 +43,7 @@ export function TabBar({
   onDelete,
   onSaveAs,
   onRevealInFinder,
+  onTearOut,
   onOpenSearch,
   onToggleMode,
 }: TabBarProps) {
@@ -130,9 +133,29 @@ export function TabBar({
                 setDragIndex(null);
                 setDropIndex(null);
               }}
-              onDragEnd={() => {
+              onDragEnd={async (e) => {
+                const draggedPath = tab.path;
                 setDragIndex(null);
                 setDropIndex(null);
+                try {
+                  const win = getCurrentWindow();
+                  const [pos, size, scale] = await Promise.all([
+                    win.outerPosition(),
+                    win.outerSize(),
+                    win.scaleFactor(),
+                  ]);
+                  const px = e.screenX * scale;
+                  const py = e.screenY * scale;
+                  const margin = 20 * scale;
+                  const outside =
+                    px < pos.x - margin ||
+                    px > pos.x + size.width + margin ||
+                    py < pos.y - margin ||
+                    py > pos.y + size.height + margin;
+                  if (outside) onTearOut(draggedPath, e.screenX, e.screenY);
+                } catch {
+                  // Tauri 不可用（浏览器预览模式）就忽略
+                }
               }}
               onClick={() => {
                 if (!isEditing) onSelect(tab.path);
