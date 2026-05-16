@@ -1,6 +1,6 @@
 import { Code2, Eye, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { getCurrentWindow } from "@tauri-apps/api/window";
+import { cursorPosition, getCurrentWindow } from "@tauri-apps/api/window";
 
 export interface TabItem {
   path: string;
@@ -133,26 +133,24 @@ export function TabBar({
                 setDragIndex(null);
                 setDropIndex(null);
               }}
-              onDragEnd={async (e) => {
+              onDragEnd={async () => {
                 const draggedPath = tab.path;
                 setDragIndex(null);
                 setDropIndex(null);
                 try {
                   const win = getCurrentWindow();
-                  const [pos, size, scale] = await Promise.all([
+                  const [cursor, pos, size] = await Promise.all([
+                    cursorPosition(),
                     win.outerPosition(),
                     win.outerSize(),
-                    win.scaleFactor(),
                   ]);
-                  const px = e.screenX * scale;
-                  const py = e.screenY * scale;
-                  const margin = 20 * scale;
+                  const margin = 20;
                   const outside =
-                    px < pos.x - margin ||
-                    px > pos.x + size.width + margin ||
-                    py < pos.y - margin ||
-                    py > pos.y + size.height + margin;
-                  if (outside) onTearOut(draggedPath, e.screenX, e.screenY);
+                    cursor.x < pos.x - margin ||
+                    cursor.x > pos.x + size.width + margin ||
+                    cursor.y < pos.y - margin ||
+                    cursor.y > pos.y + size.height + margin;
+                  if (outside) onTearOut(draggedPath, cursor.x, cursor.y);
                 } catch {
                   // Tauri 不可用（浏览器预览模式）就忽略
                 }

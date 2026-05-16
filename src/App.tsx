@@ -335,14 +335,15 @@ export default function App() {
     }
     const label = `torn-${Date.now()}`;
     const url = `index.html?path=${encodeURIComponent(path)}`;
+    const dpr = window.devicePixelRatio || 1;
     try {
       new WebviewWindow(label, {
         url,
         title: "Penraft",
         width: 1280,
         height: 820,
-        x: Math.round(screenX - 100),
-        y: Math.round(screenY - 20),
+        x: Math.round(screenX / dpr - 100),
+        y: Math.round(screenY / dpr - 20),
       });
     } catch (err) {
       showToast(`新建窗口失败：${String(err)}`);
