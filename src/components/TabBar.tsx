@@ -137,6 +137,7 @@ export function TabBar({
                 const draggedPath = tab.path;
                 setDragIndex(null);
                 setDropIndex(null);
+                console.log("[tearout] dragend fired for", draggedPath);
                 try {
                   const win = getCurrentWindow();
                   const [cursor, pos, size] = await Promise.all([
@@ -144,15 +145,17 @@ export function TabBar({
                     win.outerPosition(),
                     win.outerSize(),
                   ]);
+                  console.log("[tearout] cursor:", cursor, "winPos:", pos, "winSize:", size);
                   const margin = 20;
                   const outside =
                     cursor.x < pos.x - margin ||
                     cursor.x > pos.x + size.width + margin ||
                     cursor.y < pos.y - margin ||
                     cursor.y > pos.y + size.height + margin;
+                  console.log("[tearout] outside?", outside);
                   if (outside) onTearOut(draggedPath, cursor.x, cursor.y);
-                } catch {
-                  // Tauri 不可用（浏览器预览模式）就忽略
+                } catch (err) {
+                  console.error("[tearout] detection error:", err);
                 }
               }}
               onClick={() => {
