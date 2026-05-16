@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title data-i18n="meta.title">Penraft — 朴素，但顺手。</title>
+<meta name="description" data-i18n="meta.description" content="一个安静的笔记应用。朴素、顺手、自动保存。" />
+<link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32.png" />
+<link rel="apple-touch-icon" href="images/icon-128.png" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav">
+  <div class="nav-inner container">
+    <a class="brand" href="#top" aria-label="Penraft">
+      <img src="images/icon-128.png" alt="" width="28" height="28" class="brand-mark" />
+      <span class="brand-name">Penraft</span>
+    </a>
+
+    <nav class="nav-links">
+      <a href="#features" data-i18n="nav.features">功能</a>
+      <a href="#highlight" data-i18n="nav.philosophy">理念</a>
+    </nav>
+
+    <div class="nav-actions">
+      <div class="lang-toggle" role="group" aria-label="Language">
+        <button type="button" data-lang="zh" class="lang-btn is-active">中</button>
+        <button type="button" data-lang="en" class="lang-btn">EN</button>
+      </div>
+      <a class="icon-link" href="https://github.com/" target="_blank" rel="noopener" aria-label="GitHub">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+      </a>
+      <a class="btn btn-primary btn-sm" href="https://github.com/releases" target="_blank" rel="noopener" data-i18n="nav.download">下载</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="container hero-grid">
+    <div class="hero-text">
+      <div class="eyebrow" data-i18n="hero.eyebrow">一个安静的笔记应用。</div>
+      <h1 class="hero-title" data-i18n="hero.title">朴素，但顺手。</h1>
+      <p class="hero-sub" data-i18n="hero.sub">
+        你专心写，剩下的它管。
+      </p>
+      <ul class="hero-tags">
+        <li data-i18n="hero.tags.minimal">极简</li>
+        <li data-i18n="hero.tags.autosave">自动保存</li>
+        <li data-i18n="hero.tags.multidoc">笔记，并排放</li>
+      </ul>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://github.com/releases" target="_blank" rel="noopener">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span data-i18n="hero.cta_primary">下载 Mac 版</span>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/" target="_blank" rel="noopener">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          <span data-i18n="hero.cta_secondary">查看源码</span>
+        </a>
+      </div>
+      <ul class="hero-meta">
+        <li><span class="dot"></span><span data-i18n="hero.meta.platforms">仅 macOS</span></li>
+        <li><span class="dot"></span><span data-i18n="hero.meta.free">免费使用</span></li>
+        <li><span class="dot"></span><span data-i18n="hero.meta.offline">笔记存在你电脑里</span></li>
+      </ul>
+    </div>
+
+    <div class="hero-visual">
+      <div class="screenshot screenshot-frame" data-image="images/hero.png">
+        <div class="screenshot-bar">
+          <span class="dot-mac dot-red"></span>
+          <span class="dot-mac dot-yellow"></span>
+          <span class="dot-mac dot-green"></span>
+        </div>
+        <img alt="" data-i18n-alt="hero.image_alt" class="screenshot-img" />
+        <div class="screenshot-mock">
+          <div class="mock-tabs" role="tablist">
+            <span class="mock-tab is-active" role="tab" tabindex="0" data-mock-tab="0"><span class="mock-dot"></span><span data-i18n="mock.tab1">今日的写作</span></span>
+            <span class="mock-tab" role="tab" tabindex="0" data-mock-tab="1"><span data-i18n="mock.tab2">Penraft 设计笔记</span></span>
+            <span class="mock-tab" role="tab" tabindex="0" data-mock-tab="2"><span data-i18n="mock.tab3">周会记录</span></span>
+            <span class="mock-tab-plus">+</span>
+          </div>
+
+          <div class="mock-body is-active" data-mock-body="0">
+            <h3 class="mock-h1" data-i18n="mock.h1">今日的写作</h3>
+            <p class="mock-quote" data-i18n="mock.quote">写作不是把灵感保存下来，而是在纸上想清楚。</p>
+            <h4 class="mock-h2" data-i18n="mock.h2">三件事</h4>
+            <ul class="mock-list">
+              <li><strong data-i18n="mock.li1.k">早晨</strong>：<span data-i18n="mock.li1.v">晨跑后把脑子里冒出的几句话写下来</span></li>
+              <li><strong data-i18n="mock.li2.k">中午</strong>：<span data-i18n="mock.li2.v">整理上周和团队的对话，找出可以追的线索</span></li>
+              <li><strong data-i18n="mock.li3.k">晚上</strong>：<span data-i18n="mock.li3.v">复盘——今天有没有让任何事情变得更简单</span></li>
+            </ul>
+            <p class="mock-p"><code>Penraft</code> <span data-i18n="mock.p">默认把笔记保存到</span> <code>~/Documents/PenraftVault/Notes/</code><span data-i18n="mock.period">。</span></p>
+          </div>
+
+          <div class="mock-body" data-mock-body="1">
+            <h3 class="mock-h1" data-i18n="mock2.h1">Penraft 设计笔记</h3>
+            <p class="mock-quote" data-i18n="mock2.quote">安静的工具，用得最久。</p>
+            <h4 class="mock-h2" data-i18n="mock2.h2">三个原则</h4>
+            <ul class="mock-list">
+              <li><strong data-i18n="mock2.li1.k">极简</strong>：<span data-i18n="mock2.li1.v">能少一个按钮就少一个</span></li>
+              <li><strong data-i18n="mock2.li2.k">顺手</strong>：<span data-i18n="mock2.li2.v">别打扰，也别打断</span></li>
+              <li><strong data-i18n="mock2.li3.k">可靠</strong>：<span data-i18n="mock2.li3.v">每一个字都自动留下</span></li>
+            </ul>
+            <p class="mock-p" data-i18n="mock2.p">设计灵感：一支顺手的笔。</p>
+          </div>
+
+          <div class="mock-body" data-mock-body="2">
+            <h3 class="mock-h1" data-i18n="mock3.h1">周会记录</h3>
+            <p class="mock-quote" data-i18n="mock3.quote">5 月 16 日 · 团队对齐</p>
+            <h4 class="mock-h2" data-i18n="mock3.h2">本周</h4>
+            <ul class="mock-list">
+              <li><strong data-i18n="mock3.li1.k">完成</strong>：<span data-i18n="mock3.li1.v">Hero 文案落地</span></li>
+              <li><strong data-i18n="mock3.li2.k">进行</strong>：<span data-i18n="mock3.li2.v">应用截图替换中</span></li>
+              <li><strong data-i18n="mock3.li3.k">下周</strong>：<span data-i18n="mock3.li3.v">开放下载页</span></li>
+            </ul>
+            <p class="mock-p" data-i18n="mock3.p">下次周会：5 月 23 日。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES ============ -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="eyebrow" data-i18n="features.eyebrow">核心功能</div>
+      <h2 class="section-title" data-i18n="features.title">朴素 · 顺手</h2>
+      <p class="section-sub" data-i18n="features.sub">不堆砌功能，只保留写作真正需要的那几件。</p>
+    </div>
+
+    <div class="feature-grid">
+
+      <article class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M9 6v4"/></svg>
+        </div>
+        <h3 class="feature-title" data-i18n="features.tabs.title">多文档管理</h3>
+        <p class="feature-desc" data-i18n="features.tabs.desc">想新建就新建，想关掉就关掉。Tab 像浏览器一样，可以拖动排序、双击改名，关掉只是隐藏，不会真删。</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+        </div>
+        <h3 class="feature-title" data-i18n="features.dual.title">两种写作模式</h3>
+        <p class="feature-desc" data-i18n="features.dual.desc">默认所见即所得——写 # 直接出标题、写 - 直接出列表。也能切到纯文本，看到完整的源码。</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>
+        </div>
+        <h3 class="feature-title" data-i18n="features.autosave.title">自动保存</h3>
+        <p class="feature-desc" data-i18n="features.autosave.desc">每输入一个字都会悄悄存到电脑里，不用手动按保存，不会丢任何一个想法。</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h3 class="feature-title" data-i18n="features.search.title">搜索所有笔记</h3>
+        <p class="feature-desc" data-i18n="features.search.desc">点一下放大镜，所有文档一起搜。命中哪一篇直接跳过去。</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+        </div>
+        <h3 class="feature-title" data-i18n="features.restore.title">下次打开如初</h3>
+        <p class="feature-desc" data-i18n="features.restore.desc">关掉前开着哪几篇、停在哪一篇，下次再开还是原样。</p>
+      </article>
+
+      <article class="feature-card">
+        <div class="feature-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h12"/></svg>
+        </div>
+        <h3 class="feature-title" data-i18n="features.shortcuts.title">键盘友好</h3>
+        <p class="feature-desc" data-i18n="features.shortcuts.desc">几个最常用的动作——新建、切换模式、立即保存——都能不离手地完成。</p>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============ HIGHLIGHT ============ -->
+<section class="section section-alt" id="highlight">
+  <div class="container highlight-grid">
+    <div class="highlight-visual">
+      <div class="screenshot screenshot-frame screenshot-source" data-image="images/screenshot-source.png">
+        <div class="screenshot-bar">
+          <span class="dot-mac dot-red"></span>
+          <span class="dot-mac dot-yellow"></span>
+          <span class="dot-mac dot-green"></span>
+        </div>
+        <img alt="" data-i18n-alt="highlight.image_alt" class="screenshot-img" />
+        <div class="screenshot-mock screenshot-mock-source" aria-hidden="true">
+          <div class="mock-tabs">
+            <span class="mock-tab is-active"><span data-i18n="mock.tab1">今日的写作</span></span>
+            <span class="mock-tab"><span data-i18n="mock.tab2">Penraft 设计笔记</span></span>
+            <span class="mock-source-toggle">&lt;/&gt;</span>
+          </div>
+          <pre class="mock-source"><code><span class="src-h"># 今日的写作</span>
+
+<span class="src-q">&gt; 写作不是把灵感保存下来，</span>
+<span class="src-q">&gt; 而是在纸上想清楚。</span>
+
+<span class="src-h">## 三件事</span>
+
+- **早晨**：晨跑后把脑子里冒出的几句话
+- **中午**：整理上周和团队的对话
+- **晚上**：复盘——今天哪件事变简单了
+
+<span class="src-h">## 一段引文</span>
+
+<span class="src-q">&gt; 极简不是少，是恰到好处。</span>
+
+<span class="src-c">`Penraft`</span> 默认把笔记保存到
+<span class="src-c">`~/Documents/PenraftVault/Notes/`</span>。
+</code></pre>
+        </div>
+      </div>
+    </div>
+    <div class="highlight-text">
+      <div class="eyebrow" data-i18n="highlight.eyebrow">为什么是 Penraft</div>
+      <h2 class="section-title" data-i18n="highlight.title">朴素 · 顺手</h2>
+
+      <ul class="principle-list">
+        <li>
+          <h3 data-i18n="highlight.p1.title">极简</h3>
+          <p data-i18n="highlight.p1.desc">没有设置面板，没有侧边栏，没有插件市场。打开就写。</p>
+        </li>
+        <li>
+          <h3 data-i18n="highlight.p2.title">笔记在你自己手里</h3>
+          <p data-i18n="highlight.p2.desc">所有笔记都是纯文本文件，存在你自己电脑里。想用 iCloud / 同步盘备份随时都行。</p>
+        </li>
+        <li>
+          <h3 data-i18n="highlight.p3.title">不用调，能用</h3>
+          <p data-i18n="highlight.p3.desc">没什么可设置的。装上就能写，不必学。</p>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="images/icon-128.png" alt="" width="36" height="36" />
+      <div>
+        <div class="footer-name">Penraft</div>
+        <div class="footer-tag" data-i18n="footer.tag">v0.1.0 · 一个安静的笔记工具</div>
+      </div>
+    </div>
+
+    <div class="footer-links">
+      <a href="https://github.com/" target="_blank" rel="noopener" data-i18n="footer.github">GitHub</a>
+      <a href="https://github.com/releases" target="_blank" rel="noopener" data-i18n="footer.releases">下载</a>
+      <a href="#features" data-i18n="footer.features">功能</a>
+      <a href="#highlight" data-i18n="footer.philosophy">理念</a>
+    </div>
+
+    <div class="footer-copy" data-i18n="footer.copy">© 2026 Penraft · 一个对写作友善的小工具</div>
+  </div>
+</footer>
+
+</main>
+
+<script src="script.js"></script>
+</body>
+</html>
