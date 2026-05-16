@@ -133,27 +133,38 @@ export function TabBar({
                 setDragIndex(null);
                 setDropIndex(null);
               }}
-              onDragEnd={async () => {
+              onDragEnd={async (e) => {
                 const draggedPath = tab.path;
+                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 setDragIndex(null);
                 setDropIndex(null);
-                console.log("[tearout] dragend fired for", draggedPath);
                 try {
                   const win = getCurrentWindow();
-                  const [cursor, pos, size] = await Promise.all([
+                  const [cursor, outerPos, size, innerPos, scale] = await Promise.all([
                     cursorPosition(),
                     win.outerPosition(),
                     win.outerSize(),
+                    win.innerPosition(),
+                    win.scaleFactor(),
                   ]);
-                  console.log("[tearout] cursor:", cursor, "winPos:", pos, "winSize:", size);
+                  // 完全跑到窗口外 → 撕扯
                   const margin = 20;
                   const outside =
-                    cursor.x < pos.x - margin ||
-                    cursor.x > pos.x + size.width + margin ||
-                    cursor.y < pos.y - margin ||
-                    cursor.y > pos.y + size.height + margin;
-                  console.log("[tearout] outside?", outside);
-                  if (outside) onTearOut(draggedPath, cursor.x, cursor.y);
+                    cursor.x < outerPos.x - margin ||
+                    cursor.x > outerPos.x + size.width + margin ||
+                    cursor.y < outerPos.y - margin ||
+                    cursor.y > outerPos.y + size.height + margin;
+                  // 在窗口内但纵向离开 Tab 栏 > 60 CSS px → 也撕扯（Chrome 风格）
+                  const tabBottomPhys = innerPos.y + rect.bottom * scale;
+                  const tabTopPhys = innerPos.y + rect.top * scale;
+                  const verticalDropPhys =
+                    cursor.y > tabBottomPhys
+                      ? cursor.y - tabBottomPhys
+                      : cursor.y < tabTopPhys
+                      ? tabTopPhys - cursor.y
+                      : 0;
+                  const draggedFar = verticalDropPhys > 60 * scale;
+                  if (outside || draggedFar) onTearOut(draggedPath, cursor.x, cursor.y);
                 } catch (err) {
                   console.error("[tearout] detection error:", err);
                 }
