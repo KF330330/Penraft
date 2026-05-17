@@ -2,17 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { emitTo } from "@tauri-apps/api/event";
 import { EditorPane } from "./components/EditorPane";
 import type { Theme } from "./components/MarkdownEditor";
 import { SearchPanel } from "./components/SearchPanel";
-import { TabBar } from "./components/TabBar";
+import { TabBar, type TabBarHandle } from "./components/TabBar";
 import { ThemePicker } from "./components/ThemePicker";
 import UpdateNotice from "./components/UpdateNotice";
 import {
   createNote,
   deleteNote,
   exportNote,
+  listPenraftWindows,
   loadTabs,
   readNote,
   renameNote,
@@ -21,9 +22,36 @@ import {
   saveTabs,
   takePendingOpenFiles,
 } from "./lib/tauri";
-import type { NoteDocument, TabsState } from "./lib/types";
+import type { NoteDocument, TabsState, WindowGeom } from "./lib/types";
+import { EVENTS, type MergeTabPayload } from "./lib/events";
+import { useTauriListen } from "./lib/use-tauri-listen";
 
-const OPEN_FILE_EVENT = "penraft://open-file";
+const MAIN_WINDOW_LABEL = "main";
+
+// tab-bar 高度从 CSS 变量 --tab-bar-height 读取（src/styles/global.css）。
+// 40 仅作为变量缺失时的兜底。
+function readTabBarHeightCss(): number {
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--tab-bar-height")
+    .trim();
+  const n = parseFloat(raw);
+  return Number.isFinite(n) && n > 0 ? n : 40;
+}
+
+function isInTabBarZone(
+  w: WindowGeom,
+  screenX: number,
+  screenY: number,
+  tabBarHeightCss: number,
+): boolean {
+  const topZonePhys = w.inner_y + tabBarHeightCss * w.scale_factor;
+  return (
+    screenX >= w.inner_x &&
+    screenX <= w.inner_x + w.inner_width &&
+    screenY >= w.inner_y &&
+    screenY <= topZonePhys
+  );
+}
 
 const AUTOSAVE_DELAY_MS = 500;
 const ZOOM_MIN = 0.5;
@@ -64,7 +92,7 @@ function getWindowLabel(): string {
   try {
     return getCurrentWindow().label;
   } catch {
-    return "main";
+    return MAIN_WINDOW_LABEL;
   }
 }
 
@@ -99,6 +127,7 @@ export default function App() {
   const docsRef = useRef<OpenDoc[]>([]);
   const activePathRef = useRef<string | null>(null);
   const handleCreateRef = useRef<(() => Promise<void>) | null>(null);
+  const tabBarRef = useRef<TabBarHandle | null>(null);
 
   useEffect(() => { docsRef.current = docs; }, [docs]);
   useEffect(() => { activePathRef.current = activePath; }, [activePath]);
@@ -296,8 +325,13 @@ export default function App() {
     handleCreateRef.current = handleCreate;
   }, [handleCreate]);
 
-  const handleClose = useCallback(async (path: string) => {
-    await persistDoc(path);
+  // 唯一抽象：从本窗口移除一个 tab，并按窗口身份处理"空状态"。
+  // 调用契约：调用方负责本地 IO（save / delete / spawn window 等），
+  //          本函数只负责本地状态 + 窗口生命周期。
+  // - 本地 remaining 数组同步可知长度，不依赖 docsRef 异步同步。
+  // - main 窗口被掏空 → 新建一个空 note（保留"主窗口必有内容"语义）
+  // - torn 窗口被掏空 → 关闭自己
+  const closeTabAndCleanup = useCallback(async (path: string) => {
     const current = docsRef.current;
     const idx = current.findIndex((d) => d.document.summary.path === path);
     if (idx === -1) return;
@@ -305,14 +339,30 @@ export default function App() {
     setDocs(remaining);
     if (activePathRef.current === path) {
       const fallback = remaining[idx] ?? remaining[idx - 1] ?? remaining[0];
-      if (fallback) {
-        setActivePath(fallback.document.summary.path);
-      } else {
-        setActivePath(null);
-        await handleCreate();
+      setActivePath(fallback ? fallback.document.summary.path : null);
+    }
+    if (remaining.length > 0) return;
+    if (WINDOW_LABEL === MAIN_WINDOW_LABEL) {
+      await handleCreate();
+    } else {
+      // 关 torn 窗口前先取消 tabs.json 写盘定时器，避免留下孤儿 tabs-torn-*.json
+      // （setDocs([]) 已经触发了 180ms 防抖；不取消的话写盘可能跑赢关窗）
+      if (tabsSaveTimer.current) {
+        window.clearTimeout(tabsSaveTimer.current);
+        tabsSaveTimer.current = null;
+      }
+      try {
+        await getCurrentWindow().close();
+      } catch (err) {
+        console.error("[close-torn] failed:", err);
       }
     }
-  }, [persistDoc, handleCreate]);
+  }, [handleCreate]);
+
+  const handleClose = useCallback(async (path: string) => {
+    await persistDoc(path);
+    await closeTabAndCleanup(path);
+  }, [persistDoc, closeTabAndCleanup]);
 
   const handleDelete = useCallback(async (path: string) => {
     const target = docsRef.current.find((d) => d.document.summary.path === path);
@@ -320,24 +370,12 @@ export default function App() {
     if (!window.confirm(`确认删除文件 "${label}"？该操作不可撤销。`)) return;
     try {
       await deleteNote(path);
-      const current = docsRef.current;
-      const idx = current.findIndex((d) => d.document.summary.path === path);
-      const remaining = idx === -1 ? current : current.filter((_, i) => i !== idx);
-      setDocs(remaining);
-      if (activePathRef.current === path) {
-        const fallback = remaining[idx] ?? remaining[idx - 1] ?? remaining[0];
-        if (fallback) {
-          setActivePath(fallback.document.summary.path);
-        } else {
-          setActivePath(null);
-          await handleCreate();
-        }
-      }
+      await closeTabAndCleanup(path);
       showToast(`已删除 ${label}`);
     } catch (err) {
       showToast(`删除失败：${String(err)}`);
     }
-  }, [handleCreate, showToast]);
+  }, [closeTabAndCleanup, showToast]);
 
   const handleRevealInFinder = useCallback(async (path: string) => {
     try {
@@ -351,8 +389,28 @@ export default function App() {
     try {
       await persistDoc(path);
     } catch {
-      // ignore save errors; still tear out
+      // ignore save errors; still proceed
     }
+
+    // 1) 检测光标是否落在某个其他窗口的 tab bar 区
+    let hit: WindowGeom | null = null;
+    try {
+      const tabBarHeightCss = readTabBarHeightCss();
+      const others = await listPenraftWindows(WINDOW_LABEL);
+      hit = others.find((w) => isInTabBarZone(w, screenX, screenY, tabBarHeightCss)) ?? null;
+    } catch (err) {
+      console.error("[merge] detection error:", err);
+    }
+
+    // 2) 命中 → 合并到目标，自己移除并自清理
+    if (hit) {
+      const payload: MergeTabPayload = { path, screenX };
+      await emitTo(hit.label, EVENTS.MERGE_TAB, payload);
+      await closeTabAndCleanup(path);
+      return;
+    }
+
+    // 3) 未命中 → 撕出新窗口，自己移除并自清理
     const label = `torn-${Date.now()}`;
     const url = `index.html?path=${encodeURIComponent(path)}`;
     const dpr = window.devicePixelRatio || 1;
@@ -369,8 +427,8 @@ export default function App() {
       showToast(`新建窗口失败：${String(err)}`);
       return;
     }
-    await handleClose(path);
-  }, [persistDoc, handleClose, showToast]);
+    await closeTabAndCleanup(path);
+  }, [persistDoc, closeTabAndCleanup, showToast]);
 
   const handleSaveAs = useCallback(async (path: string) => {
     const target = docsRef.current.find((d) => d.document.summary.path === path);
@@ -424,21 +482,41 @@ export default function App() {
     }
   }, [persistDoc, showToast]);
 
-  const openPath = useCallback(async (path: string) => {
+  // 单一入口：打开（或聚焦）一个 path。
+  // - insertAt 缺省 → 末尾追加；提供数字 → 插入到该索引。
+  // - moveIfExists：path 已在本窗口时，是否把已存在的 tab 移动到 insertAt 位置
+  //   （仅当 insertAt 也提供时生效）。默认 false，保持"打开已存在 tab 时不重排"语义。
+  const openPath = useCallback(async (
+    path: string,
+    opts?: { insertAt?: number; moveIfExists?: boolean },
+  ) => {
+    const insertAt = opts?.insertAt;
+    const moveIfExists = opts?.moveIfExists ?? false;
+    await flushActive();
     const existing = docsRef.current.find((d) => d.document.summary.path === path);
     if (existing) {
-      await flushActive();
+      if (moveIfExists && insertAt !== undefined) {
+        setDocs((current) => {
+          const fromIdx = current.findIndex((d) => d.document.summary.path === path);
+          if (fromIdx === -1) return current;
+          const next = current.slice();
+          const [moved] = next.splice(fromIdx, 1);
+          const targetIdx = fromIdx < insertAt ? insertAt - 1 : insertAt;
+          next.splice(Math.max(0, Math.min(targetIdx, next.length)), 0, moved);
+          return next;
+        });
+      }
       setActivePath(path);
       return;
     }
     try {
-      await flushActive();
       const doc = await readNote(path);
       setDocs((current) => {
-        if (current.some((d) => d.document.summary.path === doc.summary.path)) {
-          return current;
-        }
-        return [...current, makeOpenDoc(doc)];
+        if (current.some((d) => d.document.summary.path === doc.summary.path)) return current;
+        const next = current.slice();
+        const at = insertAt === undefined ? next.length : Math.max(0, Math.min(insertAt, next.length));
+        next.splice(at, 0, makeOpenDoc(doc));
+        return next;
       });
       setActivePath(doc.summary.path);
     } catch (err) {
@@ -451,38 +529,54 @@ export default function App() {
     await openPath(path);
   }, [openPath]);
 
-  // 监听后端派发的 "用 Penraft 打开" 事件（macOS RunEvent::Opened / Win+Linux single-instance）
+  // 后端派发 "用 Penraft 打开"（macOS RunEvent::Opened / Win+Linux single-instance）
+  useTauriListen<string>(EVENTS.OPEN_FILE, (event) => {
+    if (typeof event.payload === "string" && event.payload.length > 0) {
+      void openPath(event.payload);
+    }
+  }, bootstrapped);
+
+  // 跨窗口拖拽合并
+  useTauriListen<MergeTabPayload>(EVENTS.MERGE_TAB, (event) => {
+    const payload = event.payload;
+    if (!payload || typeof payload.path !== "string" || payload.path.length === 0) return;
+    void (async () => {
+      // 把屏幕 X 换算到本窗口 CSS X，再让 TabBar 计算插入位置
+      let insertIndex = docsRef.current.length;
+      try {
+        const win = getCurrentWindow();
+        const [innerPos, scale] = await Promise.all([win.innerPosition(), win.scaleFactor()]);
+        const cssX = (payload.screenX - innerPos.x) / scale;
+        insertIndex = tabBarRef.current?.getInsertIndexForClientX(cssX) ?? insertIndex;
+      } catch {
+        // fallback: 追加到末尾
+      }
+      await openPath(payload.path, { insertAt: insertIndex, moveIfExists: true });
+      try {
+        await getCurrentWindow().setFocus();
+      } catch {
+        // ignore
+      }
+    })();
+  }, bootstrapped);
+
+  // 启动时排空 pending 队列（OPEN_FILE listener 挂载前可能已有事件入队）
   useEffect(() => {
     if (!bootstrapped) return;
     let cancelled = false;
-    let unlisten: UnlistenFn | null = null;
     (async () => {
       try {
-        const fn = await listen<string>(OPEN_FILE_EVENT, (event) => {
-          if (typeof event.payload === "string" && event.payload.length > 0) {
-            void openPath(event.payload);
-          }
-        });
-        if (cancelled) {
-          fn();
-          return;
-        }
-        unlisten = fn;
-        try {
-          const pending = await takePendingOpenFiles();
-          for (const p of pending) {
-            await openPath(p);
-          }
-        } catch {
-          // ignore — drain failure shouldn't block runtime listening
+        const pending = await takePendingOpenFiles();
+        if (cancelled) return;
+        for (const p of pending) {
+          await openPath(p);
         }
       } catch {
-        // not running inside Tauri shell — ignore
+        // ignore — drain failure shouldn't block runtime listening
       }
     })();
     return () => {
       cancelled = true;
-      if (unlisten) unlisten();
     };
   }, [bootstrapped, openPath]);
 
@@ -499,10 +593,8 @@ export default function App() {
   return (
     <>
       <div className="app-shell">
-        <div className="title-strip" data-tauri-drag-region>
-          <span className="title-strip-text">Penraft</span>
-        </div>
         <TabBar
+          ref={tabBarRef}
           tabs={tabs}
           activePath={activePath}
           mode={mode}
