@@ -59,6 +59,19 @@ export function TabBar({
   const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const tabsContainerRef = useRef<HTMLDivElement | null>(null);
+  const didReorderRef = useRef(false);
+
+  const computeInsertIndex = (clientX: number): number => {
+    const container = tabsContainerRef.current;
+    if (!container) return tabs.length;
+    const items = container.querySelectorAll<HTMLElement>(":scope > .tab-item");
+    for (let i = 0; i < items.length; i++) {
+      const r = items[i].getBoundingClientRect();
+      if (clientX < r.left + r.width / 2) return i;
+    }
+    return items.length;
+  };
 
   useEffect(() => {
     if (!menu) return;
@@ -107,7 +120,31 @@ export function TabBar({
         <Search size={16} />
       </button>
 
-      <div className="tab-bar-tabs">
+      <div
+        className="tab-bar-tabs"
+        ref={tabsContainerRef}
+        onDragOver={(e) => {
+          if (dragIndex === null) return;
+          e.preventDefault();
+          e.dataTransfer.dropEffect = "move";
+          const idx = computeInsertIndex(e.clientX);
+          // 折叠到同一位置（左右半边都指向 dragIndex 自己）则不高亮
+          const next = idx === dragIndex || idx === dragIndex + 1 ? null : idx;
+          if (next !== dropIndex) setDropIndex(next);
+        }}
+        onDrop={(e) => {
+          if (dragIndex === null) return;
+          e.preventDefault();
+          const insertIdx = computeInsertIndex(e.clientX);
+          if (insertIdx !== dragIndex && insertIdx !== dragIndex + 1) {
+            const targetIdx = insertIdx > dragIndex ? insertIdx - 1 : insertIdx;
+            onReorder(dragIndex, targetIdx);
+            didReorderRef.current = true;
+          }
+          setDragIndex(null);
+          setDropIndex(null);
+        }}
+      >
         {tabs.map((tab, idx) => {
           const isActive = tab.path === activePath;
           const isDragOver = dropIndex === idx && dragIndex !== null && dragIndex !== idx;
@@ -118,32 +155,19 @@ export function TabBar({
               className={`tab-item${isActive ? " active" : ""}${isDragOver ? " drop-target" : ""}`}
               draggable={!isEditing}
               onDragStart={(e) => {
+                didReorderRef.current = false;
                 setDragIndex(idx);
                 e.dataTransfer.effectAllowed = "move";
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-                if (dragIndex !== null && dragIndex !== idx) {
-                  setDropIndex(idx);
-                  e.dataTransfer.dropEffect = "move";
-                }
-              }}
-              onDragLeave={() => {
-                if (dropIndex === idx) setDropIndex(null);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (dragIndex !== null && dragIndex !== idx) {
-                  onReorder(dragIndex, idx);
-                }
-                setDragIndex(null);
-                setDropIndex(null);
               }}
               onDragEnd={async (e) => {
                 const draggedPath = tab.path;
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 setDragIndex(null);
                 setDropIndex(null);
+                if (didReorderRef.current) {
+                  didReorderRef.current = false;
+                  return;
+                }
                 try {
                   const win = getCurrentWindow();
                   const [cursor, outerPos, size, innerPos, scale] = await Promise.all([

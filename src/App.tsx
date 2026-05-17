@@ -385,7 +385,7 @@ export default function App() {
         );
       });
       if (hit) {
-        await emitTo(hit.label, MERGE_TAB_EVENT, path);
+        await emitTo(hit.label, MERGE_TAB_EVENT, { path, screenX });
         removeTab(path);
         // 副窗口空了就关闭自己（main 窗口不关）
         if (WINDOW_LABEL !== "main") {
@@ -500,6 +500,36 @@ export default function App() {
     }
   }, [flushActive, showToast]);
 
+  const openPathAt = useCallback(async (path: string, index: number) => {
+    const existing = docsRef.current.find((d) => d.document.summary.path === path);
+    if (existing) {
+      setDocs((current) => {
+        const fromIdx = current.findIndex((d) => d.document.summary.path === path);
+        if (fromIdx === -1) return current;
+        const next = current.slice();
+        const [moved] = next.splice(fromIdx, 1);
+        const targetIdx = fromIdx < index ? index - 1 : index;
+        next.splice(Math.max(0, Math.min(targetIdx, next.length)), 0, moved);
+        return next;
+      });
+      setActivePath(path);
+      return;
+    }
+    await flushActive();
+    try {
+      const doc = await readNote(path);
+      setDocs((current) => {
+        if (current.some((d) => d.document.summary.path === doc.summary.path)) return current;
+        const next = current.slice();
+        next.splice(Math.max(0, Math.min(index, next.length)), 0, makeOpenDoc(doc));
+        return next;
+      });
+      setActivePath(doc.summary.path);
+    } catch (err) {
+      showToast(`打开失败：${String(err)}`);
+    }
+  }, [flushActive, showToast]);
+
   const handleOpenFromSearch = useCallback(async (path: string) => {
     setSearchOpen(false);
     await openPath(path);
@@ -525,10 +555,28 @@ export default function App() {
           unlistenOpen = fnOpen;
         }
 
-        const fnMerge = await listen<string>(MERGE_TAB_EVENT, (event) => {
-          if (typeof event.payload !== "string" || event.payload.length === 0) return;
+        const fnMerge = await listen<{ path: string; screenX: number }>(MERGE_TAB_EVENT, (event) => {
+          const payload = event.payload;
+          if (!payload || typeof payload.path !== "string" || payload.path.length === 0) return;
           void (async () => {
-            await openPath(event.payload);
+            // 把屏幕 X 换算到本窗口 CSS X，再查 tab-item DOM 算出插入位置
+            let insertIndex = docsRef.current.length;
+            try {
+              const win = getCurrentWindow();
+              const [innerPos, scale] = await Promise.all([win.innerPosition(), win.scaleFactor()]);
+              const cssX = (payload.screenX - innerPos.x) / scale;
+              const items = document.querySelectorAll<HTMLElement>(".tab-bar-tabs > .tab-item");
+              for (let i = 0; i < items.length; i++) {
+                const r = items[i].getBoundingClientRect();
+                if (cssX < r.left + r.width / 2) {
+                  insertIndex = i;
+                  break;
+                }
+              }
+            } catch {
+              // fallback: 追加到末尾
+            }
+            await openPathAt(payload.path, insertIndex);
             try {
               await getCurrentWindow().setFocus();
             } catch {
@@ -559,7 +607,7 @@ export default function App() {
       if (unlistenOpen) unlistenOpen();
       if (unlistenMerge) unlistenMerge();
     };
-  }, [bootstrapped, openPath]);
+  }, [bootstrapped, openPath, openPathAt]);
 
   const tabs = useMemo(
     () =>
