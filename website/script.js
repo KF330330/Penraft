@@ -620,6 +620,8 @@ A pen that just works.`,
 
     // 点击：事件委托。点击通常意味着用户即将离开页面（外链 target=_blank、download 等），
     // 立刻 flush 一次以确保事件能在用户关 tab 前到达后端，不再等 5s 队列。
+    // 注意：用 fetch+keepalive 而非 sendBeacon —— 跨域 application/json 触发 CORS preflight，
+    // sendBeacon 不等 preflight 完成就发，结果是事件被浏览器静默丢弃。
     document.addEventListener('click', (e) => {
       const t = e.target.closest('[data-track]');
       if (!t) return;
@@ -627,7 +629,7 @@ A pen that just works.`,
       const meta = {};
       if (t.tagName === 'A' && t.href) meta.href = t.href;
       track('click', name, meta);
-      flush(true);  // 用 sendBeacon 立即发出
+      flush(false);  // 走 fetch + keepalive，等 CORS preflight，可靠送达
     }, { capture: true });
 
     // 离开页面强制 flush
