@@ -4,7 +4,7 @@ import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
 
 const TEXT = "#24292e";
-const HEADING = "#b35a2c";
+const HEADING = "#a8542a";
 
 const quietMarkdownHighlight = HighlightStyle.define([
   { tag: t.heading, fontWeight: "600", color: HEADING },
