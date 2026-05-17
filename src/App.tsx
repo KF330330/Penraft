@@ -109,6 +109,41 @@ export default function App() {
     localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
 
+  // DRAG-DEBUG-START
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (!t.closest(".title-strip, .tab-bar")) return;
+      const path = e.composedPath() as HTMLElement[];
+      let dragHost: HTMLElement | null = null;
+      let dragVal: string | null = null;
+      for (const el of path) {
+        if (!(el instanceof HTMLElement)) break;
+        if (el.hasAttribute("data-tauri-drag-region")) {
+          dragHost = el;
+          dragVal = el.getAttribute("data-tauri-drag-region");
+          break;
+        }
+      }
+      const isFalseOptOut = dragVal === "false";
+      const expectWindowDrag = !!dragHost && !isFalseOptOut;
+      console.log("[drag-debug]", {
+        tag: t.tagName,
+        cls: t.className,
+        dragHostCls: dragHost?.className ?? null,
+        dragVal,
+        isFalseOptOut,
+        expectWindowDrag,
+        x: e.clientX,
+        y: e.clientY,
+      });
+    };
+    document.addEventListener("mousedown", onDown, true);
+    return () => document.removeEventListener("mousedown", onDown, true);
+  }, []);
+  // DRAG-DEBUG-END
+
   const saveTimer = useRef<number | null>(null);
   const tabsSaveTimer = useRef<number | null>(null);
   const docsRef = useRef<OpenDoc[]>([]);
