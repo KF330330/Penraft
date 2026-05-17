@@ -831,3 +831,23 @@ kbd {
   outline-offset: 2px;
   border-radius: 6px;
 }
+
+/* ============================================================
+   Arch hint (Apple Silicon / Intel switch)
+   ============================================================ */
+.arch-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--muted, #8a8f9c);
+}
+.arch-hint .arch-hint-label[hidden] { display: none; }
+.arch-hint a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(0, 0, 0, 0.2);
+}
+.arch-hint a:hover {
+  color: var(--accent, #3a5ad8);
+  text-decoration-color: currentColor;
+}

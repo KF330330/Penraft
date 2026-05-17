@@ -638,6 +638,61 @@ A pen that just works.`,
   }
 
   // ==========================================================
+  // Mac 芯片检测（Apple Silicon vs Intel）
+  // ==========================================================
+  // 用 navigator.userAgentData.getHighEntropyValues 获取 architecture:
+  //   - "arm"  → Apple Silicon (M 系列)
+  //   - "x86"  → Intel
+  //   - 接口不存在（Safari/Firefox）→ 默认 ARM（2020 年起 Mac 全是 ARM），同时展示"Intel？"切换链接
+  // 非 macOS 用户不动 href（保留默认 ARM dmg）
+  const DOWNLOAD_URLS = {
+    arm: 'https://github.com/KF330330/Penraft/releases/latest/download/Penraft_0.2.0_aarch64.dmg',
+    x86: 'https://github.com/KF330330/Penraft/releases/latest/download/Penraft_0.2.0_x86_64.dmg',
+  };
+
+  function isMac() {
+    const p = navigator.userAgentData?.platform || navigator.platform || '';
+    return /mac/i.test(p);
+  }
+
+  async function detectArch() {
+    if (!isMac()) return null;
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+        const v = await navigator.userAgentData.getHighEntropyValues(['architecture']);
+        if (v && typeof v.architecture === 'string') {
+          if (v.architecture.toLowerCase().startsWith('arm')) return 'arm';
+          if (v.architecture.toLowerCase().startsWith('x86')) return 'x86';
+        }
+      }
+    } catch (_) {}
+    return null; // 不知道，让用户决定
+  }
+
+  function applyArch(arch) {
+    const url = DOWNLOAD_URLS[arch] || DOWNLOAD_URLS.arm;
+    document.querySelectorAll('[data-arch-href]').forEach((a) => { a.setAttribute('href', url); });
+    const hint = document.getElementById('arch-hint');
+    if (hint) {
+      hint.hidden = false;
+      hint.querySelectorAll('.arch-hint-label').forEach((el) => { el.hidden = el.getAttribute('data-arch') !== arch; });
+    }
+  }
+
+  async function initArchDetect() {
+    if (!isMac()) return;            // 非 Mac 不动
+    const detected = await detectArch();
+    applyArch(detected || 'arm');    // 检测不出来时默认 ARM + 显示切换提示
+    // 切换链接
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-arch-switch]');
+      if (!t) return;
+      e.preventDefault();
+      applyArch(t.getAttribute('data-arch-switch'));
+    });
+  }
+
+  // ==========================================================
   // Boot
   // ==========================================================
   document.addEventListener('DOMContentLoaded', () => {
@@ -647,5 +702,6 @@ A pen that just works.`,
     initScreenshots();
     initMockTabs();
     initNavScroll();
+    initArchDetect();
   });
 })();
