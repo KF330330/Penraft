@@ -538,7 +538,7 @@ kbd {
 .mock-source {
   margin: 0;
   padding: 26px 36px;
-  background: var(--bg);
+  background: transparent;
   color: var(--ink);
   font-family: var(--ff-mono);
   font-size: 13px;
