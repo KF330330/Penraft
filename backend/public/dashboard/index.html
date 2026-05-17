@@ -9,9 +9,16 @@
 </head>
 <body>
   <header class="topbar">
-    <h1>Penraft Dashboard</h1>
+    <div class="topbar-left">
+      <h1>Penraft Dashboard</h1>
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-tab="web" role="tab">官网</button>
+        <button class="tab" data-tab="app" role="tab">App</button>
+      </div>
+    </div>
+
     <div class="filters">
-      <div class="preset">
+      <div class="preset" role="group" aria-label="时间预设">
         <button data-preset="today">今天</button>
         <button data-preset="7d" class="active">7 天</button>
         <button data-preset="30d">30 天</button>
@@ -23,39 +30,60 @@
         <input type="date" id="to-date" />
         <button id="apply-range">应用</button>
       </div>
-      <div class="granularity">
+      <div class="granularity" role="group" aria-label="时间粒度">
         粒度
         <button data-granularity="hour">小时</button>
         <button data-granularity="day" class="active">天</button>
       </div>
       <div class="status" id="status">加载中…</div>
+      <div class="user-area">
+        <span class="user-name" id="user-name"></span>
+        <button class="logout-btn" id="logout-btn">退出</button>
+      </div>
     </div>
   </header>
 
-  <main class="grid">
-    <section class="card">
-      <h2>① 官网曝光</h2>
-      <canvas id="chart-views"></canvas>
-    </section>
-    <section class="card">
-      <h2>② 点击 TOP10</h2>
-      <canvas id="chart-clicks-by-name"></canvas>
-    </section>
-    <section class="card">
-      <h2>③ 设备总览</h2>
-      <div class="bignum-row">
-        <div class="bignum"><div class="label">活跃 (≤7d)</div><div class="value" id="num-active">—</div></div>
-        <div class="bignum"><div class="label">已卸载 (&gt;7d)</div><div class="value muted" id="num-uninstalled">—</div></div>
-        <div class="bignum"><div class="label">累计</div><div class="value" id="num-total">—</div></div>
+  <!-- 官网 tab -->
+  <section class="tab-panel active" data-panel="web">
+    <div class="bignum-row" style="margin-bottom: 14px;">
+      <div class="bignum"><div class="label">曝光总数</div><div class="value accent" id="web-total-views">—</div></div>
+      <div class="bignum"><div class="label">点击总数</div><div class="value" id="web-total-clicks">—</div></div>
+      <div class="bignum"><div class="label">点击率 (CTR)</div><div class="value muted" id="web-ctr">—</div></div>
+    </div>
+    <div class="grid">
+      <section class="card">
+        <h2>① 曝光 / 点击 趋势</h2>
+        <canvas id="chart-web-trend" class="chart-lg"></canvas>
+      </section>
+      <section class="card">
+        <h2>② 点击 TOP10（按事件名）</h2>
+        <canvas id="chart-web-clicks-by-name" class="chart-md"></canvas>
+      </section>
+    </div>
+  </section>
+
+  <!-- App tab -->
+  <section class="tab-panel" data-panel="app">
+    <section class="card devices-overview" style="margin-bottom: 14px;">
+      <div class="numbers">
+        <div class="bignum"><div class="label">活跃 (≤7d)</div><div class="value accent" id="app-active">—</div></div>
+        <div class="bignum"><div class="label">已卸载 (&gt;7d)</div><div class="value muted" id="app-uninstalled">—</div></div>
+        <div class="bignum"><div class="label">累计</div><div class="value" id="app-total">—</div></div>
       </div>
-      <canvas id="chart-device-ratio" style="max-height:160px;"></canvas>
+      <div class="ratio-wrap"><canvas id="chart-app-ratio" class="chart-sm"></canvas></div>
     </section>
-    <section class="card">
-      <h2>④ DAU + 版本分布</h2>
-      <canvas id="chart-dau"></canvas>
-      <canvas id="chart-version" style="max-height:160px;"></canvas>
-    </section>
-  </main>
+
+    <div class="grid">
+      <section class="card">
+        <h2>③ DAU + 新装 趋势</h2>
+        <canvas id="chart-app-dau" class="chart-lg"></canvas>
+      </section>
+      <section class="card">
+        <h2>④ 版本分布（活跃设备）</h2>
+        <canvas id="chart-app-version" class="chart-md"></canvas>
+      </section>
+    </div>
+  </section>
 
   <script src="app.js"></script>
 </body>

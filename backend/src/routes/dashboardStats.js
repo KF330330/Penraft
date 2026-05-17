@@ -2,7 +2,7 @@ import { db } from '../db/index.js';
 import { nowMs, toMs, UNINSTALL_THRESHOLD_MS, granularityBucket } from '../utils/time.js';
 
 export default async function dashboardStatsRoutes(fastify) {
-  fastify.get('/api/dashboard/stats', { onRequest: fastify.basicAuth }, async (request, reply) => {
+  fastify.get('/api/dashboard/stats', async (request, reply) => {
     const q = request.query || {};
     const granularity = q.granularity === 'hour' ? 'hour' : 'day';
     const now = nowMs();

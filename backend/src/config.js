@@ -15,6 +15,7 @@ export const config = {
     : path.join(root, process.env.DB_PATH || './data/penraft.db'),
   dashboardUser: process.env.DASHBOARD_USER || 'admin',
   dashboardPass: process.env.DASHBOARD_PASS || 'change-me-please',
+  sessionSecret: process.env.SESSION_SECRET || '',
   corsOrigin: parseList(process.env.CORS_ORIGIN || ''),
   rateLimitPerMin: Number(process.env.RATE_LIMIT_PER_MIN || 60),
   dailySaltSeed: process.env.DAILY_SALT_SEED || 'penraft-default-salt-seed',

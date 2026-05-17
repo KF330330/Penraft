@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>登录 · Penraft Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="login-body">
+  <div class="login-bg" aria-hidden="true"></div>
+
+  <main class="login-card" id="login-card">
+    <header class="login-head">
+      <div class="login-brand">
+        <div class="login-logo" aria-hidden="true">P</div>
+        <div class="login-titles">
+          <h1>Penraft</h1>
+          <p>Dashboard</p>
+        </div>
+      </div>
+    </header>
+
+    <form id="login-form" class="login-form" autocomplete="on" novalidate>
+      <div class="login-err" id="login-err" hidden></div>
+
+      <label class="field">
+        <span>用户名</span>
+        <input type="text" id="username" name="username" autocomplete="username" required autofocus />
+      </label>
+      <label class="field">
+        <span>密码</span>
+        <input type="password" id="password" name="password" autocomplete="current-password" required />
+      </label>
+
+      <button type="submit" class="login-submit" id="submit">
+        <span class="label">登录</span>
+        <span class="spinner" hidden></span>
+      </button>
+    </form>
+
+    <footer class="login-foot">
+      <span>仅限 Penraft 维护者访问</span>
+    </footer>
+  </main>
+
+  <script src="login.js"></script>
+</body>
+</html>
