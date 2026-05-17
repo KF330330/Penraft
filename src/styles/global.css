@@ -12,7 +12,6 @@
   --accent-soft: rgba(17, 24, 39, 0.08);
   --editor-bg: #f5f3ef;
   --top-bar-bg: #f1ede5;
-  --title-strip-top: #f6f3ee;
   --heading-accent: #b45309;
   --cm-text: #24292e;
   --cm-gutter: #c0c4c8;
@@ -36,7 +35,6 @@
   --muted: #7c746a;
   --editor-bg: #ffffff;
   --top-bar-bg: #f6f6f5;
-  --title-strip-top: #fafafa;
   --heading-accent: #24292e;
   --cm-text: #24292e;
   --cm-gutter: #c0c4c8;
@@ -59,7 +57,6 @@
   --accent-soft: rgba(216, 164, 100, 0.12);
   --editor-bg: #1f1d1a;
   --top-bar-bg: #2c2a26;
-  --title-strip-top: #2f2c27;
   --heading-accent: #d8a464;
   --cm-text: #ffffff;
   --cm-gutter: #6a6258;
@@ -107,25 +104,6 @@ button {
 }
 
 /* ===== TabBar ===== */
-.title-strip {
-  height: 34px;
-  background: linear-gradient(180deg, var(--title-strip-top), var(--top-bar-bg));
-  border-bottom: 1px solid var(--line);
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-
-.title-strip-text {
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  pointer-events: none;
-}
-
 .theme-menu {
   position: fixed;
   background: var(--panel-strong);

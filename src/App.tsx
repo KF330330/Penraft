@@ -27,8 +27,8 @@ import type { NoteDocument, TabsState, WindowGeom } from "./lib/types";
 const OPEN_FILE_EVENT = "penraft://open-file";
 const MERGE_TAB_EVENT = "penraft://merge-tab";
 
-// title-strip 高度 34px + tab-bar 高度 40px（见 src/styles/global.css）
-const TAB_BAR_ZONE_CSS = 74;
+// tab-bar 高度 40px（见 src/styles/global.css）
+const TAB_BAR_ZONE_CSS = 40;
 
 function isInTabBarZone(w: WindowGeom, screenX: number, screenY: number): boolean {
   const topZonePhys = w.inner_y + TAB_BAR_ZONE_CSS * w.scale_factor;
@@ -398,8 +398,6 @@ export default function App() {
         height: 820,
         x: Math.round(screenX / dpr - 100),
         y: Math.round(screenY / dpr - 20),
-        titleBarStyle: "overlay",
-        hiddenTitle: true,
       });
     } catch (err) {
       showToast(`新建窗口失败：${String(err)}`);
@@ -604,9 +602,6 @@ export default function App() {
   return (
     <>
       <div className="app-shell">
-        <div className="title-strip">
-          <span className="title-strip-text">Penraft</span>
-        </div>
         <TabBar
           tabs={tabs}
           activePath={activePath}
