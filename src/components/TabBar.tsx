@@ -1,6 +1,8 @@
 import { Code2, Eye, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cursorPosition, getCurrentWindow } from "@tauri-apps/api/window";
+import type { Theme } from "./MarkdownEditor";
+import { ThemePicker } from "./ThemePicker";
 
 export interface TabItem {
   path: string;
@@ -23,6 +25,8 @@ interface TabBarProps {
   onTearOut: (path: string, screenX: number, screenY: number) => void;
   onOpenSearch: () => void;
   onToggleMode: () => void;
+  theme: Theme;
+  onThemeChange: (theme: Theme) => void;
 }
 
 interface ContextMenuState {
@@ -46,6 +50,8 @@ export function TabBar({
   onTearOut,
   onOpenSearch,
   onToggleMode,
+  theme,
+  onThemeChange,
 }: TabBarProps) {
   const [editingPath, setEditingPath] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
@@ -96,7 +102,7 @@ export function TabBar({
   };
 
   return (
-    <div className="tab-bar">
+    <div className="tab-bar" data-tauri-drag-region>
       <button className="tab-bar-icon" onClick={onOpenSearch} title="搜索文档">
         <Search size={16} />
       </button>
@@ -228,6 +234,8 @@ export function TabBar({
       <button className="tab-bar-icon" onClick={onToggleMode} title={mode === "render" ? "切到源码 (⌘+/)" : "切到渲染 (⌘+/)"}>
         {mode === "render" ? <Code2 size={16} /> : <Eye size={16} />}
       </button>
+
+      <ThemePicker theme={theme} onChange={onThemeChange} />
 
       {menu ? (
         <div

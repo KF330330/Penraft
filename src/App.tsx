@@ -4,8 +4,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { EditorPane } from "./components/EditorPane";
+import type { Theme } from "./components/MarkdownEditor";
 import { SearchPanel } from "./components/SearchPanel";
 import { TabBar } from "./components/TabBar";
+import { ThemePicker } from "./components/ThemePicker";
 import {
   createNote,
   deleteNote,
@@ -26,6 +28,13 @@ const AUTOSAVE_DELAY_MS = 500;
 const ZOOM_MIN = 0.5;
 const ZOOM_MAX = 3.0;
 const ZOOM_DEFAULT = 1.0;
+const THEME_KEY = "penraft.theme";
+const THEMES: Theme[] = ["paper", "light", "dark"];
+
+function loadInitialTheme(): Theme {
+  const saved = localStorage.getItem(THEME_KEY) as Theme | null;
+  return saved && THEMES.includes(saved) ? saved : "paper";
+}
 
 function clampZoom(value: number) {
   if (!Number.isFinite(value)) return ZOOM_DEFAULT;
@@ -77,6 +86,12 @@ export default function App() {
   const [toast, setToast] = useState("");
   const [bootstrapped, setBootstrapped] = useState(false);
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
+  const [theme, setTheme] = useState<Theme>(loadInitialTheme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem(THEME_KEY, theme);
+  }, [theme]);
 
   const saveTimer = useRef<number | null>(null);
   const tabsSaveTimer = useRef<number | null>(null);
@@ -483,6 +498,9 @@ export default function App() {
   return (
     <>
       <div className="app-shell">
+        <div className="title-strip" data-tauri-drag-region>
+          <span className="title-strip-text">Penraft</span>
+        </div>
         <TabBar
           tabs={tabs}
           activePath={activePath}
@@ -498,11 +516,14 @@ export default function App() {
           onTearOut={(p, x, y) => handleTearOut(p, x, y).catch(() => {})}
           onOpenSearch={() => setSearchOpen(true)}
           onToggleMode={() => setMode((m) => (m === "render" ? "source" : "render"))}
+          theme={theme}
+          onThemeChange={setTheme}
         />
         <EditorPane
           document={activeDoc?.document ?? null}
           content={activeDoc?.content ?? ""}
           mode={mode}
+          theme={theme}
           onContentChange={handleContentChange}
         />
       </div>

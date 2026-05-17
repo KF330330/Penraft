@@ -1,11 +1,12 @@
 import type { NoteDocument } from "../lib/types";
-import { MarkdownEditor } from "./MarkdownEditor";
+import { MarkdownEditor, type Theme } from "./MarkdownEditor";
 import { MilkdownEditor } from "./MilkdownEditor";
 
 interface EditorPaneProps {
   document: NoteDocument | null;
   content: string;
   mode: "render" | "source";
+  theme: Theme;
   onContentChange: (value: string) => void;
 }
 
@@ -13,6 +14,7 @@ export function EditorPane({
   document,
   content,
   mode,
+  theme,
   onContentChange,
 }: EditorPaneProps) {
   if (!document) {
@@ -37,7 +39,7 @@ export function EditorPane({
           </div>
         ) : (
           <div className="source-column">
-            <MarkdownEditor value={content} onChange={onContentChange} />
+            <MarkdownEditor value={content} onChange={onContentChange} theme={theme} />
           </div>
         )}
       </div>
