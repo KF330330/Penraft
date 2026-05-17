@@ -57,7 +57,17 @@
     return true;
   }
 
+  // 把 preset 重新折算成 [from, to]。custom 不动；today/7d/30d 的 to 永远是 now，
+  // 这样 auto-refresh 能看到最新事件，不会被锁在加载页面那一刻。
+  function refreshTimeWindow() {
+    if (state.preset === 'today')      { state.from = startOfToday(); state.to = isoNow(); }
+    else if (state.preset === '7d')    { state.from = isoDaysAgo(7);  state.to = isoNow(); }
+    else if (state.preset === '30d')   { state.from = isoDaysAgo(30); state.to = isoNow(); }
+    // custom: 用户手工选的固定范围，不动
+  }
+
   async function fetchAndRender() {
+    refreshTimeWindow();
     setStatus('加载中…');
     try {
       const q = new URLSearchParams({ from: state.from, to: state.to, granularity: state.granularity });
