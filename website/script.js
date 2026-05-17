@@ -335,18 +335,115 @@ A pen that just works.`,
   // ==========================================================
   // Mock tab switching (hero screenshot demo)
   // ==========================================================
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+  function timestampName() {
+    const d = new Date();
+    return (
+      d.getFullYear() +
+      pad2(d.getMonth() + 1) +
+      pad2(d.getDate()) +
+      '_' +
+      pad2(d.getHours()) +
+      pad2(d.getMinutes()) +
+      pad2(d.getSeconds())
+    );
+  }
+
   function initMockTabs() {
     document.querySelectorAll('.screenshot-mock').forEach((mock) => {
-      const tabs = mock.querySelectorAll('.mock-tab[data-mock-tab]');
-      const bodies = mock.querySelectorAll('.mock-body[data-mock-body]');
-      if (!tabs.length || !bodies.length) return;
+      const tabsContainer = mock.querySelector('.mock-tabs');
+      if (!tabsContainer) return;
+
+      const toggle = mock.querySelector('.mock-source-toggle');
+      const plus = mock.querySelector('.mock-tab-plus');
 
       const activate = (index) => {
-        tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.mockTab === String(index)));
-        bodies.forEach((b) => b.classList.toggle('is-active', b.dataset.mockBody === String(index)));
+        const idx = String(index);
+        mock.querySelectorAll('.mock-tab[data-mock-tab]').forEach((t) =>
+          t.classList.toggle('is-active', t.dataset.mockTab === idx));
+        mock.querySelectorAll('.mock-body[data-mock-body]').forEach((b) =>
+          b.classList.toggle('is-active', b.dataset.mockBody === idx));
+        mock.querySelectorAll('.mock-source[data-mock-source]').forEach((s) =>
+          s.classList.toggle('is-active', s.dataset.mockSource === idx));
       };
 
-      tabs.forEach((tab) => {
+      const createDoc = () => {
+        let maxIdx = -1;
+        mock.querySelectorAll('.mock-tab[data-mock-tab]').forEach((t) => {
+          const n = parseInt(t.dataset.mockTab, 10);
+          if (!isNaN(n) && n > maxIdx) maxIdx = n;
+        });
+        const idx = String(maxIdx + 1);
+        const name = timestampName();
+
+        const newTab = document.createElement('span');
+        newTab.className = 'mock-tab';
+        newTab.setAttribute('role', 'tab');
+        newTab.setAttribute('tabindex', '0');
+        newTab.dataset.mockTab = idx;
+        const inner = document.createElement('span');
+        inner.textContent = name;
+        newTab.appendChild(inner);
+        if (plus) {
+          tabsContainer.insertBefore(newTab, plus);
+        } else {
+          tabsContainer.appendChild(newTab);
+        }
+        bindTab(newTab);
+
+        const newBody = document.createElement('div');
+        newBody.className = 'mock-body';
+        newBody.dataset.mockBody = idx;
+        mock.appendChild(newBody);
+
+        const newSource = document.createElement('pre');
+        newSource.className = 'mock-source';
+        newSource.dataset.mockSource = idx;
+        newSource.innerHTML = '<code></code>';
+        mock.appendChild(newSource);
+
+        activate(idx);
+      };
+
+      const closeTab = (idx) => {
+        const target = String(idx);
+        const tab = mock.querySelector('.mock-tab[data-mock-tab="' + target + '"]');
+        const body = mock.querySelector('.mock-body[data-mock-body="' + target + '"]');
+        const source = mock.querySelector('.mock-source[data-mock-source="' + target + '"]');
+        const wasActive = tab && tab.classList.contains('is-active');
+        const allTabs = Array.from(mock.querySelectorAll('.mock-tab[data-mock-tab]'));
+        const pos = allTabs.findIndex((t) => t === tab);
+        if (tab) tab.remove();
+        if (body) body.remove();
+        if (source) source.remove();
+        const remaining = mock.querySelectorAll('.mock-tab[data-mock-tab]');
+        if (!remaining.length) {
+          createDoc();
+          return;
+        }
+        if (wasActive) {
+          const fallback = allTabs[pos - 1] || allTabs[pos + 1] || remaining[0];
+          activate(fallback.dataset.mockTab);
+        }
+      };
+
+      const ensureClose = (tab) => {
+        if (tab.querySelector('.mock-tab-close')) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mock-tab-close';
+        btn.setAttribute('aria-label', '关闭');
+        btn.setAttribute('tabindex', '-1');
+        btn.textContent = '×';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeTab(tab.dataset.mockTab);
+        });
+        tab.appendChild(btn);
+      };
+
+      const bindTab = (tab) => {
+        ensureClose(tab);
         tab.addEventListener('click', () => activate(tab.dataset.mockTab));
         tab.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -354,7 +451,41 @@ A pen that just works.`,
             activate(tab.dataset.mockTab);
           }
         });
-      });
+      };
+
+      mock.querySelectorAll('.mock-tab[data-mock-tab]').forEach(bindTab);
+
+      // Sync body/source active state to the initially-active tab
+      const initialTab = mock.querySelector('.mock-tab[data-mock-tab].is-active');
+      if (initialTab) activate(initialTab.dataset.mockTab);
+
+      if (plus) {
+        plus.setAttribute('role', 'button');
+        plus.setAttribute('tabindex', '0');
+        plus.setAttribute('aria-label', '新建文档');
+        plus.addEventListener('click', createDoc);
+        plus.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            createDoc();
+          }
+        });
+      }
+
+      if (toggle) {
+        toggle.removeAttribute('aria-hidden');
+        toggle.setAttribute('role', 'button');
+        toggle.setAttribute('tabindex', '0');
+        toggle.setAttribute('aria-label', '切换源码 / 渲染');
+        const doToggle = () => mock.classList.toggle('is-source');
+        toggle.addEventListener('click', doToggle);
+        toggle.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            doToggle();
+          }
+        });
+      }
     });
   }
 

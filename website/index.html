@@ -84,6 +84,7 @@
             <span class="mock-tab" role="tab" tabindex="0" data-mock-tab="1"><span data-i18n="mock.tab2">Penraft 设计笔记</span></span>
             <span class="mock-tab" role="tab" tabindex="0" data-mock-tab="2"><span data-i18n="mock.tab3">周会记录</span></span>
             <span class="mock-tab-plus">+</span>
+            <span class="mock-source-toggle" aria-hidden="true">&lt;/&gt;</span>
           </div>
 
           <div class="mock-body is-active" data-mock-body="0">
@@ -121,6 +122,45 @@
             </ul>
             <p class="mock-p" data-i18n="mock3.p">下次周会：5 月 23 日。</p>
           </div>
+
+          <pre class="mock-source" data-mock-source="0"><code><span class="src-h"># 今日的写作</span>
+
+<span class="src-q">&gt; 写作不是把灵感保存下来，而是在纸上想清楚。</span>
+
+<span class="src-h">## 三件事</span>
+
+- **早晨**：晨跑后把脑子里冒出的几句话写下来
+- **中午**：整理上周和团队的对话，找出可以追的线索
+- **晚上**：复盘——今天有没有让任何事情变得更简单
+
+<span class="src-c">`Penraft`</span> 默认把笔记保存到 <span class="src-c">`~/Documents/PenraftVault/Notes/`</span>。
+</code></pre>
+
+          <pre class="mock-source" data-mock-source="1"><code><span class="src-h"># Penraft 设计笔记</span>
+
+<span class="src-q">&gt; 安静的工具，用得最久。</span>
+
+<span class="src-h">## 三个原则</span>
+
+- **极简**：能少一个按钮就少一个
+- **顺手**：别打扰，也别打断
+- **可靠**：每一个字都自动留下
+
+设计灵感：一支顺手的笔。
+</code></pre>
+
+          <pre class="mock-source" data-mock-source="2"><code><span class="src-h"># 周会记录</span>
+
+<span class="src-q">&gt; 5 月 16 日 · 团队对齐</span>
+
+<span class="src-h">## 本周</span>
+
+- **完成**：Hero 文案落地
+- **进行**：应用截图替换中
+- **下周**：开放下载页
+
+下次周会：5 月 23 日。
+</code></pre>
         </div>
       </div>
     </div>
@@ -201,14 +241,42 @@
           <span class="dot-mac dot-green"></span>
         </div>
         <img alt="" data-i18n-alt="highlight.image_alt" class="screenshot-img" />
-        <div class="screenshot-mock screenshot-mock-source">
+        <div class="screenshot-mock is-source">
           <div class="mock-tabs" role="tablist">
             <span class="mock-tab is-active" role="tab" tabindex="0" data-mock-tab="0"><span data-i18n="mock.tab1">今日的写作</span></span>
             <span class="mock-tab" role="tab" tabindex="0" data-mock-tab="1"><span data-i18n="mock.tab2">Penraft 设计笔记</span></span>
+            <span class="mock-tab-plus">+</span>
             <span class="mock-source-toggle">&lt;/&gt;</span>
           </div>
-          <pre class="mock-source mock-body is-active" data-mock-body="0"><code data-i18n="source.tab1"></code></pre>
-          <pre class="mock-source mock-body" data-mock-body="1"><code data-i18n="source.tab2"></code></pre>
+
+          <div class="mock-body" data-mock-body="0">
+            <h3 class="mock-h1">今日的写作</h3>
+            <p class="mock-quote">写作不是把灵感保存下来，而是在纸上想清楚。</p>
+            <h4 class="mock-h2">三件事</h4>
+            <ul class="mock-list">
+              <li><strong>早晨</strong>：晨跑后把脑子里冒出的几句话</li>
+              <li><strong>中午</strong>：整理上周和团队的对话</li>
+              <li><strong>晚上</strong>：复盘——今天哪件事变简单了</li>
+            </ul>
+            <h4 class="mock-h2">一段引文</h4>
+            <p class="mock-quote">极简不是少，是恰到好处。</p>
+            <p class="mock-p"><code>Penraft</code> 默认把笔记保存到 <code>~/Documents/PenraftVault/Notes/</code>。</p>
+          </div>
+
+          <div class="mock-body" data-mock-body="1">
+            <h3 class="mock-h1">Penraft 设计笔记</h3>
+            <p class="mock-quote">安静的工具，用得最久。</p>
+            <h4 class="mock-h2">三个原则</h4>
+            <ul class="mock-list">
+              <li><strong>极简</strong>：能少一个按钮就少一个</li>
+              <li><strong>顺手</strong>：别打扰，也别打断</li>
+              <li><strong>可靠</strong>：每一个字都自动留下</li>
+            </ul>
+            <p class="mock-p">设计灵感：一支顺手的笔。</p>
+          </div>
+
+          <pre class="mock-source is-active" data-mock-source="0"><code data-i18n="source.tab1"></code></pre>
+          <pre class="mock-source" data-mock-source="1"><code data-i18n="source.tab2"></code></pre>
         </div>
       </div>
     </div>
