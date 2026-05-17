@@ -44,3 +44,7 @@ export async function loadTabs(label: string): Promise<TabsState> {
 export async function saveTabs(label: string, state: TabsState): Promise<void> {
   return invoke("save_tabs", { label, state });
 }
+
+export async function takePendingOpenFiles(): Promise<string[]> {
+  return invoke("take_pending_open_files");
+}

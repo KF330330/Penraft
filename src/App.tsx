@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { EditorPane } from "./components/EditorPane";
 import { SearchPanel } from "./components/SearchPanel";
 import { TabBar } from "./components/TabBar";
@@ -15,8 +16,11 @@ import {
   revealInFinder,
   saveNote,
   saveTabs,
+  takePendingOpenFiles,
 } from "./lib/tauri";
 import type { NoteDocument, TabsState } from "./lib/types";
+
+const OPEN_FILE_EVENT = "penraft://open-file";
 
 const AUTOSAVE_DELAY_MS = 500;
 const ZOOM_MIN = 0.5;
@@ -404,8 +408,7 @@ export default function App() {
     }
   }, [persistDoc, showToast]);
 
-  const handleOpenFromSearch = useCallback(async (path: string) => {
-    setSearchOpen(false);
+  const openPath = useCallback(async (path: string) => {
     const existing = docsRef.current.find((d) => d.document.summary.path === path);
     if (existing) {
       await flushActive();
@@ -415,12 +418,57 @@ export default function App() {
     try {
       await flushActive();
       const doc = await readNote(path);
-      setDocs((current) => [...current, makeOpenDoc(doc)]);
-      setActivePath(path);
+      setDocs((current) => {
+        if (current.some((d) => d.document.summary.path === doc.summary.path)) {
+          return current;
+        }
+        return [...current, makeOpenDoc(doc)];
+      });
+      setActivePath(doc.summary.path);
     } catch (err) {
       showToast(`打开失败：${String(err)}`);
     }
   }, [flushActive, showToast]);
+
+  const handleOpenFromSearch = useCallback(async (path: string) => {
+    setSearchOpen(false);
+    await openPath(path);
+  }, [openPath]);
+
+  // 监听后端派发的 "用 Penraft 打开" 事件（macOS RunEvent::Opened / Win+Linux single-instance）
+  useEffect(() => {
+    if (!bootstrapped) return;
+    let cancelled = false;
+    let unlisten: UnlistenFn | null = null;
+    (async () => {
+      try {
+        const fn = await listen<string>(OPEN_FILE_EVENT, (event) => {
+          if (typeof event.payload === "string" && event.payload.length > 0) {
+            void openPath(event.payload);
+          }
+        });
+        if (cancelled) {
+          fn();
+          return;
+        }
+        unlisten = fn;
+        try {
+          const pending = await takePendingOpenFiles();
+          for (const p of pending) {
+            await openPath(p);
+          }
+        } catch {
+          // ignore — drain failure shouldn't block runtime listening
+        }
+      } catch {
+        // not running inside Tauri shell — ignore
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (unlisten) unlisten();
+    };
+  }, [bootstrapped, openPath]);
 
   const tabs = useMemo(
     () =>
