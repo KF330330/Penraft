@@ -6,13 +6,41 @@ use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use models::{NoteDocument, NoteSummary, TabsState, WindowGeom};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 use vault::CommandResult;
 
 const OPEN_FILE_EVENT: &str = "penraft://open-file";
+const MAIN_WINDOW: &str = "main";
+const TORN_PREFIX: &str = "torn-";
 
 #[derive(Default)]
 struct PendingOpenFiles(Mutex<Vec<String>>);
+
+/// 维护最近一次 focus 的窗口顺序。末尾 = 最近 focus = z-order 顶。
+#[derive(Default)]
+struct FocusOrder(Mutex<Vec<String>>);
+
+impl FocusOrder {
+    fn touch(&self, label: &str) {
+        if let Ok(mut v) = self.0.lock() {
+            v.retain(|x| x != label);
+            v.push(label.to_string());
+        }
+    }
+
+    /// 返回 label 在 focus 历史中的排名（越大越靠前 = z-order 越上）。
+    /// 未记录过的窗口返回 0。
+    fn rank(&self, label: &str) -> usize {
+        match self.0.lock() {
+            Ok(v) => v.iter().position(|x| x == label).map(|i| i + 1).unwrap_or(0),
+            Err(_) => 0,
+        }
+    }
+}
+
+fn is_mergeable_label(label: &str) -> bool {
+    label == MAIN_WINDOW || label.starts_with(TORN_PREFIX)
+}
 
 #[tauri::command]
 fn list_notes() -> CommandResult<Vec<NoteSummary>> {
@@ -71,9 +99,13 @@ fn save_tabs(label: String, state: TabsState) -> CommandResult<()> {
 
 #[tauri::command]
 fn list_penraft_windows(app: AppHandle, self_label: String) -> Vec<WindowGeom> {
+    let focus_order = app.state::<FocusOrder>();
     let mut out = Vec::new();
     for (label, win) in app.webview_windows() {
         if label == self_label {
+            continue;
+        }
+        if !is_mergeable_label(&label) {
             continue;
         }
         if !win.is_visible().unwrap_or(false) {
@@ -82,6 +114,7 @@ fn list_penraft_windows(app: AppHandle, self_label: String) -> Vec<WindowGeom> {
         let Ok(pos) = win.inner_position() else { continue };
         let Ok(size) = win.inner_size() else { continue };
         let Ok(scale) = win.scale_factor() else { continue };
+        let is_focused = win.is_focused().unwrap_or(false);
         out.push(WindowGeom {
             label,
             inner_x: pos.x,
@@ -89,8 +122,12 @@ fn list_penraft_windows(app: AppHandle, self_label: String) -> Vec<WindowGeom> {
             inner_width: size.width,
             inner_height: size.height,
             scale_factor: scale,
+            is_focused,
         });
     }
+    // 按 focus 历史排序：最近 focus 的（z-order 顶）排前面。
+    // 未在历史里出现的窗口（rank=0）排最后。
+    out.sort_by(|a, b| focus_order.rank(&b.label).cmp(&focus_order.rank(&a.label)));
     out
 }
 
@@ -138,7 +175,7 @@ fn dispatch_open_files(app: &AppHandle, paths: Vec<String>) {
             queue.extend(paths.clone());
         }
     }
-    if let Some(window) = app.get_webview_window("main") {
+    if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
         let _ = window.set_focus();
         for p in &paths {
             let _ = window.emit(OPEN_FILE_EVENT, p);
@@ -176,7 +213,15 @@ pub fn run() {
             telemetry::spawn();
             Ok(())
         })
+        .on_window_event(|window, event| {
+            if let WindowEvent::Focused(true) = event {
+                if let Some(state) = window.app_handle().try_state::<FocusOrder>() {
+                    state.touch(window.label());
+                }
+            }
+        })
         .manage(PendingOpenFiles(Mutex::new(initial_paths)))
+        .manage(FocusOrder::default())
         .invoke_handler(tauri::generate_handler![
             list_notes,
             create_note,

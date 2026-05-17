@@ -2,11 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { emitTo, listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { emitTo } from "@tauri-apps/api/event";
 import { EditorPane } from "./components/EditorPane";
 import type { Theme } from "./components/MarkdownEditor";
 import { SearchPanel } from "./components/SearchPanel";
-import { TabBar } from "./components/TabBar";
+import { TabBar, type TabBarHandle } from "./components/TabBar";
 import { ThemePicker } from "./components/ThemePicker";
 import UpdateNotice from "./components/UpdateNotice";
 import {
@@ -23,15 +23,28 @@ import {
   takePendingOpenFiles,
 } from "./lib/tauri";
 import type { NoteDocument, TabsState, WindowGeom } from "./lib/types";
+import { EVENTS, type MergeTabPayload } from "./lib/events";
+import { useTauriListen } from "./lib/use-tauri-listen";
 
-const OPEN_FILE_EVENT = "penraft://open-file";
-const MERGE_TAB_EVENT = "penraft://merge-tab";
+const MAIN_WINDOW_LABEL = "main";
 
-// tab-bar 高度 40px（见 src/styles/global.css）
-const TAB_BAR_ZONE_CSS = 40;
+// tab-bar 高度从 CSS 变量 --tab-bar-height 读取（src/styles/global.css）。
+// 40 仅作为变量缺失时的兜底。
+function readTabBarHeightCss(): number {
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--tab-bar-height")
+    .trim();
+  const n = parseFloat(raw);
+  return Number.isFinite(n) && n > 0 ? n : 40;
+}
 
-function isInTabBarZone(w: WindowGeom, screenX: number, screenY: number): boolean {
-  const topZonePhys = w.inner_y + TAB_BAR_ZONE_CSS * w.scale_factor;
+function isInTabBarZone(
+  w: WindowGeom,
+  screenX: number,
+  screenY: number,
+  tabBarHeightCss: number,
+): boolean {
+  const topZonePhys = w.inner_y + tabBarHeightCss * w.scale_factor;
   return (
     screenX >= w.inner_x &&
     screenX <= w.inner_x + w.inner_width &&
@@ -79,7 +92,7 @@ function getWindowLabel(): string {
   try {
     return getCurrentWindow().label;
   } catch {
-    return "main";
+    return MAIN_WINDOW_LABEL;
   }
 }
 
@@ -114,6 +127,7 @@ export default function App() {
   const docsRef = useRef<OpenDoc[]>([]);
   const activePathRef = useRef<string | null>(null);
   const handleCreateRef = useRef<(() => Promise<void>) | null>(null);
+  const tabBarRef = useRef<TabBarHandle | null>(null);
 
   useEffect(() => { docsRef.current = docs; }, [docs]);
   useEffect(() => { activePathRef.current = activePath; }, [activePath]);
@@ -312,6 +326,8 @@ export default function App() {
   }, [handleCreate]);
 
   // 唯一抽象：从本窗口移除一个 tab，并按窗口身份处理"空状态"。
+  // 调用契约：调用方负责本地 IO（save / delete / spawn window 等），
+  //          本函数只负责本地状态 + 窗口生命周期。
   // - 本地 remaining 数组同步可知长度，不依赖 docsRef 异步同步。
   // - main 窗口被掏空 → 新建一个空 note（保留"主窗口必有内容"语义）
   // - torn 窗口被掏空 → 关闭自己
@@ -326,9 +342,15 @@ export default function App() {
       setActivePath(fallback ? fallback.document.summary.path : null);
     }
     if (remaining.length > 0) return;
-    if (WINDOW_LABEL === "main") {
+    if (WINDOW_LABEL === MAIN_WINDOW_LABEL) {
       await handleCreate();
     } else {
+      // 关 torn 窗口前先取消 tabs.json 写盘定时器，避免留下孤儿 tabs-torn-*.json
+      // （setDocs([]) 已经触发了 180ms 防抖；不取消的话写盘可能跑赢关窗）
+      if (tabsSaveTimer.current) {
+        window.clearTimeout(tabsSaveTimer.current);
+        tabsSaveTimer.current = null;
+      }
       try {
         await getCurrentWindow().close();
       } catch (err) {
@@ -373,15 +395,17 @@ export default function App() {
     // 1) 检测光标是否落在某个其他窗口的 tab bar 区
     let hit: WindowGeom | null = null;
     try {
+      const tabBarHeightCss = readTabBarHeightCss();
       const others = await listPenraftWindows(WINDOW_LABEL);
-      hit = others.find((w) => isInTabBarZone(w, screenX, screenY)) ?? null;
+      hit = others.find((w) => isInTabBarZone(w, screenX, screenY, tabBarHeightCss)) ?? null;
     } catch (err) {
       console.error("[merge] detection error:", err);
     }
 
     // 2) 命中 → 合并到目标，自己移除并自清理
     if (hit) {
-      await emitTo(hit.label, MERGE_TAB_EVENT, { path, screenX });
+      const payload: MergeTabPayload = { path, screenX };
+      await emitTo(hit.label, EVENTS.MERGE_TAB, payload);
       await closeTabAndCleanup(path);
       return;
     }
@@ -458,50 +482,40 @@ export default function App() {
     }
   }, [persistDoc, showToast]);
 
-  const openPath = useCallback(async (path: string) => {
-    const existing = docsRef.current.find((d) => d.document.summary.path === path);
-    if (existing) {
-      await flushActive();
-      setActivePath(path);
-      return;
-    }
-    try {
-      await flushActive();
-      const doc = await readNote(path);
-      setDocs((current) => {
-        if (current.some((d) => d.document.summary.path === doc.summary.path)) {
-          return current;
-        }
-        return [...current, makeOpenDoc(doc)];
-      });
-      setActivePath(doc.summary.path);
-    } catch (err) {
-      showToast(`打开失败：${String(err)}`);
-    }
-  }, [flushActive, showToast]);
-
-  const openPathAt = useCallback(async (path: string, index: number) => {
-    const existing = docsRef.current.find((d) => d.document.summary.path === path);
-    if (existing) {
-      setDocs((current) => {
-        const fromIdx = current.findIndex((d) => d.document.summary.path === path);
-        if (fromIdx === -1) return current;
-        const next = current.slice();
-        const [moved] = next.splice(fromIdx, 1);
-        const targetIdx = fromIdx < index ? index - 1 : index;
-        next.splice(Math.max(0, Math.min(targetIdx, next.length)), 0, moved);
-        return next;
-      });
-      setActivePath(path);
-      return;
-    }
+  // 单一入口：打开（或聚焦）一个 path。
+  // - insertAt 缺省 → 末尾追加；提供数字 → 插入到该索引。
+  // - moveIfExists：path 已在本窗口时，是否把已存在的 tab 移动到 insertAt 位置
+  //   （仅当 insertAt 也提供时生效）。默认 false，保持"打开已存在 tab 时不重排"语义。
+  const openPath = useCallback(async (
+    path: string,
+    opts?: { insertAt?: number; moveIfExists?: boolean },
+  ) => {
+    const insertAt = opts?.insertAt;
+    const moveIfExists = opts?.moveIfExists ?? false;
     await flushActive();
+    const existing = docsRef.current.find((d) => d.document.summary.path === path);
+    if (existing) {
+      if (moveIfExists && insertAt !== undefined) {
+        setDocs((current) => {
+          const fromIdx = current.findIndex((d) => d.document.summary.path === path);
+          if (fromIdx === -1) return current;
+          const next = current.slice();
+          const [moved] = next.splice(fromIdx, 1);
+          const targetIdx = fromIdx < insertAt ? insertAt - 1 : insertAt;
+          next.splice(Math.max(0, Math.min(targetIdx, next.length)), 0, moved);
+          return next;
+        });
+      }
+      setActivePath(path);
+      return;
+    }
     try {
       const doc = await readNote(path);
       setDocs((current) => {
         if (current.some((d) => d.document.summary.path === doc.summary.path)) return current;
         const next = current.slice();
-        next.splice(Math.max(0, Math.min(index, next.length)), 0, makeOpenDoc(doc));
+        const at = insertAt === undefined ? next.length : Math.max(0, Math.min(insertAt, next.length));
+        next.splice(at, 0, makeOpenDoc(doc));
         return next;
       });
       setActivePath(doc.summary.path);
@@ -515,79 +529,56 @@ export default function App() {
     await openPath(path);
   }, [openPath]);
 
-  // 监听后端派发的 "用 Penraft 打开" 事件（macOS RunEvent::Opened / Win+Linux single-instance）
-  // + 跨窗口拖拽合并 "penraft://merge-tab" 事件
+  // 后端派发 "用 Penraft 打开"（macOS RunEvent::Opened / Win+Linux single-instance）
+  useTauriListen<string>(EVENTS.OPEN_FILE, (event) => {
+    if (typeof event.payload === "string" && event.payload.length > 0) {
+      void openPath(event.payload);
+    }
+  }, bootstrapped);
+
+  // 跨窗口拖拽合并
+  useTauriListen<MergeTabPayload>(EVENTS.MERGE_TAB, (event) => {
+    const payload = event.payload;
+    if (!payload || typeof payload.path !== "string" || payload.path.length === 0) return;
+    void (async () => {
+      // 把屏幕 X 换算到本窗口 CSS X，再让 TabBar 计算插入位置
+      let insertIndex = docsRef.current.length;
+      try {
+        const win = getCurrentWindow();
+        const [innerPos, scale] = await Promise.all([win.innerPosition(), win.scaleFactor()]);
+        const cssX = (payload.screenX - innerPos.x) / scale;
+        insertIndex = tabBarRef.current?.getInsertIndexForClientX(cssX) ?? insertIndex;
+      } catch {
+        // fallback: 追加到末尾
+      }
+      await openPath(payload.path, { insertAt: insertIndex, moveIfExists: true });
+      try {
+        await getCurrentWindow().setFocus();
+      } catch {
+        // ignore
+      }
+    })();
+  }, bootstrapped);
+
+  // 启动时排空 pending 队列（OPEN_FILE listener 挂载前可能已有事件入队）
   useEffect(() => {
     if (!bootstrapped) return;
     let cancelled = false;
-    let unlistenOpen: UnlistenFn | null = null;
-    let unlistenMerge: UnlistenFn | null = null;
     (async () => {
       try {
-        const fnOpen = await listen<string>(OPEN_FILE_EVENT, (event) => {
-          if (typeof event.payload === "string" && event.payload.length > 0) {
-            void openPath(event.payload);
-          }
-        });
-        if (cancelled) {
-          fnOpen();
-        } else {
-          unlistenOpen = fnOpen;
-        }
-
-        const fnMerge = await listen<{ path: string; screenX: number }>(MERGE_TAB_EVENT, (event) => {
-          const payload = event.payload;
-          if (!payload || typeof payload.path !== "string" || payload.path.length === 0) return;
-          void (async () => {
-            // 把屏幕 X 换算到本窗口 CSS X，再查 tab-item DOM 算出插入位置
-            let insertIndex = docsRef.current.length;
-            try {
-              const win = getCurrentWindow();
-              const [innerPos, scale] = await Promise.all([win.innerPosition(), win.scaleFactor()]);
-              const cssX = (payload.screenX - innerPos.x) / scale;
-              const items = document.querySelectorAll<HTMLElement>(".tab-bar-tabs > .tab-item");
-              for (let i = 0; i < items.length; i++) {
-                const r = items[i].getBoundingClientRect();
-                if (cssX < r.left + r.width / 2) {
-                  insertIndex = i;
-                  break;
-                }
-              }
-            } catch {
-              // fallback: 追加到末尾
-            }
-            await openPathAt(payload.path, insertIndex);
-            try {
-              await getCurrentWindow().setFocus();
-            } catch {
-              // ignore
-            }
-          })();
-        });
-        if (cancelled) {
-          fnMerge();
-        } else {
-          unlistenMerge = fnMerge;
-        }
-
-        try {
-          const pending = await takePendingOpenFiles();
-          for (const p of pending) {
-            await openPath(p);
-          }
-        } catch {
-          // ignore — drain failure shouldn't block runtime listening
+        const pending = await takePendingOpenFiles();
+        if (cancelled) return;
+        for (const p of pending) {
+          await openPath(p);
         }
       } catch {
-        // not running inside Tauri shell — ignore
+        // ignore — drain failure shouldn't block runtime listening
       }
     })();
     return () => {
       cancelled = true;
-      if (unlistenOpen) unlistenOpen();
-      if (unlistenMerge) unlistenMerge();
     };
-  }, [bootstrapped, openPath, openPathAt]);
+  }, [bootstrapped, openPath]);
 
   const tabs = useMemo(
     () =>
@@ -603,6 +594,7 @@ export default function App() {
     <>
       <div className="app-shell">
         <TabBar
+          ref={tabBarRef}
           tabs={tabs}
           activePath={activePath}
           mode={mode}

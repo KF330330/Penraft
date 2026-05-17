@@ -32,4 +32,5 @@ pub struct WindowGeom {
     pub inner_width: u32,
     pub inner_height: u32,
     pub scale_factor: f64,
+    pub is_focused: bool,
 }

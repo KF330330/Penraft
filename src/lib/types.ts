@@ -24,4 +24,5 @@ export interface WindowGeom {
   inner_width: number;
   inner_height: number;
   scale_factor: number;
+  is_focused: boolean;
 }

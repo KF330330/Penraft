@@ -1,13 +1,22 @@
 import { Code2, Eye, Plus, Search, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { cursorPosition, getCurrentWindow } from "@tauri-apps/api/window";
 import type { Theme } from "./MarkdownEditor";
 import { ThemePicker } from "./ThemePicker";
+import {
+  TEAR_OUT_OUTSIDE_MARGIN_PHYS,
+  TEAR_OUT_VERTICAL_THRESHOLD_CSS,
+} from "../lib/drag-constants";
 
 export interface TabItem {
   path: string;
   label: string;
   dirty: boolean;
+}
+
+export interface TabBarHandle {
+  // 给定窗口内 CSS X 坐标，返回该位置应插入的 tab 索引（含末位 = tabs.length）。
+  getInsertIndexForClientX(clientX: number): number;
 }
 
 interface TabBarProps {
@@ -35,7 +44,7 @@ interface ContextMenuState {
   y: number;
 }
 
-export function TabBar({
+export const TabBar = forwardRef<TabBarHandle, TabBarProps>(function TabBar({
   tabs,
   activePath,
   mode,
@@ -52,7 +61,7 @@ export function TabBar({
   onToggleMode,
   theme,
   onThemeChange,
-}: TabBarProps) {
+}, ref) {
   const [editingPath, setEditingPath] = useState<string | null>(null);
   const [editingValue, setEditingValue] = useState("");
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -72,6 +81,8 @@ export function TabBar({
     }
     return items.length;
   };
+
+  useImperativeHandle(ref, () => ({ getInsertIndexForClientX: computeInsertIndex }));
 
   useEffect(() => {
     if (!menu) return;
@@ -152,7 +163,6 @@ export function TabBar({
             <div
               key={tab.path}
               className={`tab-item${isActive ? " active" : ""}${isDragOver ? " drop-target" : ""}`}
-              data-tauri-drag-region="false"
               draggable={!isEditing}
               onDragStart={(e) => {
                 didReorderRef.current = false;
@@ -178,13 +188,13 @@ export function TabBar({
                     win.scaleFactor(),
                   ]);
                   // 完全跑到窗口外 → 撕扯
-                  const margin = 20;
+                  const margin = TEAR_OUT_OUTSIDE_MARGIN_PHYS;
                   const outside =
                     cursor.x < outerPos.x - margin ||
                     cursor.x > outerPos.x + size.width + margin ||
                     cursor.y < outerPos.y - margin ||
                     cursor.y > outerPos.y + size.height + margin;
-                  // 在窗口内但纵向离开 Tab 栏 > 60 CSS px → 也撕扯（Chrome 风格）
+                  // 在窗口内但纵向离开 Tab 栏 > 阈值 → 也撕扯（Chrome 风格）
                   const tabBottomPhys = innerPos.y + rect.bottom * scale;
                   const tabTopPhys = innerPos.y + rect.top * scale;
                   const verticalDropPhys =
@@ -193,7 +203,7 @@ export function TabBar({
                       : cursor.y < tabTopPhys
                       ? tabTopPhys - cursor.y
                       : 0;
-                  const draggedFar = verticalDropPhys > 60 * scale;
+                  const draggedFar = verticalDropPhys > TEAR_OUT_VERTICAL_THRESHOLD_CSS * scale;
                   if (outside || draggedFar) onTearOut(draggedPath, cursor.x, cursor.y);
                 } catch (err) {
                   console.error("[tearout] detection error:", err);
@@ -250,6 +260,9 @@ export function TabBar({
             </div>
           );
         })}
+        {dropIndex === tabs.length && dragIndex !== null ? (
+          <div className="tab-drop-end" aria-hidden />
+        ) : null}
         <button className="tab-bar-icon tab-bar-add" onClick={onCreate} title="新建文档 (⌘+N)">
           <Plus size={16} />
         </button>
@@ -312,4 +325,4 @@ export function TabBar({
       ) : null}
     </div>
   );
-}
+});
