@@ -232,4 +232,21 @@
   fetchMe();
   if (readHash()) { syncUI(); setTab(state.tab); fetchAndRender(); }
   else { applyPreset('7d'); setTab('web'); }
+
+  // 自动刷新：每 15s 拉一次最新数据；标签隐藏时暂停以省电
+  let autoRefreshTimer = null;
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    autoRefreshTimer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') fetchAndRender();
+    }, 15000);
+  }
+  function stopAutoRefresh() {
+    if (autoRefreshTimer !== null) { window.clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { fetchAndRender(); startAutoRefresh(); }
+    else stopAutoRefresh();
+  });
+  startAutoRefresh();
 })();
