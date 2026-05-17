@@ -303,7 +303,83 @@
           s.classList.toggle('is-active', s.dataset.mockSource === idx));
       };
 
+      const createDoc = () => {
+        let maxIdx = -1;
+        mock.querySelectorAll('.mock-tab[data-mock-tab]').forEach((t) => {
+          const n = parseInt(t.dataset.mockTab, 10);
+          if (!isNaN(n) && n > maxIdx) maxIdx = n;
+        });
+        const idx = String(maxIdx + 1);
+        const name = timestampName();
+
+        const newTab = document.createElement('span');
+        newTab.className = 'mock-tab';
+        newTab.setAttribute('role', 'tab');
+        newTab.setAttribute('tabindex', '0');
+        newTab.dataset.mockTab = idx;
+        const inner = document.createElement('span');
+        inner.textContent = name;
+        newTab.appendChild(inner);
+        if (plus) {
+          tabsContainer.insertBefore(newTab, plus);
+        } else {
+          tabsContainer.appendChild(newTab);
+        }
+        bindTab(newTab);
+
+        const newBody = document.createElement('div');
+        newBody.className = 'mock-body';
+        newBody.dataset.mockBody = idx;
+        mock.appendChild(newBody);
+
+        const newSource = document.createElement('pre');
+        newSource.className = 'mock-source';
+        newSource.dataset.mockSource = idx;
+        newSource.innerHTML = '<code></code>';
+        mock.appendChild(newSource);
+
+        activate(idx);
+      };
+
+      const closeTab = (idx) => {
+        const target = String(idx);
+        const tab = mock.querySelector('.mock-tab[data-mock-tab="' + target + '"]');
+        const body = mock.querySelector('.mock-body[data-mock-body="' + target + '"]');
+        const source = mock.querySelector('.mock-source[data-mock-source="' + target + '"]');
+        const wasActive = tab && tab.classList.contains('is-active');
+        const allTabs = Array.from(mock.querySelectorAll('.mock-tab[data-mock-tab]'));
+        const pos = allTabs.findIndex((t) => t === tab);
+        if (tab) tab.remove();
+        if (body) body.remove();
+        if (source) source.remove();
+        const remaining = mock.querySelectorAll('.mock-tab[data-mock-tab]');
+        if (!remaining.length) {
+          createDoc();
+          return;
+        }
+        if (wasActive) {
+          const fallback = allTabs[pos - 1] || allTabs[pos + 1] || remaining[0];
+          activate(fallback.dataset.mockTab);
+        }
+      };
+
+      const ensureClose = (tab) => {
+        if (tab.querySelector('.mock-tab-close')) return;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mock-tab-close';
+        btn.setAttribute('aria-label', '关闭');
+        btn.setAttribute('tabindex', '-1');
+        btn.textContent = '×';
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          closeTab(tab.dataset.mockTab);
+        });
+        tab.appendChild(btn);
+      };
+
       const bindTab = (tab) => {
+        ensureClose(tab);
         tab.addEventListener('click', () => activate(tab.dataset.mockTab));
         tab.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -323,39 +399,6 @@
         plus.setAttribute('role', 'button');
         plus.setAttribute('tabindex', '0');
         plus.setAttribute('aria-label', '新建文档');
-        const createDoc = () => {
-          let maxIdx = -1;
-          mock.querySelectorAll('.mock-tab[data-mock-tab]').forEach((t) => {
-            const n = parseInt(t.dataset.mockTab, 10);
-            if (!isNaN(n) && n > maxIdx) maxIdx = n;
-          });
-          const idx = String(maxIdx + 1);
-          const name = timestampName();
-
-          const newTab = document.createElement('span');
-          newTab.className = 'mock-tab';
-          newTab.setAttribute('role', 'tab');
-          newTab.setAttribute('tabindex', '0');
-          newTab.dataset.mockTab = idx;
-          const inner = document.createElement('span');
-          inner.textContent = name;
-          newTab.appendChild(inner);
-          tabsContainer.insertBefore(newTab, plus);
-          bindTab(newTab);
-
-          const newBody = document.createElement('div');
-          newBody.className = 'mock-body';
-          newBody.dataset.mockBody = idx;
-          mock.appendChild(newBody);
-
-          const newSource = document.createElement('pre');
-          newSource.className = 'mock-source';
-          newSource.dataset.mockSource = idx;
-          newSource.innerHTML = '<code></code>';
-          mock.appendChild(newSource);
-
-          activate(idx);
-        };
         plus.addEventListener('click', createDoc);
         plus.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {

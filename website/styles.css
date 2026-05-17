@@ -441,6 +441,35 @@ kbd {
   border-radius: 50%;
   background: var(--accent);
 }
+.mock-tab-close {
+  display: none;
+  width: 16px;
+  height: 16px;
+  margin-left: 2px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted-2);
+  font-size: 14px;
+  line-height: 1;
+  border-radius: 4px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.mock-tab.is-active .mock-tab-close,
+.mock-tab[data-mock-tab]:hover .mock-tab-close {
+  display: inline-flex;
+}
+.mock-tab-close:hover {
+  background: rgba(36, 30, 21, 0.08);
+  color: var(--ink);
+}
+.mock-tab-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
 .mock-tab-plus,
 .mock-source-toggle {
   padding: 6px 10px;
