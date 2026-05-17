@@ -9,9 +9,9 @@
   --muted-2: #a49b90;
   --accent: #111827;
   --accent-soft: rgba(17, 24, 39, 0.08);
-  --editor-bg: #faf6ed;
-  --top-bar-bg: #f0ebe0;
-  --heading-accent: #a8542a;
+  --editor-bg: #f5f3ef;
+  --top-bar-bg: #f1ede5;
+  --heading-accent: #b45309;
   --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
   --radius: 16px;
   --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
@@ -56,12 +56,18 @@ button {
 }
 
 /* ===== TabBar ===== */
+.title-strip {
+  height: 28px;
+  background: linear-gradient(180deg, #f6f3ee, var(--top-bar-bg));
+  flex-shrink: 0;
+}
+
 .tab-bar {
   height: 40px;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 8px 0 84px;
+  padding: 0 8px;
   background: var(--top-bar-bg);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
@@ -108,7 +114,7 @@ button {
   gap: 6px;
   padding: 0 8px 0 12px;
   height: 30px;
-  border-radius: 8px;
+  border-radius: 10px 10px 2px 2px;
   background: transparent;
   color: var(--muted);
   font-size: 13px;
@@ -127,10 +133,13 @@ button {
 }
 
 .tab-item.active {
-  background: var(--editor-bg);
+  background: #ffffff;
   color: var(--text);
-  border-color: var(--line);
-  box-shadow: 0 2px 6px rgba(28, 22, 16, 0.04);
+  border-color: transparent;
+  box-shadow:
+    0 -1px 0 var(--line),
+    1px 0 0 var(--line),
+    -1px 0 0 var(--line);
 }
 
 .tab-item.drop-target {

@@ -435,6 +435,7 @@ export default function App() {
   return (
     <>
       <div className="app-shell">
+        <div className="title-strip" data-tauri-drag-region />
         <TabBar
           tabs={tabs}
           activePath={activePath}
