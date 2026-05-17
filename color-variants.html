@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>Penraft 配色选择 · 9 个版本</title>
+<style>
+  :root {
+    --line: rgba(36, 30, 21, 0.12);
+    --muted: #7c746a;
+    --text: #24201a;
+    --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+    --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 32px;
+    background: #ececec;
+    font-family: var(--font);
+    color: var(--text);
+  }
+  h1.page-title {
+    margin: 0 0 6px;
+    font-size: 22px;
+    font-weight: 600;
+  }
+  p.page-sub {
+    margin: 0 0 28px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(440px, 1fr));
+    gap: 24px;
+  }
+  .card {
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 24px rgba(28, 22, 16, 0.08);
+    background: #fff;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 12px 16px;
+    background: #1f1c17;
+    color: #f3eee5;
+    font-size: 13px;
+  }
+  .card-head .name { font-weight: 600; }
+  .card-head .swatches {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    opacity: 0.85;
+  }
+  .swatch-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+
+  /* 模拟窗口 */
+  .window {
+    height: 360px;
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid var(--line);
+  }
+  .topbar {
+    height: 42px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 8px 0 78px; /* 给假交通灯留位 */
+    border-bottom: 1px solid var(--line);
+    position: relative;
+  }
+  .traffic-lights {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 8px;
+  }
+  .traffic-lights span {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+  .tl-red { background: #ff5f57; }
+  .tl-yellow { background: #ffbd2e; }
+  .tl-green { background: #28c840; }
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .tab.inactive { color: var(--muted); }
+  .tab.active {
+    border: 1px solid var(--line);
+    box-shadow: 0 2px 6px rgba(28, 22, 16, 0.04);
+  }
+  .editor {
+    flex: 1;
+    padding: 26px 32px;
+    overflow: auto;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.75;
+  }
+  .h1, .h2 { font-weight: 600; }
+  .h1 { font-size: 18px; margin: 0 0 12px; }
+  .h2 { font-size: 16px; margin: 18px 0 8px; }
+  .quote { color: var(--muted); }
+  .body { color: #2a261f; }
+  .body.dim { color: #514a3f; }
+
+  /* —— 九个版本：每个 .v<N> 设置 --top, --ed, --hd, （可选 --hover） —— */
+  .v1 { --top: #e8dec8; --ed: #fbf8f1; --hd: #b35a2c; }
+  .v2 { --top: #f0ebe0; --ed: #faf6ed; --hd: #a8542a; }
+  .v3 { --top: #e4d9c0; --ed: #f7f1e3; --hd: #9c4a1d; }
+  .v4 { --top: #d8e0d2; --ed: #f4f6f1; --hd: #5d7a4a; }
+  .v5 { --top: #d8dde2; --ed: #f5f7f9; --hd: #3c5266; }
+  .v6 { --top: #dccdb8; --ed: #f5ede0; --hd: #7a4a2c; }
+  .v7 { --top: #dcd6cc; --ed: #f6f3ed; --hd: #5a5247; }
+  .v8 { --top: #e6d8d4; --ed: #f9f3f0; --hd: #9c4b4b; }
+  .v9 { --top: #2c2a26; --ed: #1f1d1a; --hd: #d8a464; --light: 1; }
+
+  .v9 .body, .v9 .h1, .v9 .h2 { color: #e9e2d4; }
+  .v9 .quote { color: #9b938a; }
+  .v9 .tab.inactive { color: #9b938a; }
+  .v9 .tab.active { color: #e9e2d4; border-color: rgba(255,255,255,0.08); }
+
+  .topbar { background: var(--top); }
+  .tab.active { background: var(--ed); }
+  .editor { background: var(--ed); }
+  .h1, .h2 { color: var(--hd); }
+  .hash { color: var(--hd); margin-right: 6px; }
+</style>
+</head>
+<body>
+<h1 class="page-title">Penraft 顶栏 / 编辑区配色 · 9 个版本</h1>
+<p class="page-sub">每张卡 = 一个版本，含顶栏（含假交通灯）、活动 tab、源码模式标题色。选定后告诉我编号即可。</p>
+
+<div class="grid">
+
+  <!-- v1 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">1 · Penraft 原版（当前）</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#e8dec8"></span>top #e8dec8</span>
+        <span><span class="swatch-dot" style="background:#fbf8f1"></span>ed #fbf8f1</span>
+        <span><span class="swatch-dot" style="background:#b35a2c"></span>hd #b35a2c</span>
+      </span>
+    </div>
+    <div class="window v1">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v2 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">2 · Pale Paper · 淡纸</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#f0ebe0"></span>top #f0ebe0</span>
+        <span><span class="swatch-dot" style="background:#faf6ed"></span>ed #faf6ed</span>
+        <span><span class="swatch-dot" style="background:#a8542a"></span>hd #a8542a</span>
+      </span>
+    </div>
+    <div class="window v2">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v3 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">3 · Warm Cream · 暖奶油</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#e4d9c0"></span>top #e4d9c0</span>
+        <span><span class="swatch-dot" style="background:#f7f1e3"></span>ed #f7f1e3</span>
+        <span><span class="swatch-dot" style="background:#9c4a1d"></span>hd #9c4a1d</span>
+      </span>
+    </div>
+    <div class="window v3">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v4 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">4 · Sage · 鼠尾草绿</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#d8e0d2"></span>top #d8e0d2</span>
+        <span><span class="swatch-dot" style="background:#f4f6f1"></span>ed #f4f6f1</span>
+        <span><span class="swatch-dot" style="background:#5d7a4a"></span>hd #5d7a4a</span>
+      </span>
+    </div>
+    <div class="window v4">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v5 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">5 · Slate · 冷石板</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#d8dde2"></span>top #d8dde2</span>
+        <span><span class="swatch-dot" style="background:#f5f7f9"></span>ed #f5f7f9</span>
+        <span><span class="swatch-dot" style="background:#3c5266"></span>hd #3c5266</span>
+      </span>
+    </div>
+    <div class="window v5">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v6 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">6 · Mocha · 摩卡</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#dccdb8"></span>top #dccdb8</span>
+        <span><span class="swatch-dot" style="background:#f5ede0"></span>ed #f5ede0</span>
+        <span><span class="swatch-dot" style="background:#7a4a2c"></span>hd #7a4a2c</span>
+      </span>
+    </div>
+    <div class="window v6">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v7 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">7 · Stone · 中性石</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#dcd6cc"></span>top #dcd6cc</span>
+        <span><span class="swatch-dot" style="background:#f6f3ed"></span>ed #f6f3ed</span>
+        <span><span class="swatch-dot" style="background:#5a5247"></span>hd #5a5247</span>
+      </span>
+    </div>
+    <div class="window v7">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v8 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">8 · Soft Rose · 柔玫</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#e6d8d4"></span>top #e6d8d4</span>
+        <span><span class="swatch-dot" style="background:#f9f3f0"></span>ed #f9f3f0</span>
+        <span><span class="swatch-dot" style="background:#9c4b4b"></span>hd #9c4b4b</span>
+      </span>
+    </div>
+    <div class="window v8">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- v9 -->
+  <div class="card">
+    <div class="card-head">
+      <span class="name">9 · Dark · 深色夜读</span>
+      <span class="swatches">
+        <span><span class="swatch-dot" style="background:#2c2a26"></span>top #2c2a26</span>
+        <span><span class="swatch-dot" style="background:#1f1d1a"></span>ed #1f1d1a</span>
+        <span><span class="swatch-dot" style="background:#d8a464"></span>hd #d8a464</span>
+      </span>
+    </div>
+    <div class="window v9">
+      <div class="topbar">
+        <div class="traffic-lights"><span class="tl-red"></span><span class="tl-yellow"></span><span class="tl-green"></span></div>
+        <div class="tab active">今日的写作</div>
+        <div class="tab inactive">Penraft 设计笔记</div>
+      </div>
+      <div class="editor">
+        <div class="h1"><span class="hash">#</span>今日的写作</div>
+        <div class="quote">&gt; 写作不是把灵感保存下来，</div>
+        <div class="quote">&gt; 而是在纸上想清楚。</div>
+        <div class="h2"><span class="hash">##</span>三件事</div>
+        <div class="body">- 早晨：晨跑后写几句话</div>
+        <div class="body">- 中午：整理上周对话</div>
+        <div class="body">- 晚上：复盘哪件事变简单了</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
