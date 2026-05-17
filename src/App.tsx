@@ -416,6 +416,8 @@ export default function App() {
         height: 820,
         x: Math.round(screenX / dpr - 100),
         y: Math.round(screenY / dpr - 20),
+        titleBarStyle: "overlay",
+        hiddenTitle: true,
       });
     } catch (err) {
       showToast(`新建窗口失败：${String(err)}`);
