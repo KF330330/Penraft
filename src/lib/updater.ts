@@ -3,6 +3,7 @@ import { relaunch } from '@tauri-apps/plugin-process';
 import { getVersion } from '@tauri-apps/api/app';
 
 const STORAGE_KEY = 'penraft_updater_state_v1';
+const PENDING_CHANGELOG_KEY = 'penraft_pending_changelog_v1';
 const SECOND_REMINDER_DELAY_MS = 7 * 24 * 60 * 60 * 1000;
 const CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 const FIRST_CHECK_DELAY_MS = 10 * 1000;
@@ -19,6 +20,11 @@ export interface PendingUpdate {
   notes?: string;
   date?: string;
   update: Update;
+}
+
+export interface PendingChangelog {
+  version: string;
+  notes: string;
 }
 
 function readState(): UpdaterState {
@@ -44,6 +50,57 @@ function clearState() {
 
 function emptyState(): UpdaterState {
   return { lastSeenVersion: null, firstNoticeAt: null, secondNoticeAt: null, dismissedVersion: null };
+}
+
+/**
+ * 在执行 downloadAndInstall 之前把本次更新的 version + notes 写入 localStorage，
+ * 这样 relaunch 后能在新进程里取出来弹"本次更新内容"窗。notes 为空时也写空串占位，
+ * 保持"装完后必弹一次"的行为一致。
+ */
+export function persistPendingChangelog(version: string, notes: string | undefined): void {
+  try {
+    const payload: PendingChangelog = { version, notes: notes ?? '' };
+    localStorage.setItem(PENDING_CHANGELOG_KEY, JSON.stringify(payload));
+  } catch { /* silent */ }
+}
+
+export function clearPendingChangelog(): void {
+  try { localStorage.removeItem(PENDING_CHANGELOG_KEY); } catch { /* silent */ }
+}
+
+/**
+ * 启动期调用：读出 pending changelog，只在它指向"当前进程版本"时返回并清掉；
+ * 版本不匹配（回滚 / 装错 / 用户手动降级）也清掉，避免永久残留。
+ */
+export async function consumePendingChangelogForCurrentVersion(): Promise<PendingChangelog | null> {
+  let raw: string | null = null;
+  try { raw = localStorage.getItem(PENDING_CHANGELOG_KEY); } catch { return null; }
+  if (!raw) return null;
+
+  let parsed: PendingChangelog;
+  try {
+    parsed = JSON.parse(raw) as PendingChangelog;
+  } catch {
+    clearPendingChangelog();
+    return null;
+  }
+  if (!parsed || typeof parsed.version !== 'string') {
+    clearPendingChangelog();
+    return null;
+  }
+
+  let appVersion = '';
+  try { appVersion = await getVersion(); } catch { return null; }
+  if (!appVersion) return null;
+
+  if (appVersion !== parsed.version) {
+    // 版本对不上：无论 manifest 改了还是用户回滚了，都清掉，不再弹
+    clearPendingChangelog();
+    return null;
+  }
+
+  clearPendingChangelog();
+  return { version: parsed.version, notes: parsed.notes ?? '' };
 }
 
 /**
@@ -141,11 +198,13 @@ export function snooze() {
 /**
  * 用户主动点了"立即更新"。
  * 下载并安装；完成后重启。任何阶段失败都抛错给 caller 显示。
+ * 安装前会把本次更新的 notes 落盘，relaunch 后由 consumePendingChangelogForCurrentVersion 读出弹窗。
  */
 export async function applyUpdate(
   pending: PendingUpdate,
   onProgress?: (downloaded: number, total: number | null) => void,
 ): Promise<void> {
+  persistPendingChangelog(pending.version, pending.notes);
   let downloaded = 0;
   let total: number | null = null;
   await pending.update.downloadAndInstall((event) => {
