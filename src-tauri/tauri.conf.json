@@ -19,7 +19,8 @@
         "minHeight": 640,
         "resizable": true,
         "titleBarStyle": "Visible",
-        "hiddenTitle": false
+        "hiddenTitle": false,
+        "dragDropEnabled": false
       }
     ],
     "security": {
