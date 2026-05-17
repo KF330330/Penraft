@@ -443,11 +443,13 @@ kbd {
 }
 .mock-tab-plus,
 .mock-source-toggle {
-  margin-left: auto;
   padding: 6px 10px;
   color: var(--muted-2);
   font-size: 13px;
   font-family: var(--ff-mono);
+}
+.mock-source-toggle {
+  margin-left: auto;
 }
 
 .mock-body {
