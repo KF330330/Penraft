@@ -9,42 +9,62 @@ interface ThemePickerProps {
 
 const OPTIONS: { value: Theme; label: string; swatch: string }[] = [
   { value: "paper", label: "Paper · 米色", swatch: "#f1ede5" },
-  { value: "light", label: "Light · 白色", swatch: "#f6f6f5" },
+  { value: "light", label: "Light · 白色", swatch: "#ffffff" },
   { value: "dark", label: "Dark · 暗色", swatch: "#2c2a26" },
 ];
 
 export function ThemePicker({ theme, onChange }: ThemePickerProps) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement | null>(null);
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setOpen(false);
     };
+    const onBlur = () => setOpen(false);
     window.addEventListener("mousedown", handler);
-    window.addEventListener("blur", () => setOpen(false));
+    window.addEventListener("blur", onBlur);
+    window.addEventListener("resize", onBlur);
     return () => {
       window.removeEventListener("mousedown", handler);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("resize", onBlur);
     };
   }, [open]);
 
+  const toggle = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setMenuPos({
+        top: rect.bottom + 6,
+        right: window.innerWidth - rect.right,
+      });
+    }
+    setOpen((v) => !v);
+  };
+
   return (
-    <div className="title-strip-actions" ref={rootRef}>
+    <>
       <button
-        className="title-strip-btn"
+        ref={btnRef}
+        className="tab-bar-icon"
         title="主题设置"
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((v) => !v);
-        }}
+        onClick={toggle}
       >
-        <Settings size={14} />
+        <Settings size={16} />
       </button>
-      {open ? (
-        <div className="theme-menu">
+      {open && menuPos ? (
+        <div
+          ref={menuRef}
+          className="theme-menu"
+          style={{ top: menuPos.top, right: menuPos.right }}
+        >
           {OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -60,6 +80,6 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
           ))}
         </div>
       ) : null}
-    </div>
+    </>
   );
 }

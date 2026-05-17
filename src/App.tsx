@@ -452,7 +452,6 @@ export default function App() {
       <div className="app-shell">
         <div className="title-strip" data-tauri-drag-region>
           <span className="title-strip-text">Penraft</span>
-          <ThemePicker theme={theme} onChange={setTheme} />
         </div>
         <TabBar
           tabs={tabs}
@@ -469,6 +468,8 @@ export default function App() {
           onTearOut={(p, x, y) => handleTearOut(p, x, y).catch(() => {})}
           onOpenSearch={() => setSearchOpen(true)}
           onToggleMode={() => setMode((m) => (m === "render" ? "source" : "render"))}
+          theme={theme}
+          onThemeChange={setTheme}
         />
         <EditorPane
           document={activeDoc?.document ?? null}
