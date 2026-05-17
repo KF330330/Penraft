@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { NoteDocument, NoteSummary, TabsState } from "./types";
+import type { NoteDocument, NoteSummary, TabsState, WindowGeom } from "./types";
 
 export async function listNotes(): Promise<NoteSummary[]> {
   return invoke("list_notes");
@@ -47,4 +47,8 @@ export async function saveTabs(label: string, state: TabsState): Promise<void> {
 
 export async function takePendingOpenFiles(): Promise<string[]> {
   return invoke("take_pending_open_files");
+}
+
+export async function listPenraftWindows(selfLabel: string): Promise<WindowGeom[]> {
+  return invoke("list_penraft_windows", { selfLabel });
 }

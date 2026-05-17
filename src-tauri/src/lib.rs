@@ -5,7 +5,7 @@ mod vault;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use models::{NoteDocument, NoteSummary, TabsState};
+use models::{NoteDocument, NoteSummary, TabsState, WindowGeom};
 use tauri::{AppHandle, Emitter, Manager};
 use vault::CommandResult;
 
@@ -67,6 +67,31 @@ fn load_tabs(label: String) -> CommandResult<TabsState> {
 #[tauri::command]
 fn save_tabs(label: String, state: TabsState) -> CommandResult<()> {
     vault::save_tabs(label, state)
+}
+
+#[tauri::command]
+fn list_penraft_windows(app: AppHandle, self_label: String) -> Vec<WindowGeom> {
+    let mut out = Vec::new();
+    for (label, win) in app.webview_windows() {
+        if label == self_label {
+            continue;
+        }
+        if !win.is_visible().unwrap_or(false) {
+            continue;
+        }
+        let Ok(pos) = win.inner_position() else { continue };
+        let Ok(size) = win.inner_size() else { continue };
+        let Ok(scale) = win.scale_factor() else { continue };
+        out.push(WindowGeom {
+            label,
+            inner_x: pos.x,
+            inner_y: pos.y,
+            inner_width: size.width,
+            inner_height: size.height,
+            scale_factor: scale,
+        });
+    }
+    out
 }
 
 #[tauri::command]
@@ -164,6 +189,7 @@ pub fn run() {
             search_notes,
             load_tabs,
             save_tabs,
+            list_penraft_windows,
             take_pending_open_files,
         ])
         .build(tauri::generate_context!())

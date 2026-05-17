@@ -23,3 +23,13 @@ pub struct TabsState {
     #[serde(default)]
     pub active: Option<String>,
 }
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WindowGeom {
+    pub label: String,
+    pub inner_x: i32,
+    pub inner_y: i32,
+    pub inner_width: u32,
+    pub inner_height: u32,
+    pub scale_factor: f64,
+}

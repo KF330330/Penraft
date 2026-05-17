@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { emitTo, listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { EditorPane } from "./components/EditorPane";
 import type { Theme } from "./components/MarkdownEditor";
 import { SearchPanel } from "./components/SearchPanel";
@@ -13,6 +13,7 @@ import {
   createNote,
   deleteNote,
   exportNote,
+  listPenraftWindows,
   loadTabs,
   readNote,
   renameNote,
@@ -24,6 +25,10 @@ import {
 import type { NoteDocument, TabsState } from "./lib/types";
 
 const OPEN_FILE_EVENT = "penraft://open-file";
+const MERGE_TAB_EVENT = "penraft://merge-tab";
+
+// title-strip 高度 34px + tab-bar 高度 40px（见 src/styles/global.css）
+const TAB_BAR_ZONE_CSS = 74;
 
 const AUTOSAVE_DELAY_MS = 500;
 const ZOOM_MIN = 0.5;
@@ -347,12 +352,59 @@ export default function App() {
     }
   }, [showToast]);
 
+  // 从当前窗口移除某个 tab（不会自动新建空 note，专门给合并/撕出后清理用）
+  const removeTab = useCallback((path: string) => {
+    const current = docsRef.current;
+    const idx = current.findIndex((d) => d.document.summary.path === path);
+    if (idx === -1) return;
+    const remaining = current.filter((_, i) => i !== idx);
+    setDocs(remaining);
+    if (activePathRef.current === path) {
+      const fallback = remaining[idx] ?? remaining[idx - 1] ?? remaining[0];
+      setActivePath(fallback ? fallback.document.summary.path : null);
+    }
+  }, []);
+
   const handleTearOut = useCallback(async (path: string, screenX: number, screenY: number) => {
     try {
       await persistDoc(path);
     } catch {
-      // ignore save errors; still tear out
+      // ignore save errors; still proceed
     }
+
+    // 先尝试合并到其他窗口的 tab bar 区域
+    try {
+      const others = await listPenraftWindows(WINDOW_LABEL);
+      const hit = others.find((w) => {
+        const topZonePhys = w.inner_y + TAB_BAR_ZONE_CSS * w.scale_factor;
+        return (
+          screenX >= w.inner_x &&
+          screenX <= w.inner_x + w.inner_width &&
+          screenY >= w.inner_y &&
+          screenY <= topZonePhys
+        );
+      });
+      if (hit) {
+        await emitTo(hit.label, MERGE_TAB_EVENT, path);
+        removeTab(path);
+        // 副窗口空了就关闭自己（main 窗口不关）
+        if (WINDOW_LABEL !== "main") {
+          window.setTimeout(() => {
+            if (docsRef.current.length === 0) {
+              getCurrentWindow().close().catch(() => {});
+            }
+          }, 60);
+        } else if (docsRef.current.length === 0) {
+          // main 窗口被掏空 → 维持原行为，新建一个空 note
+          await handleCreate();
+        }
+        return;
+      }
+    } catch (err) {
+      console.error("[merge] detection error:", err);
+    }
+
+    // 没命中目标窗口 tab bar → 撕出新窗口
     const label = `torn-${Date.now()}`;
     const url = `index.html?path=${encodeURIComponent(path)}`;
     const dpr = window.devicePixelRatio || 1;
@@ -370,7 +422,7 @@ export default function App() {
       return;
     }
     await handleClose(path);
-  }, [persistDoc, handleClose, showToast]);
+  }, [persistDoc, handleClose, handleCreate, removeTab, showToast]);
 
   const handleSaveAs = useCallback(async (path: string) => {
     const target = docsRef.current.find((d) => d.document.summary.path === path);
@@ -452,22 +504,42 @@ export default function App() {
   }, [openPath]);
 
   // 监听后端派发的 "用 Penraft 打开" 事件（macOS RunEvent::Opened / Win+Linux single-instance）
+  // + 跨窗口拖拽合并 "penraft://merge-tab" 事件
   useEffect(() => {
     if (!bootstrapped) return;
     let cancelled = false;
-    let unlisten: UnlistenFn | null = null;
+    let unlistenOpen: UnlistenFn | null = null;
+    let unlistenMerge: UnlistenFn | null = null;
     (async () => {
       try {
-        const fn = await listen<string>(OPEN_FILE_EVENT, (event) => {
+        const fnOpen = await listen<string>(OPEN_FILE_EVENT, (event) => {
           if (typeof event.payload === "string" && event.payload.length > 0) {
             void openPath(event.payload);
           }
         });
         if (cancelled) {
-          fn();
-          return;
+          fnOpen();
+        } else {
+          unlistenOpen = fnOpen;
         }
-        unlisten = fn;
+
+        const fnMerge = await listen<string>(MERGE_TAB_EVENT, (event) => {
+          if (typeof event.payload !== "string" || event.payload.length === 0) return;
+          void (async () => {
+            await openPath(event.payload);
+            try {
+              await getCurrentWindow().setFocus();
+            } catch {
+              // ignore
+            }
+          })();
+        });
+        if (cancelled) {
+          fnMerge();
+        } else {
+          unlistenMerge = fnMerge;
+        }
+
         try {
           const pending = await takePendingOpenFiles();
           for (const p of pending) {
@@ -482,7 +554,8 @@ export default function App() {
     })();
     return () => {
       cancelled = true;
-      if (unlisten) unlisten();
+      if (unlistenOpen) unlistenOpen();
+      if (unlistenMerge) unlistenMerge();
     };
   }, [bootstrapped, openPath]);
 
