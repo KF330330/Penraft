@@ -9,6 +9,8 @@
   --muted-2: #a49b90;
   --accent: #111827;
   --accent-soft: rgba(17, 24, 39, 0.08);
+  --editor-bg: #ede7d8;
+  --heading-accent: #b35a2c;
   --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
   --radius: 16px;
   --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
@@ -243,7 +245,7 @@ button {
 .editor-pane {
   min-width: 0;
   flex: 1;
-  background: #fffdf9;
+  background: var(--editor-bg);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -262,7 +264,7 @@ button {
   min-height: 0;
   overflow: auto;
   flex: 1;
-  background: #ffffff;
+  background: var(--editor-bg);
 }
 
 .source-column .cm-editor {
@@ -312,7 +314,7 @@ button {
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  background: #ffffff;
+  background: var(--editor-bg);
   flex: 1;
 }
 
