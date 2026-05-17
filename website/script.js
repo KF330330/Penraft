@@ -275,12 +275,20 @@
     document.querySelectorAll('.hero .screenshot-mock').forEach((mock) => {
       const tabs = mock.querySelectorAll('.mock-tab[data-mock-tab]');
       const bodies = mock.querySelectorAll('.mock-body[data-mock-body]');
+      const sources = mock.querySelectorAll('.mock-source[data-mock-source]');
+      const toggle = mock.querySelector('.mock-source-toggle');
       if (!tabs.length || !bodies.length) return;
 
       const activate = (index) => {
-        tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.mockTab === String(index)));
-        bodies.forEach((b) => b.classList.toggle('is-active', b.dataset.mockBody === String(index)));
+        const idx = String(index);
+        tabs.forEach((t) => t.classList.toggle('is-active', t.dataset.mockTab === idx));
+        bodies.forEach((b) => b.classList.toggle('is-active', b.dataset.mockBody === idx));
+        sources.forEach((s) => s.classList.toggle('is-active', s.dataset.mockSource === idx));
       };
+
+      const initialTab = mock.querySelector('.mock-tab[data-mock-tab].is-active');
+      const initialIdx = initialTab ? initialTab.dataset.mockTab : '0';
+      sources.forEach((s) => s.classList.toggle('is-active', s.dataset.mockSource === initialIdx));
 
       tabs.forEach((tab) => {
         tab.addEventListener('click', () => activate(tab.dataset.mockTab));
@@ -291,6 +299,21 @@
           }
         });
       });
+
+      if (toggle) {
+        toggle.removeAttribute('aria-hidden');
+        toggle.setAttribute('role', 'button');
+        toggle.setAttribute('tabindex', '0');
+        toggle.setAttribute('aria-label', '切换源码 / 渲染');
+        const doToggle = () => mock.classList.toggle('is-source');
+        toggle.addEventListener('click', doToggle);
+        toggle.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            doToggle();
+          }
+        });
+      }
     });
   }
 
