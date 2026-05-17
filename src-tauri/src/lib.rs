@@ -1,4 +1,5 @@
 mod models;
+mod telemetry;
 mod vault;
 
 use std::path::{Path, PathBuf};
@@ -144,6 +145,12 @@ pub fn run() {
             dispatch_open_files(app, paths);
         }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .setup(|_app| {
+            telemetry::spawn();
+            Ok(())
+        })
         .manage(PendingOpenFiles(Mutex::new(initial_paths)))
         .invoke_handler(tauri::generate_handler![
             list_notes,

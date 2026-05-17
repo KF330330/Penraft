@@ -1,0 +1,58 @@
+:root {
+  --bg: #0f1115;
+  --card: #171a21;
+  --border: #232730;
+  --text: #e6e7eb;
+  --muted: #8a8f9c;
+  --accent: #5b8cff;
+  --accent2: #ff7a59;
+  --warn: #ffb547;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  background: var(--bg); color: var(--text);
+}
+.topbar {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+}
+.topbar h1 { font-size: 16px; margin: 0; font-weight: 600; }
+.filters { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.preset, .granularity { display: flex; align-items: center; gap: 6px; }
+.granularity { color: var(--muted); font-size: 12px; }
+button {
+  background: transparent; color: var(--text); border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+}
+button:hover { border-color: var(--accent); }
+button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.custom-range { display: flex; align-items: center; gap: 6px; }
+.custom-range.hidden { display: none; }
+.custom-range input {
+  background: var(--card); color: var(--text); border: 1px solid var(--border);
+  padding: 4px 8px; border-radius: 6px; font-size: 12px;
+}
+.status { color: var(--muted); font-size: 12px; min-width: 80px; }
+
+.grid {
+  padding: 16px;
+  display: grid; gap: 16px;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; min-height: 280px; display: flex; flex-direction: column;
+}
+.card h2 { font-size: 13px; margin: 0 0 12px; color: var(--muted); font-weight: 500; }
+canvas { width: 100% !important; max-height: 320px; }
+
+.bignum-row { display: flex; gap: 24px; margin-bottom: 12px; }
+.bignum { flex: 1; }
+.bignum .label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+.bignum .value { font-size: 28px; font-weight: 600; }
+.bignum .value.muted { color: var(--muted); }

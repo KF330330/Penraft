@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Penraft Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Penraft Dashboard</h1>
+    <div class="filters">
+      <div class="preset">
+        <button data-preset="today">今天</button>
+        <button data-preset="7d" class="active">7 天</button>
+        <button data-preset="30d">30 天</button>
+        <button data-preset="custom">自定义</button>
+      </div>
+      <div class="custom-range hidden">
+        <input type="date" id="from-date" />
+        <span>→</span>
+        <input type="date" id="to-date" />
+        <button id="apply-range">应用</button>
+      </div>
+      <div class="granularity">
+        粒度
+        <button data-granularity="hour">小时</button>
+        <button data-granularity="day" class="active">天</button>
+      </div>
+      <div class="status" id="status">加载中…</div>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="card">
+      <h2>① 官网曝光</h2>
+      <canvas id="chart-views"></canvas>
+    </section>
+    <section class="card">
+      <h2>② 点击 TOP10</h2>
+      <canvas id="chart-clicks-by-name"></canvas>
+    </section>
+    <section class="card">
+      <h2>③ 设备总览</h2>
+      <div class="bignum-row">
+        <div class="bignum"><div class="label">活跃 (≤7d)</div><div class="value" id="num-active">—</div></div>
+        <div class="bignum"><div class="label">已卸载 (&gt;7d)</div><div class="value muted" id="num-uninstalled">—</div></div>
+        <div class="bignum"><div class="label">累计</div><div class="value" id="num-total">—</div></div>
+      </div>
+      <canvas id="chart-device-ratio" style="max-height:160px;"></canvas>
+    </section>
+    <section class="card">
+      <h2>④ DAU + 版本分布</h2>
+      <canvas id="chart-dau"></canvas>
+      <canvas id="chart-version" style="max-height:160px;"></canvas>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

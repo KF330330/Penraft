@@ -8,6 +8,7 @@ import type { Theme } from "./components/MarkdownEditor";
 import { SearchPanel } from "./components/SearchPanel";
 import { TabBar } from "./components/TabBar";
 import { ThemePicker } from "./components/ThemePicker";
+import UpdateNotice from "./components/UpdateNotice";
 import {
   createNote,
   deleteNote,
@@ -533,6 +534,7 @@ export default function App() {
       ) : null}
 
       {toast ? <div className="toast">{toast}</div> : null}
+      <UpdateNotice />
     </>
   );
 }

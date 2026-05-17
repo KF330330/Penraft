@@ -1,0 +1,12 @@
+services:
+  penraft-backend:
+    build: .
+    container_name: penraft-backend
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    env_file: .env
+    environment:
+      - DB_PATH=/app/data/penraft.db
+    volumes:
+      - ./data:/app/data

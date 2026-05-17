@@ -512,9 +512,132 @@ A pen that just works.`,
   }
 
   // ==========================================================
+  // Tracking (曝光 + 点击 → backend /api/event)
+  // ==========================================================
+  const TRACK_ENDPOINT = (window.PENRAFT_TRACK || 'http://localhost:8787') + '/api/event';
+  const TRACK_SECTIONS = [
+    { id: 'top',       el: () => document.getElementById('top') },
+    { id: 'features',  el: () => document.getElementById('features') },
+    { id: 'highlight', el: () => document.getElementById('highlight') },
+    { id: 'footer',    el: () => document.querySelector('footer.footer') },
+  ];
+
+  function uuid() {
+    if (crypto && crypto.randomUUID) return crypto.randomUUID();
+    return ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx').replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
+  function getVid() {
+    try {
+      let v = localStorage.getItem('penraft_vid');
+      if (!v) { v = uuid(); localStorage.setItem('penraft_vid', v); }
+      return v;
+    } catch (_) { return null; }
+  }
+
+  function getSid() {
+    try {
+      let v = sessionStorage.getItem('penraft_sid');
+      if (!v) { v = uuid(); sessionStorage.setItem('penraft_sid', v); }
+      return v;
+    } catch (_) { return null; }
+  }
+
+  let queue = [];
+  let flushTimer = null;
+  const FLUSH_INTERVAL = 5000;
+  const FLUSH_THRESHOLD = 10;
+
+  function enqueue(ev) {
+    queue.push(ev);
+    if (queue.length >= FLUSH_THRESHOLD) flush(false);
+    else scheduleFlush();
+  }
+
+  function scheduleFlush() {
+    if (flushTimer) return;
+    flushTimer = setTimeout(() => flush(false), FLUSH_INTERVAL);
+  }
+
+  function flush(useBeacon) {
+    if (flushTimer) { clearTimeout(flushTimer); flushTimer = null; }
+    if (queue.length === 0) return;
+    const payload = JSON.stringify({ events: queue });
+    queue = [];
+    try {
+      if (useBeacon && navigator.sendBeacon) {
+        navigator.sendBeacon(TRACK_ENDPOINT, new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch(TRACK_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+          mode: 'cors',
+          credentials: 'omit',
+        }).catch(() => {});
+      }
+    } catch (_) { /* silent */ }
+  }
+
+  function track(event_type, event_name, meta) {
+    enqueue({
+      event_type,
+      event_name,
+      page: location.pathname,
+      referrer: document.referrer || null,
+      session_id: getSid(),
+      meta: Object.assign({ vid: getVid(), lang: document.documentElement.lang || null }, meta || {}),
+    });
+  }
+
+  function initTracking() {
+    // 首屏 page_view
+    track('view', 'page_view');
+
+    // section 曝光：同 session 同 section 只算一次
+    const seen = new Set();
+    const sid = getSid();
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const sectionId = entry.target.getAttribute('data-track-section');
+        if (!sectionId) continue;
+        const k = sid + '|' + sectionId;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        track('view', 'section_' + sectionId);
+      }
+    }, { threshold: 0.5 });
+    for (const s of TRACK_SECTIONS) {
+      const node = s.el();
+      if (node) { node.setAttribute('data-track-section', s.id); observer.observe(node); }
+    }
+
+    // 点击：事件委托
+    document.addEventListener('click', (e) => {
+      const t = e.target.closest('[data-track]');
+      if (!t) return;
+      const name = t.getAttribute('data-track');
+      const meta = {};
+      if (t.tagName === 'A' && t.href) meta.href = t.href;
+      track('click', name, meta);
+    }, { capture: true });
+
+    // 离开页面强制 flush
+    addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush(true); });
+    addEventListener('pagehide', () => flush(true));
+  }
+
+  // ==========================================================
   // Boot
   // ==========================================================
   document.addEventListener('DOMContentLoaded', () => {
+    initTracking();
     setLang(detectLang(), false);
     initLangToggle();
     initScreenshots();

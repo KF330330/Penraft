@@ -203,7 +203,7 @@ fn notes_dir() -> PathBuf {
     vault_root().join("Notes")
 }
 
-fn penraft_dir() -> PathBuf {
+pub(crate) fn penraft_dir() -> PathBuf {
     vault_root().join(".penraft")
 }
 
