@@ -115,36 +115,36 @@ export function TabBar({
   };
 
   return (
-    <div className="tab-bar" data-tauri-drag-region>
+    <div
+      className="tab-bar"
+      data-tauri-drag-region
+      onDragOver={(e) => {
+        if (dragIndex === null) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        const idx = computeInsertIndex(e.clientX);
+        // 折叠到同一位置（左右半边都指向 dragIndex 自己）则不高亮
+        const next = idx === dragIndex || idx === dragIndex + 1 ? null : idx;
+        if (next !== dropIndex) setDropIndex(next);
+      }}
+      onDrop={(e) => {
+        if (dragIndex === null) return;
+        e.preventDefault();
+        const insertIdx = computeInsertIndex(e.clientX);
+        if (insertIdx !== dragIndex && insertIdx !== dragIndex + 1) {
+          const targetIdx = insertIdx > dragIndex ? insertIdx - 1 : insertIdx;
+          onReorder(dragIndex, targetIdx);
+          didReorderRef.current = true;
+        }
+        setDragIndex(null);
+        setDropIndex(null);
+      }}
+    >
       <button className="tab-bar-icon" onClick={onOpenSearch} title="搜索文档">
         <Search size={16} />
       </button>
 
-      <div
-        className="tab-bar-tabs"
-        ref={tabsContainerRef}
-        onDragOver={(e) => {
-          if (dragIndex === null) return;
-          e.preventDefault();
-          e.dataTransfer.dropEffect = "move";
-          const idx = computeInsertIndex(e.clientX);
-          // 折叠到同一位置（左右半边都指向 dragIndex 自己）则不高亮
-          const next = idx === dragIndex || idx === dragIndex + 1 ? null : idx;
-          if (next !== dropIndex) setDropIndex(next);
-        }}
-        onDrop={(e) => {
-          if (dragIndex === null) return;
-          e.preventDefault();
-          const insertIdx = computeInsertIndex(e.clientX);
-          if (insertIdx !== dragIndex && insertIdx !== dragIndex + 1) {
-            const targetIdx = insertIdx > dragIndex ? insertIdx - 1 : insertIdx;
-            onReorder(dragIndex, targetIdx);
-            didReorderRef.current = true;
-          }
-          setDragIndex(null);
-          setDropIndex(null);
-        }}
-      >
+      <div className="tab-bar-tabs" ref={tabsContainerRef}>
         {tabs.map((tab, idx) => {
           const isActive = tab.path === activePath;
           const isDragOver = dropIndex === idx && dragIndex !== null && dragIndex !== idx;
@@ -153,6 +153,7 @@ export function TabBar({
             <div
               key={tab.path}
               className={`tab-item${isActive ? " active" : ""}${isDragOver ? " drop-target" : ""}`}
+              data-tauri-drag-region="false"
               draggable={!isEditing}
               onDragStart={(e) => {
                 didReorderRef.current = false;
