@@ -126,30 +126,7 @@ export const TabBar = forwardRef<TabBarHandle, TabBarProps>(function TabBar({
   };
 
   return (
-    <div
-      className="tab-bar"
-      onDragOver={(e) => {
-        if (dragIndex === null) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        const idx = computeInsertIndex(e.clientX);
-        // 折叠到同一位置（左右半边都指向 dragIndex 自己）则不高亮
-        const next = idx === dragIndex || idx === dragIndex + 1 ? null : idx;
-        if (next !== dropIndex) setDropIndex(next);
-      }}
-      onDrop={(e) => {
-        if (dragIndex === null) return;
-        e.preventDefault();
-        const insertIdx = computeInsertIndex(e.clientX);
-        if (insertIdx !== dragIndex && insertIdx !== dragIndex + 1) {
-          const targetIdx = insertIdx > dragIndex ? insertIdx - 1 : insertIdx;
-          onReorder(dragIndex, targetIdx);
-          didReorderRef.current = true;
-        }
-        setDragIndex(null);
-        setDropIndex(null);
-      }}
-    >
+    <div className="tab-bar">
       <button className="tab-bar-icon" onClick={onOpenSearch} title="搜索文档">
         <Search size={16} />
       </button>
@@ -168,6 +145,25 @@ export const TabBar = forwardRef<TabBarHandle, TabBarProps>(function TabBar({
                 didReorderRef.current = false;
                 setDragIndex(idx);
                 e.dataTransfer.effectAllowed = "move";
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                if (dragIndex !== null && dragIndex !== idx) {
+                  setDropIndex(idx);
+                  e.dataTransfer.dropEffect = "move";
+                }
+              }}
+              onDragLeave={() => {
+                if (dropIndex === idx) setDropIndex(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (dragIndex !== null && dragIndex !== idx) {
+                  onReorder(dragIndex, idx);
+                  didReorderRef.current = true;
+                }
+                setDragIndex(null);
+                setDropIndex(null);
               }}
               onDragEnd={async (e) => {
                 const draggedPath = tab.path;
@@ -260,9 +256,6 @@ export const TabBar = forwardRef<TabBarHandle, TabBarProps>(function TabBar({
             </div>
           );
         })}
-        {dropIndex === tabs.length && dragIndex !== null ? (
-          <div className="tab-drop-end" aria-hidden />
-        ) : null}
         <button className="tab-bar-icon tab-bar-add" onClick={onCreate} title="新建文档 (⌘+N)">
           <Plus size={16} />
         </button>

@@ -234,15 +234,6 @@ button {
   box-shadow: inset 3px 0 0 var(--accent);
 }
 
-.tab-drop-end {
-  width: 3px;
-  height: 24px;
-  background: var(--accent);
-  border-radius: 2px;
-  flex-shrink: 0;
-  align-self: center;
-}
-
 .tab-label {
   overflow: hidden;
   text-overflow: ellipsis;
