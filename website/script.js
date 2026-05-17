@@ -95,6 +95,38 @@
       'mock3.li3.k': '下周',
       'mock3.li3.v': '开放下载页',
       'mock3.p': '下次周会：5 月 23 日。',
+
+      'source.tab1': `<span class="src-h"># 今日的写作</span>
+
+<span class="src-q">&gt; 写作不是把灵感保存下来，</span>
+<span class="src-q">&gt; 而是在纸上想清楚。</span>
+
+<span class="src-h">## 三件事</span>
+
+- **早晨**：晨跑后把脑子里冒出的几句话
+- **中午**：整理上周和团队的对话
+- **晚上**：复盘——今天哪件事变简单了
+
+<span class="src-h">## 一段引文</span>
+
+<span class="src-q">&gt; 极简不是少，是恰到好处。</span>
+
+<span class="src-c">\`Penraft\`</span> 默认把笔记保存到
+<span class="src-c">\`~/Documents/PenraftVault/Notes/\`</span>。`,
+
+      'source.tab2': `<span class="src-h"># Penraft 设计笔记</span>
+
+<span class="src-q">&gt; 安静的工具，用得最久。</span>
+
+<span class="src-h">## 三个原则</span>
+
+- **极简**：能少一个按钮就少一个
+- **顺手**：别打扰，也别打断
+- **可靠**：每一个字都自动留下
+
+<span class="src-h">## 灵感来源</span>
+
+设计灵感：一支顺手的笔。`,
     },
 
     en: {
@@ -187,6 +219,38 @@
       'mock3.li3.k': 'Next',
       'mock3.li3.v': 'Open the download page',
       'mock3.p': 'Next sync: May 23.',
+
+      'source.tab1': `<span class="src-h"># Today's writing</span>
+
+<span class="src-q">&gt; Writing isn't capturing inspiration —</span>
+<span class="src-q">&gt; it's thinking clearly on paper.</span>
+
+<span class="src-h">## Three things</span>
+
+- **Morning**: Jot down whatever surfaced during the run
+- **Noon**: Sift last week's team chats for threads
+- **Evening**: Review — did anything get simpler today?
+
+<span class="src-h">## A quote</span>
+
+<span class="src-q">&gt; Minimal isn't less — it's just right.</span>
+
+<span class="src-c">\`Penraft\`</span> saves notes to
+<span class="src-c">\`~/Documents/PenraftVault/Notes/\`</span> by default.`,
+
+      'source.tab2': `<span class="src-h"># Penraft design notes</span>
+
+<span class="src-q">&gt; Quiet tools are the ones you keep using.</span>
+
+<span class="src-h">## Three principles</span>
+
+- **Minimal**: One less button is always better
+- **Handy**: Don't interrupt, don't get in the way
+- **Reliable**: Every keystroke kept, automatically
+
+<span class="src-h">## Inspiration</span>
+
+A pen that just works.`,
     },
   };
 
@@ -272,7 +336,7 @@
   // Mock tab switching (hero screenshot demo)
   // ==========================================================
   function initMockTabs() {
-    document.querySelectorAll('.hero .screenshot-mock').forEach((mock) => {
+    document.querySelectorAll('.screenshot-mock').forEach((mock) => {
       const tabs = mock.querySelectorAll('.mock-tab[data-mock-tab]');
       const bodies = mock.querySelectorAll('.mock-body[data-mock-body]');
       if (!tabs.length || !bodies.length) return;
