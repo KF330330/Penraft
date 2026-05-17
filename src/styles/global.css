@@ -10,6 +10,7 @@
   --accent: #111827;
   --accent-soft: rgba(17, 24, 39, 0.08);
   --editor-bg: #fbf8f1;
+  --top-bar-bg: #e8dec8;
   --heading-accent: #b35a2c;
   --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
   --radius: 16px;
@@ -60,8 +61,8 @@ button {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 8px;
-  background: var(--panel);
+  padding: 0 8px 0 84px;
+  background: var(--top-bar-bg);
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
 }
@@ -126,7 +127,7 @@ button {
 }
 
 .tab-item.active {
-  background: var(--panel-strong);
+  background: var(--editor-bg);
   color: var(--text);
   border-color: var(--line);
   box-shadow: 0 2px 6px rgba(28, 22, 16, 0.04);

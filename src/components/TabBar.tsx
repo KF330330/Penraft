@@ -96,7 +96,7 @@ export function TabBar({
   };
 
   return (
-    <div className="tab-bar">
+    <div className="tab-bar" data-tauri-drag-region>
       <button className="tab-bar-icon" onClick={onOpenSearch} title="搜索文档">
         <Search size={16} />
       </button>
