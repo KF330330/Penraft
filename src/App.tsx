@@ -22,13 +22,23 @@ import {
   saveTabs,
   takePendingOpenFiles,
 } from "./lib/tauri";
-import type { NoteDocument, TabsState } from "./lib/types";
+import type { NoteDocument, TabsState, WindowGeom } from "./lib/types";
 
 const OPEN_FILE_EVENT = "penraft://open-file";
 const MERGE_TAB_EVENT = "penraft://merge-tab";
 
 // title-strip 高度 34px + tab-bar 高度 40px（见 src/styles/global.css）
 const TAB_BAR_ZONE_CSS = 74;
+
+function isInTabBarZone(w: WindowGeom, screenX: number, screenY: number): boolean {
+  const topZonePhys = w.inner_y + TAB_BAR_ZONE_CSS * w.scale_factor;
+  return (
+    screenX >= w.inner_x &&
+    screenX <= w.inner_x + w.inner_width &&
+    screenY >= w.inner_y &&
+    screenY <= topZonePhys
+  );
+}
 
 const AUTOSAVE_DELAY_MS = 500;
 const ZOOM_MIN = 0.5;
@@ -301,59 +311,11 @@ export default function App() {
     handleCreateRef.current = handleCreate;
   }, [handleCreate]);
 
-  const handleClose = useCallback(async (path: string) => {
-    await persistDoc(path);
-    const current = docsRef.current;
-    const idx = current.findIndex((d) => d.document.summary.path === path);
-    if (idx === -1) return;
-    const remaining = current.filter((_, i) => i !== idx);
-    setDocs(remaining);
-    if (activePathRef.current === path) {
-      const fallback = remaining[idx] ?? remaining[idx - 1] ?? remaining[0];
-      if (fallback) {
-        setActivePath(fallback.document.summary.path);
-      } else {
-        setActivePath(null);
-        await handleCreate();
-      }
-    }
-  }, [persistDoc, handleCreate]);
-
-  const handleDelete = useCallback(async (path: string) => {
-    const target = docsRef.current.find((d) => d.document.summary.path === path);
-    const label = target?.document.summary.title ?? path;
-    if (!window.confirm(`确认删除文件 "${label}"？该操作不可撤销。`)) return;
-    try {
-      await deleteNote(path);
-      const current = docsRef.current;
-      const idx = current.findIndex((d) => d.document.summary.path === path);
-      const remaining = idx === -1 ? current : current.filter((_, i) => i !== idx);
-      setDocs(remaining);
-      if (activePathRef.current === path) {
-        const fallback = remaining[idx] ?? remaining[idx - 1] ?? remaining[0];
-        if (fallback) {
-          setActivePath(fallback.document.summary.path);
-        } else {
-          setActivePath(null);
-          await handleCreate();
-        }
-      }
-      showToast(`已删除 ${label}`);
-    } catch (err) {
-      showToast(`删除失败：${String(err)}`);
-    }
-  }, [handleCreate, showToast]);
-
-  const handleRevealInFinder = useCallback(async (path: string) => {
-    try {
-      await revealInFinder(path);
-    } catch (err) {
-      showToast(`打开 Finder 失败：${String(err)}`);
-    }
-  }, [showToast]);
-
-  // 从当前窗口移除某个 tab（不会自动新建空 note，专门给合并/撕出后清理用）
-  const removeTab = useCallback((path: string) => {
+  // 唯一抽象：从本窗口移除一个 tab，并按窗口身份处理"空状态"。
+  // - 本地 remaining 数组同步可知长度，不依赖 docsRef 异步同步。
+  // - main 窗口被掏空 → 新建一个空 note（保留"主窗口必有内容"语义）
+  // - torn 窗口被掏空 → 关闭自己
+  const closeTabAndCleanup = useCallback(async (path: string) => {
     const current = docsRef.current;
     const idx = current.findIndex((d) => d.document.summary.path === path);
     if (idx === -1) return;
@@ -363,7 +325,43 @@ export default function App() {
       const fallback = remaining[idx] ?? remaining[idx - 1] ?? remaining[0];
       setActivePath(fallback ? fallback.document.summary.path : null);
     }
-  }, []);
+    if (remaining.length > 0) return;
+    if (WINDOW_LABEL === "main") {
+      await handleCreate();
+    } else {
+      try {
+        await getCurrentWindow().close();
+      } catch (err) {
+        console.error("[close-torn] failed:", err);
+      }
+    }
+  }, [handleCreate]);
+
+  const handleClose = useCallback(async (path: string) => {
+    await persistDoc(path);
+    await closeTabAndCleanup(path);
+  }, [persistDoc, closeTabAndCleanup]);
+
+  const handleDelete = useCallback(async (path: string) => {
+    const target = docsRef.current.find((d) => d.document.summary.path === path);
+    const label = target?.document.summary.title ?? path;
+    if (!window.confirm(`确认删除文件 "${label}"？该操作不可撤销。`)) return;
+    try {
+      await deleteNote(path);
+      await closeTabAndCleanup(path);
+      showToast(`已删除 ${label}`);
+    } catch (err) {
+      showToast(`删除失败：${String(err)}`);
+    }
+  }, [closeTabAndCleanup, showToast]);
+
+  const handleRevealInFinder = useCallback(async (path: string) => {
+    try {
+      await revealInFinder(path);
+    } catch (err) {
+      showToast(`打开 Finder 失败：${String(err)}`);
+    }
+  }, [showToast]);
 
   const handleTearOut = useCallback(async (path: string, screenX: number, screenY: number) => {
     try {
@@ -372,39 +370,23 @@ export default function App() {
       // ignore save errors; still proceed
     }
 
-    // 先尝试合并到其他窗口的 tab bar 区域
+    // 1) 检测光标是否落在某个其他窗口的 tab bar 区
+    let hit: WindowGeom | null = null;
     try {
       const others = await listPenraftWindows(WINDOW_LABEL);
-      const hit = others.find((w) => {
-        const topZonePhys = w.inner_y + TAB_BAR_ZONE_CSS * w.scale_factor;
-        return (
-          screenX >= w.inner_x &&
-          screenX <= w.inner_x + w.inner_width &&
-          screenY >= w.inner_y &&
-          screenY <= topZonePhys
-        );
-      });
-      if (hit) {
-        await emitTo(hit.label, MERGE_TAB_EVENT, { path, screenX });
-        removeTab(path);
-        // 副窗口空了就关闭自己（main 窗口不关）
-        if (WINDOW_LABEL !== "main") {
-          window.setTimeout(() => {
-            if (docsRef.current.length === 0) {
-              getCurrentWindow().close().catch(() => {});
-            }
-          }, 60);
-        } else if (docsRef.current.length === 0) {
-          // main 窗口被掏空 → 维持原行为，新建一个空 note
-          await handleCreate();
-        }
-        return;
-      }
+      hit = others.find((w) => isInTabBarZone(w, screenX, screenY)) ?? null;
     } catch (err) {
       console.error("[merge] detection error:", err);
     }
 
-    // 没命中目标窗口 tab bar → 撕出新窗口
+    // 2) 命中 → 合并到目标，自己移除并自清理
+    if (hit) {
+      await emitTo(hit.label, MERGE_TAB_EVENT, { path, screenX });
+      await closeTabAndCleanup(path);
+      return;
+    }
+
+    // 3) 未命中 → 撕出新窗口，自己移除并自清理
     const label = `torn-${Date.now()}`;
     const url = `index.html?path=${encodeURIComponent(path)}`;
     const dpr = window.devicePixelRatio || 1;
@@ -423,8 +405,8 @@ export default function App() {
       showToast(`新建窗口失败：${String(err)}`);
       return;
     }
-    await handleClose(path);
-  }, [persistDoc, handleClose, handleCreate, removeTab, showToast]);
+    await closeTabAndCleanup(path);
+  }, [persistDoc, closeTabAndCleanup, showToast]);
 
   const handleSaveAs = useCallback(async (path: string) => {
     const target = docsRef.current.find((d) => d.document.summary.path === path);
