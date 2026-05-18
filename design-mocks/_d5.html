@@ -1,0 +1,550 @@
+<section class="design-section" data-design="5">
+  <header class="design-header">
+    <div class="design-meta">
+      <span class="design-num">#5</span>
+      <h2 class="design-name">Compact Floating Toast</h2>
+      <span class="design-tag">悬浮 · 紧凑 · 低打扰</span>
+    </div>
+    <p class="design-blurb">不抢夺焦点的小尺寸悬浮卡片，像 macOS 通知中心一样安静地停在右下角。</p>
+  </header>
+
+  <div class="design-grid">
+    <!-- 1. Prompt · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">Prompt · Paper</span>
+      <div class="d5-stage-inner">
+        <!-- 淡化的产品 UI 占位 -->
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <!-- toast -->
+        <div class="d5-toast">
+          <button class="d5-collapse" aria-label="折叠">⌃</button>
+
+          <div class="d5-toast-head">
+            <div class="d5-badge">
+              <span class="d5-badge-dot"></span>
+              <span class="d5-badge-num">4.2</span>
+            </div>
+            <div class="d5-toast-text">
+              <div class="d5-toast-title">Penraft 0.4.2 可用</div>
+              <div class="d5-toast-sub">3 项改进 · 1.6 MB</div>
+            </div>
+            <div class="d5-toast-cta">
+              <button class="d5-btn d5-btn--primary">立即更新</button>
+              <button class="d5-btn-icon" aria-label="关闭">✕</button>
+            </div>
+          </div>
+
+          <ul class="d5-changelog">
+            <li><span class="d5-cl-tag d5-cl-tag--fix">修复</span><span>多窗口拖拽 tab 偶发崩溃</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--new">新增</span><span>⌘+Click 跳转到标题或链接</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--imp">改进</span><span>导出 PDF 支持自定义页边距</span></li>
+          </ul>
+
+          <div class="d5-toast-foot">
+            <button class="d5-link">稍后</button>
+            <span class="d5-dot-sep">·</span>
+            <button class="d5-link d5-link--muted">跳过本次更新</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">下载中态：toast 缩成一条进度条 + “32% · 5.4 MB / 16.8 MB” 文字</p>
+    </div>
+
+    <!-- 2. Prompt · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">Prompt · Dark</span>
+      <div class="d5-stage-inner">
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <div class="d5-toast">
+          <button class="d5-collapse" aria-label="折叠">⌃</button>
+
+          <div class="d5-toast-head">
+            <div class="d5-badge">
+              <span class="d5-badge-dot"></span>
+              <span class="d5-badge-num">4.2</span>
+            </div>
+            <div class="d5-toast-text">
+              <div class="d5-toast-title">Penraft 0.4.2 可用</div>
+              <div class="d5-toast-sub">3 项改进 · 1.6 MB</div>
+            </div>
+            <div class="d5-toast-cta">
+              <button class="d5-btn d5-btn--primary">立即更新</button>
+              <button class="d5-btn-icon" aria-label="关闭">✕</button>
+            </div>
+          </div>
+
+          <ul class="d5-changelog">
+            <li><span class="d5-cl-tag d5-cl-tag--fix">修复</span><span>多窗口拖拽 tab 偶发崩溃</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--new">新增</span><span>⌘+Click 跳转到标题或链接</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--imp">改进</span><span>导出 PDF 支持自定义页边距</span></li>
+          </ul>
+
+          <div class="d5-toast-foot">
+            <button class="d5-link">稍后</button>
+            <span class="d5-dot-sep">·</span>
+            <button class="d5-link d5-link--muted">跳过本次更新</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">下载中态：toast 缩成一条进度条 + “32% · 5.4 MB / 16.8 MB” 文字</p>
+    </div>
+
+    <!-- 3. PostUpdate · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">PostUpdate · Paper</span>
+      <div class="d5-stage-inner">
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <div class="d5-toast d5-toast--mini">
+          <div class="d5-mini-row">
+            <span class="d5-check">✓</span>
+            <span class="d5-mini-text">已更新到 <strong>0.4.2</strong></span>
+            <button class="d5-link d5-link--inline">查看更新内容</button>
+            <button class="d5-btn-icon d5-btn-icon--sm" aria-label="关闭">✕</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">点击“查看更新内容”后会向上展开 changelog 列表</p>
+    </div>
+
+    <!-- 4. PostUpdate · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">PostUpdate · Dark</span>
+      <div class="d5-stage-inner">
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <div class="d5-toast d5-toast--mini">
+          <div class="d5-mini-row">
+            <span class="d5-check">✓</span>
+            <span class="d5-mini-text">已更新到 <strong>0.4.2</strong></span>
+            <button class="d5-link d5-link--inline">查看更新内容</button>
+            <button class="d5-btn-icon d5-btn-icon--sm" aria-label="关闭">✕</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">点击“查看更新内容”后会向上展开 changelog 列表</p>
+    </div>
+  </div>
+
+  <style>
+    [data-design="5"] .design-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    [data-design="5"] .stage {
+      position: relative;
+      width: 100%;
+      max-width: 540px;
+      min-height: 360px;
+      background: var(--bg);
+      border-radius: 18px;
+      padding: 36px 18px 18px;
+      box-sizing: border-box;
+      overflow: hidden;
+      font-family: var(--font);
+      color: var(--text);
+    }
+    [data-design="5"] .stage-label {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ===== stage inner: relative wrapper so the toast can pin to bottom-right ===== */
+    [data-design="5"] .d5-stage-inner {
+      position: relative;
+      width: 100%;
+      height: 320px;
+    }
+
+    /* ===== faded product UI ghost ===== */
+    [data-design="5"] .d5-app-ghost {
+      position: absolute;
+      inset: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      opacity: 0.92;
+    }
+    [data-design="5"] .d5-tabbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 32px;
+      padding: 0 10px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+    [data-design="5"] .d5-tab {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px 6px 0 0;
+      white-space: nowrap;
+    }
+    [data-design="5"] .d5-tab--active {
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-bottom: 1px solid var(--panel);
+      position: relative;
+      top: 1px;
+    }
+    [data-design="5"] .d5-tab-plus {
+      font-size: 13px;
+      color: var(--muted-2);
+      padding: 0 6px;
+    }
+    [data-design="5"] .d5-editor {
+      padding: 16px 20px;
+      color: var(--muted);
+    }
+    [data-design="5"] .d5-line {
+      margin: 0 0 6px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    [data-design="5"] .d5-line--h {
+      color: var(--heading-accent);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    [data-design="5"] .d5-line--dim {
+      color: var(--muted-2);
+    }
+
+    /* ===== floating toast (prompt) ===== */
+    [data-design="5"] .d5-toast {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      width: 340px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 12px 12px 10px;
+      box-sizing: border-box;
+      font-family: var(--font);
+      color: var(--text);
+    }
+    [data-design="5"] .d5-collapse {
+      position: absolute;
+      top: 6px;
+      left: 10px;
+      width: 16px;
+      height: 16px;
+      border: none;
+      background: transparent;
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1;
+      cursor: default;
+      padding: 0;
+    }
+
+    [data-design="5"] .d5-toast-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 14px;
+    }
+    [data-design="5"] .d5-badge {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    [data-design="5"] .d5-badge-dot {
+      position: absolute;
+      top: -1px;
+      right: -1px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--heading-accent);
+      border: 2px solid var(--panel-strong);
+      box-sizing: content-box;
+    }
+    [data-design="5"] .d5-badge-num {
+      font-size: 11px;
+    }
+    [data-design="5"] .d5-toast-text {
+      flex: 1;
+      min-width: 0;
+    }
+    [data-design="5"] .d5-toast-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    [data-design="5"] .d5-toast-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    [data-design="5"] .d5-toast-cta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    [data-design="5"] .d5-btn {
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 7px;
+      padding: 5px 10px;
+      border: 1px solid var(--line-strong);
+      background: transparent;
+      color: var(--text);
+      cursor: default;
+      white-space: nowrap;
+    }
+    [data-design="5"] .d5-btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-btn--primary {
+      color: #1f1d1a;
+    }
+    [data-design="5"] .d5-btn-icon {
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: transparent;
+      color: var(--muted-2);
+      font-size: 11px;
+      line-height: 1;
+      border-radius: 6px;
+      cursor: default;
+      padding: 0;
+    }
+
+    /* changelog */
+    [data-design="5"] .d5-changelog {
+      list-style: none;
+      margin: 10px 0 0;
+      padding: 10px 0 4px 14px;
+      border-top: 1px solid var(--line);
+    }
+    [data-design="5"] .d5-changelog li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    [data-design="5"] .d5-changelog li:last-child {
+      margin-bottom: 0;
+    }
+    [data-design="5"] .d5-cl-tag {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+      margin-top: 1px;
+    }
+    [data-design="5"] .stage[data-theme="paper"] .d5-cl-tag--fix {
+      background: rgba(180, 83, 9, 0.10);
+      color: #b45309;
+    }
+    [data-design="5"] .stage[data-theme="paper"] .d5-cl-tag--new {
+      background: rgba(17, 24, 39, 0.08);
+      color: #111827;
+    }
+    [data-design="5"] .stage[data-theme="paper"] .d5-cl-tag--imp {
+      background: rgba(124, 116, 106, 0.14);
+      color: #5a5247;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-cl-tag--fix {
+      background: rgba(216, 164, 100, 0.18);
+      color: #d8a464;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-cl-tag--new {
+      background: rgba(255, 255, 255, 0.10);
+      color: #ffffff;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-cl-tag--imp {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+    }
+
+    /* foot */
+    [data-design="5"] .d5-toast-foot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 0 0 14px;
+      margin-top: 6px;
+      border-top: 1px dashed var(--line);
+    }
+    [data-design="5"] .d5-link {
+      font-family: inherit;
+      font-size: 11px;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      padding: 2px 0;
+      cursor: default;
+    }
+    [data-design="5"] .d5-link--muted {
+      color: var(--muted-2);
+    }
+    [data-design="5"] .d5-dot-sep {
+      color: var(--muted-2);
+      font-size: 11px;
+    }
+
+    /* ===== mini toast (postUpdate) ===== */
+    [data-design="5"] .d5-toast--mini {
+      width: 240px;
+      padding: 9px 10px 9px 12px;
+    }
+    [data-design="5"] .d5-toast--mini .d5-collapse {
+      display: none;
+    }
+    [data-design="5"] .d5-mini-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    [data-design="5"] .d5-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-check {
+      color: var(--heading-accent);
+    }
+    [data-design="5"] .d5-mini-text {
+      font-size: 12px;
+      color: var(--text);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    [data-design="5"] .d5-mini-text strong {
+      font-weight: 600;
+    }
+    [data-design="5"] .d5-link--inline {
+      font-size: 11px;
+      color: var(--accent);
+      background: transparent;
+      border: none;
+      padding: 0;
+      white-space: nowrap;
+      cursor: default;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-link--inline {
+      color: var(--heading-accent);
+    }
+    [data-design="5"] .d5-btn-icon--sm {
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+    }
+
+    /* stage note */
+    [data-design="5"] .d5-stage-note {
+      margin: 12px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+      line-height: 1.5;
+    }
+  </style>
+</section>

@@ -1,0 +1,3141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Penraft 更新弹窗设计稿 · 6 选 1</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  /* ============================================================ */
+  /* 全局：Penraft 产品 CSS 变量族（与 src/styles/global.css 一致） */
+  /* ============================================================ */
+  :root,
+  [data-theme="paper"] {
+    --bg: #f5f3ef;
+    --panel: #fbfaf8;
+    --panel-strong: #ffffff;
+    --line: rgba(36, 30, 21, 0.12);
+    --line-strong: rgba(36, 30, 21, 0.18);
+    --text: #24201a;
+    --muted: #7c746a;
+    --muted-2: #a49b90;
+    --accent: #111827;
+    --accent-soft: rgba(17, 24, 39, 0.08);
+    --heading-accent: #b45309;
+    --backdrop: rgba(25, 21, 17, 0.36);
+    --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
+    --radius: 16px;
+    --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
+    --serif: "Source Han Serif SC", "Songti SC", Georgia, "Times New Roman", serif;
+  }
+  [data-theme="dark"] {
+    --bg: #1f1d1a;
+    --panel: #28251f;
+    --panel-strong: #3a342a;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.14);
+    --text: #ffffff;
+    --muted: #9b938a;
+    --muted-2: #6a6258;
+    --accent: #d8a464;
+    --accent-soft: rgba(216, 164, 100, 0.12);
+    --heading-accent: #d8a464;
+    --backdrop: rgba(0, 0, 0, 0.5);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background: #ece8df; /* 整页比 paper bg 略深一点，让 stage 内的 paper 浮起来 */
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ============================================================ */
+  /* 顶部 hero：6 选 1 说明条 */
+  /* ============================================================ */
+  .page-hero {
+    background: linear-gradient(180deg, #fff 0%, #f5f3ef 100%);
+    border-bottom: 1px solid rgba(36, 30, 21, 0.08);
+    padding: 56px 48px 44px;
+    text-align: left;
+  }
+  .page-hero-inner { max-width: 1280px; margin: 0 auto; }
+  .page-hero-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    color: #b45309;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+  }
+  .page-hero-title {
+    font-size: 38px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    letter-spacing: -0.02em;
+    color: #24201a;
+  }
+  .page-hero-sub {
+    font-size: 16px;
+    line-height: 1.65;
+    color: #7c746a;
+    margin: 0;
+    max-width: 760px;
+  }
+  .page-hero-meta {
+    display: flex;
+    gap: 28px;
+    margin-top: 28px;
+    font-size: 13px;
+    color: #7c746a;
+  }
+  .page-hero-meta span strong {
+    color: #24201a;
+    font-weight: 600;
+  }
+
+  /* ============================================================ */
+  /* 6 个设计师 section 通用容器 */
+  /* ============================================================ */
+  .design-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 64px 48px 24px;
+  }
+  .design-section + .design-section {
+    border-top: 1px solid rgba(36, 30, 21, 0.07);
+  }
+
+  .design-header { margin-bottom: 28px; }
+  .design-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .design-num {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #b45309;
+    padding: 3px 10px;
+    background: rgba(180, 83, 9, 0.08);
+    border-radius: 999px;
+  }
+  .design-name {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0;
+    color: #24201a;
+    letter-spacing: -0.01em;
+  }
+  .design-tag {
+    font-size: 13px;
+    color: #7c746a;
+  }
+  .design-blurb {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #7c746a;
+    margin: 10px 0 0;
+    max-width: 720px;
+  }
+
+  /* 4 张稿 2×2 网格 */
+  .design-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
+    margin-top: 24px;
+  }
+  @media (max-width: 1080px) {
+    .design-grid { grid-template-columns: 1fr; }
+  }
+
+  /* 每张稿的 stage：弹窗呈现的"舞台"，含产品 UI 淡化占位 */
+  .stage {
+    position: relative;
+    background: var(--bg);
+    border: 1px solid rgba(36, 30, 21, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    min-height: 480px;
+    padding: 64px 28px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .stage[data-theme="dark"] {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .stage-label {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--panel-strong);
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    z-index: 2;
+  }
+
+  /* 淡化的产品 UI 占位（每个 stage 内自动渲染） */
+  .stage::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      /* 顶部 tab bar 雏形 */
+      linear-gradient(180deg,
+        rgba(36, 30, 21, 0.06) 0,
+        rgba(36, 30, 21, 0.06) 36px,
+        transparent 36px,
+        transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .stage[data-theme="dark"]::before {
+    background:
+      linear-gradient(180deg,
+        rgba(255, 255, 255, 0.06) 0,
+        rgba(255, 255, 255, 0.06) 36px,
+        transparent 36px,
+        transparent 100%);
+  }
+  .stage::after {
+    content: "";
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    top: 56px;
+    bottom: 28px;
+    background-image:
+      linear-gradient(rgba(36,30,21,0.12) 1px, transparent 1px),
+      linear-gradient(rgba(36,30,21,0.05) 1px, transparent 1px);
+    background-size: 100% 28px, 100% 14px;
+    background-position: 0 0;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .stage[data-theme="dark"]::after {
+    background-image:
+      linear-gradient(rgba(255,255,255,0.10) 1px, transparent 1px),
+      linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+    opacity: 0.5;
+  }
+
+  /* 6 张稿 footer */
+  .page-foot {
+    max-width: 1280px;
+    margin: 24px auto 64px;
+    padding: 0 48px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #7c746a;
+    border-top: 1px solid rgba(36, 30, 21, 0.07);
+    padding-top: 24px;
+  }
+  .page-foot strong { color: #24201a; }
+</style>
+</head>
+<body>
+
+<section class="page-hero">
+  <div class="page-hero-inner">
+    <p class="page-hero-eyebrow">Design Review · Update Modals</p>
+    <h1 class="page-hero-title">Penraft 更新弹窗 · 6 个方向请你挑一个</h1>
+    <p class="page-hero-sub">
+      当前更新弹窗的视觉过于简陋。这里是 6 位"设计师"分别给出的方向，每位都画了 4 张稿：
+      <strong>更新可用提示</strong>（Prompt）和 <strong>更新完成首启提示</strong>（PostUpdate），各分 Paper（默认）和 Dark 两个主题。
+      底色使用产品的 <code>--bg</code>、按钮使用 <code>--accent</code>，保证落地后跟产品一脉相承。
+    </p>
+    <div class="page-hero-meta">
+      <span><strong>6</strong> 位设计师</span>
+      <span><strong>24</strong> 张设计稿（6 × 2 模式 × 2 主题）</span>
+      <span><strong>真实文案</strong>：v0.4.2 / 3 项 changelog</span>
+    </div>
+  </div>
+</section>
+
+<section class="design-section" data-design="1">
+  <header class="design-header">
+    <div class="design-meta">
+      <span class="design-num">#1</span>
+      <h2 class="design-name">Minimal Refined</h2>
+      <span class="design-tag">极简 · 留白 · 单色 · 瑞士平面</span>
+    </div>
+    <p class="design-blurb">让版本号成为唯一的主角，其余皆为呼吸的留白。</p>
+  </header>
+
+  <div class="design-grid">
+
+    <!-- 1. Prompt · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">Prompt · Paper</span>
+      <div class="d1-stage-inner">
+        <div class="d1-mock-app">
+          <div class="d1-mock-tabs">
+            <span class="d1-mock-tab d1-mock-tab--active">untitled.md</span>
+            <span class="d1-mock-tab">draft-2026.md</span>
+            <span class="d1-mock-tab">notes.md</span>
+          </div>
+          <div class="d1-mock-body">
+            <span class="d1-mock-line d1-mock-line--w70"></span>
+            <span class="d1-mock-line d1-mock-line--w90"></span>
+            <span class="d1-mock-line d1-mock-line--w60"></span>
+            <span class="d1-mock-line d1-mock-line--w80"></span>
+            <span class="d1-mock-line d1-mock-line--w50"></span>
+          </div>
+        </div>
+        <div class="d1-modal-backdrop">
+          <div class="d1-modal">
+            <div class="d1-modal-head">
+              <span class="d1-eyebrow">更新可用</span>
+              <div class="d1-title-row">
+                <h3 class="d1-title">Penraft</h3>
+                <span class="d1-version">0.4.2</span>
+              </div>
+              <span class="d1-subtitle">Penraft 0.4.2 可用</span>
+            </div>
+            <hr class="d1-hairline" />
+            <ul class="d1-changelog">
+              <li>修复多窗口拖拽 tab 偶发崩溃</li>
+              <li>新增 ⌘+Click 跳转到标题/链接</li>
+              <li>导出 PDF 支持自定义页边距</li>
+            </ul>
+            <p class="d1-note">下载开始后，按钮下方会出现进度条与百分比文字（例如 32% · 5.4 MB / 16.8 MB）。</p>
+            <div class="d1-actions">
+              <button class="d1-btn d1-btn--text">跳过本次更新</button>
+              <div class="d1-actions-right">
+                <button class="d1-btn d1-btn--ghost">稍后</button>
+                <button class="d1-btn d1-btn--primary">立即更新</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Prompt · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">Prompt · Dark</span>
+      <div class="d1-stage-inner">
+        <div class="d1-mock-app">
+          <div class="d1-mock-tabs">
+            <span class="d1-mock-tab d1-mock-tab--active">untitled.md</span>
+            <span class="d1-mock-tab">draft-2026.md</span>
+            <span class="d1-mock-tab">notes.md</span>
+          </div>
+          <div class="d1-mock-body">
+            <span class="d1-mock-line d1-mock-line--w70"></span>
+            <span class="d1-mock-line d1-mock-line--w90"></span>
+            <span class="d1-mock-line d1-mock-line--w60"></span>
+            <span class="d1-mock-line d1-mock-line--w80"></span>
+            <span class="d1-mock-line d1-mock-line--w50"></span>
+          </div>
+        </div>
+        <div class="d1-modal-backdrop">
+          <div class="d1-modal">
+            <div class="d1-modal-head">
+              <span class="d1-eyebrow">更新可用</span>
+              <div class="d1-title-row">
+                <h3 class="d1-title">Penraft</h3>
+                <span class="d1-version">0.4.2</span>
+              </div>
+              <span class="d1-subtitle">Penraft 0.4.2 可用</span>
+            </div>
+            <hr class="d1-hairline" />
+            <ul class="d1-changelog">
+              <li>修复多窗口拖拽 tab 偶发崩溃</li>
+              <li>新增 ⌘+Click 跳转到标题/链接</li>
+              <li>导出 PDF 支持自定义页边距</li>
+            </ul>
+            <p class="d1-note">下载开始后，按钮下方会出现进度条与百分比文字（例如 32% · 5.4 MB / 16.8 MB）。</p>
+            <div class="d1-actions">
+              <button class="d1-btn d1-btn--text">跳过本次更新</button>
+              <div class="d1-actions-right">
+                <button class="d1-btn d1-btn--ghost">稍后</button>
+                <button class="d1-btn d1-btn--primary">立即更新</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. PostUpdate · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">PostUpdate · Paper</span>
+      <div class="d1-stage-inner">
+        <div class="d1-mock-app">
+          <div class="d1-mock-tabs">
+            <span class="d1-mock-tab d1-mock-tab--active">untitled.md</span>
+            <span class="d1-mock-tab">draft-2026.md</span>
+            <span class="d1-mock-tab">notes.md</span>
+          </div>
+          <div class="d1-mock-body">
+            <span class="d1-mock-line d1-mock-line--w70"></span>
+            <span class="d1-mock-line d1-mock-line--w90"></span>
+            <span class="d1-mock-line d1-mock-line--w60"></span>
+            <span class="d1-mock-line d1-mock-line--w80"></span>
+            <span class="d1-mock-line d1-mock-line--w50"></span>
+          </div>
+        </div>
+        <div class="d1-modal-backdrop">
+          <div class="d1-modal">
+            <div class="d1-modal-head">
+              <span class="d1-eyebrow">已完成更新</span>
+              <div class="d1-title-row">
+                <h3 class="d1-title">Penraft</h3>
+                <span class="d1-version">0.4.2</span>
+              </div>
+              <span class="d1-subtitle">已更新到 Penraft 0.4.2</span>
+            </div>
+            <hr class="d1-hairline" />
+            <ul class="d1-changelog">
+              <li>修复多窗口拖拽 tab 偶发崩溃</li>
+              <li>新增 ⌘+Click 跳转到标题/链接</li>
+              <li>导出 PDF 支持自定义页边距</li>
+            </ul>
+            <div class="d1-actions d1-actions--single">
+              <button class="d1-btn d1-btn--primary">知道了</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. PostUpdate · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">PostUpdate · Dark</span>
+      <div class="d1-stage-inner">
+        <div class="d1-mock-app">
+          <div class="d1-mock-tabs">
+            <span class="d1-mock-tab d1-mock-tab--active">untitled.md</span>
+            <span class="d1-mock-tab">draft-2026.md</span>
+            <span class="d1-mock-tab">notes.md</span>
+          </div>
+          <div class="d1-mock-body">
+            <span class="d1-mock-line d1-mock-line--w70"></span>
+            <span class="d1-mock-line d1-mock-line--w90"></span>
+            <span class="d1-mock-line d1-mock-line--w60"></span>
+            <span class="d1-mock-line d1-mock-line--w80"></span>
+            <span class="d1-mock-line d1-mock-line--w50"></span>
+          </div>
+        </div>
+        <div class="d1-modal-backdrop">
+          <div class="d1-modal">
+            <div class="d1-modal-head">
+              <span class="d1-eyebrow">已完成更新</span>
+              <div class="d1-title-row">
+                <h3 class="d1-title">Penraft</h3>
+                <span class="d1-version">0.4.2</span>
+              </div>
+              <span class="d1-subtitle">已更新到 Penraft 0.4.2</span>
+            </div>
+            <hr class="d1-hairline" />
+            <ul class="d1-changelog">
+              <li>修复多窗口拖拽 tab 偶发崩溃</li>
+              <li>新增 ⌘+Click 跳转到标题/链接</li>
+              <li>导出 PDF 支持自定义页边距</li>
+            </ul>
+            <div class="d1-actions d1-actions--single">
+              <button class="d1-btn d1-btn--primary">知道了</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    .design-section[data-design="1"] {
+      font-family: var(--font, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif);
+      color: #24201a;
+      padding: 32px 24px 48px;
+      box-sizing: border-box;
+    }
+    .design-section[data-design="1"] .design-header {
+      max-width: 1180px;
+      margin: 0 auto 28px;
+      padding: 0 4px;
+    }
+    .design-section[data-design="1"] .design-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .design-section[data-design="1"] .design-num {
+      font-family: "Times New Roman", "Songti SC", "SimSun", serif;
+      font-size: 36px;
+      font-weight: 300;
+      color: #24201a;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .design-section[data-design="1"] .design-name {
+      font-size: 20px;
+      font-weight: 500;
+      margin: 0;
+      color: #24201a;
+      letter-spacing: 0.01em;
+    }
+    .design-section[data-design="1"] .design-tag {
+      font-size: 12px;
+      color: #7c746a;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .design-section[data-design="1"] .design-blurb {
+      margin: 10px 0 0;
+      font-size: 13px;
+      color: #7c746a;
+      max-width: 640px;
+      line-height: 1.6;
+    }
+
+    .design-section[data-design="1"] .design-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 24px;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    /* Stage 舞台容器 —— 模拟 App 背景 + 弹窗叠加 */
+    .design-section[data-design="1"] .stage {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+      background: var(--bg);
+      border: 1px solid var(--line);
+      min-height: 460px;
+    }
+    .design-section[data-design="1"] .stage-label {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      z-index: 5;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted-2);
+      background: var(--panel);
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+    }
+
+    .design-section[data-design="1"] .d1-stage-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 460px;
+    }
+
+    /* 淡化的 App 占位 */
+    .design-section[data-design="1"] .d1-mock-app {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+    }
+    .design-section[data-design="1"] .d1-mock-tabs {
+      display: flex;
+      gap: 2px;
+      padding: 40px 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .design-section[data-design="1"] .d1-mock-tab {
+      font-size: 11px;
+      color: var(--muted-2);
+      padding: 8px 14px;
+      background: transparent;
+      border-radius: 6px 6px 0 0;
+      border: 1px solid transparent;
+      border-bottom: none;
+    }
+    .design-section[data-design="1"] .d1-mock-tab--active {
+      background: var(--panel);
+      color: var(--muted);
+      border-color: var(--line);
+    }
+    .design-section[data-design="1"] .d1-mock-body {
+      flex: 1;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .design-section[data-design="1"] .d1-mock-line {
+      display: block;
+      height: 8px;
+      border-radius: 2px;
+      background: var(--line);
+      opacity: 0.7;
+    }
+    .design-section[data-design="1"] .d1-mock-line--w50 { width: 50%; }
+    .design-section[data-design="1"] .d1-mock-line--w60 { width: 60%; }
+    .design-section[data-design="1"] .d1-mock-line--w70 { width: 70%; }
+    .design-section[data-design="1"] .d1-mock-line--w80 { width: 80%; }
+    .design-section[data-design="1"] .d1-mock-line--w90 { width: 90%; }
+
+    /* 弹窗背板 */
+    .design-section[data-design="1"] .d1-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: var(--backdrop);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px;
+      box-sizing: border-box;
+    }
+
+    /* 弹窗本体 —— Minimal Refined：留白、无装饰 */
+    .design-section[data-design="1"] .d1-modal {
+      width: 100%;
+      max-width: 420px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      padding: 32px 32px 24px;
+      box-sizing: border-box;
+      color: var(--text);
+    }
+
+    .design-section[data-design="1"] .d1-modal-head {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .design-section[data-design="1"] .d1-eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted-2);
+      font-weight: 500;
+    }
+    .design-section[data-design="1"] .d1-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .design-section[data-design="1"] .d1-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+    .design-section[data-design="1"] .d1-version {
+      font-family: "Times New Roman", "Iowan Old Style", "Songti SC", serif;
+      font-size: 44px;
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--heading-accent);
+    }
+    .design-section[data-design="1"] .d1-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .design-section[data-design="1"] .d1-hairline {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 22px 0 18px;
+    }
+
+    .design-section[data-design="1"] .d1-changelog {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .design-section[data-design="1"] .d1-changelog li {
+      position: relative;
+      padding-left: 18px;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: var(--text);
+    }
+    .design-section[data-design="1"] .d1-changelog li::before {
+      content: "•";
+      position: absolute;
+      left: 2px;
+      top: 0;
+      color: var(--muted-2);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .design-section[data-design="1"] .d1-note {
+      margin: 18px 0 24px;
+      font-size: 11.5px;
+      line-height: 1.6;
+      color: var(--muted-2);
+      letter-spacing: 0.01em;
+    }
+
+    /* 按钮区 */
+    .design-section[data-design="1"] .d1-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .design-section[data-design="1"] .d1-actions--single {
+      justify-content: flex-end;
+    }
+    .design-section[data-design="1"] .d1-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .design-section[data-design="1"] .d1-btn {
+      font-family: inherit;
+      font-size: 13px;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      border-radius: 10px;
+      padding: 9px 16px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text);
+      transition: opacity 0.15s ease;
+      line-height: 1.2;
+    }
+    .design-section[data-design="1"] .d1-btn:hover {
+      opacity: 0.85;
+    }
+    .design-section[data-design="1"] .d1-btn--primary {
+      background: var(--accent);
+      color: var(--panel-strong);
+      border-color: var(--accent);
+      padding: 9px 20px;
+      font-weight: 500;
+    }
+    .design-section[data-design="1"] .stage[data-theme="dark"] .d1-btn--primary {
+      color: #1f1d1a;
+    }
+    .design-section[data-design="1"] .d1-btn--ghost {
+      background: transparent;
+      border-color: var(--line-strong);
+      color: var(--text);
+    }
+    .design-section[data-design="1"] .d1-btn--text {
+      padding: 6px 0;
+      color: var(--muted);
+      font-size: 12px;
+      border: none;
+    }
+    .design-section[data-design="1"] .d1-btn--text:hover {
+      color: var(--text);
+      opacity: 1;
+    }
+
+    /* Theme 应用 */
+    .design-section[data-design="1"] .stage[data-theme="paper"] {
+      --bg: #f5f3ef;
+      --panel: #fbfaf8;
+      --panel-strong: #ffffff;
+      --line: rgba(36, 30, 21, 0.12);
+      --line-strong: rgba(36, 30, 21, 0.18);
+      --text: #24201a;
+      --muted: #7c746a;
+      --muted-2: #a49b90;
+      --accent: #111827;
+      --accent-soft: rgba(17, 24, 39, 0.08);
+      --heading-accent: #b45309;
+      --backdrop: rgba(25, 21, 17, 0.36);
+      --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
+    }
+    .design-section[data-design="1"] .stage[data-theme="dark"] {
+      --bg: #1f1d1a;
+      --panel: #28251f;
+      --panel-strong: #3a342a;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-strong: rgba(255, 255, 255, 0.14);
+      --text: #ffffff;
+      --muted: #9b938a;
+      --muted-2: #6a6258;
+      --accent: #d8a464;
+      --accent-soft: rgba(216, 164, 100, 0.12);
+      --heading-accent: #d8a464;
+      --backdrop: rgba(0, 0, 0, 0.5);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+    }
+  </style>
+</section>
+<section class="design-section" data-design="2">
+  <header class="design-header">
+    <div class="design-meta">
+      <span class="design-num">#2</span>
+      <h2 class="design-name">Card Highlights</h2>
+      <span class="design-tag">卡片 · 亮点 · icon</span>
+    </div>
+    <p class="design-blurb">把"这版做了什么"拆成三张可读的亮点卡，icon 先行、标题次之、描述兜底；完整 changelog 折在下面，存在但不抢戏。</p>
+  </header>
+
+  <div class="design-grid">
+
+    <!-- ============== 1. Prompt × Paper ============== -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">Prompt · Paper</span>
+      <div class="d2-modal-backdrop">
+        <div class="d2-modal" role="dialog" aria-modal="true" aria-labelledby="d2-title-1">
+          <div class="d2-head">
+            <div class="d2-eyebrow">
+              <span class="d2-dot"></span>
+              <span class="d2-eyebrow-text">新版本可用</span>
+            </div>
+            <h3 id="d2-title-1" class="d2-title">Penraft 0.4.2 可用</h3>
+            <p class="d2-subtitle">3 项改进 · 建议更新</p>
+          </div>
+
+          <div class="d2-cards">
+            <div class="d2-card">
+              <div class="d2-card-icon">🛠️</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">多窗口稳定性</div>
+                <div class="d2-card-desc">修复拖拽 tab 偶发崩溃</div>
+              </div>
+            </div>
+            <div class="d2-card">
+              <div class="d2-card-icon">🔗</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">快速跳转</div>
+                <div class="d2-card-desc">⌘+Click 跳到标题或链接</div>
+              </div>
+            </div>
+            <div class="d2-card">
+              <div class="d2-card-icon">📄</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">PDF 导出</div>
+                <div class="d2-card-desc">自定义页边距</div>
+              </div>
+            </div>
+          </div>
+
+          <details class="d2-details">
+            <summary class="d2-summary">
+              <span>查看完整更新说明</span>
+              <span class="d2-chev">⌄</span>
+            </summary>
+            <ul class="d2-changelog">
+              <li><span class="d2-tag d2-tag-fix">Fix</span>修复多窗口拖拽 tab 时偶发的崩溃问题</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>支持 ⌘+Click 跳转到标题锚点或外链</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>PDF 导出支持自定义页边距</li>
+            </ul>
+          </details>
+
+          <div class="d2-actions">
+            <button class="d2-btn d2-btn-primary">立即更新</button>
+            <button class="d2-btn d2-btn-ghost">稍后</button>
+            <button class="d2-btn d2-btn-subtle">跳过本次更新</button>
+          </div>
+
+          <p class="d2-foot">下载中态：按钮区折叠为一行进度条 + <strong>32%</strong> · 5.4 MB / 16.8 MB</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== 2. Prompt × Dark ============== -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">Prompt · Dark</span>
+      <div class="d2-modal-backdrop">
+        <div class="d2-modal" role="dialog" aria-modal="true" aria-labelledby="d2-title-2">
+          <div class="d2-head">
+            <div class="d2-eyebrow">
+              <span class="d2-dot"></span>
+              <span class="d2-eyebrow-text">新版本可用</span>
+            </div>
+            <h3 id="d2-title-2" class="d2-title">Penraft 0.4.2 可用</h3>
+            <p class="d2-subtitle">3 项改进 · 建议更新</p>
+          </div>
+
+          <div class="d2-cards">
+            <div class="d2-card">
+              <div class="d2-card-icon">🛠️</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">多窗口稳定性</div>
+                <div class="d2-card-desc">修复拖拽 tab 偶发崩溃</div>
+              </div>
+            </div>
+            <div class="d2-card">
+              <div class="d2-card-icon">🔗</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">快速跳转</div>
+                <div class="d2-card-desc">⌘+Click 跳到标题或链接</div>
+              </div>
+            </div>
+            <div class="d2-card">
+              <div class="d2-card-icon">📄</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">PDF 导出</div>
+                <div class="d2-card-desc">自定义页边距</div>
+              </div>
+            </div>
+          </div>
+
+          <details class="d2-details">
+            <summary class="d2-summary">
+              <span>查看完整更新说明</span>
+              <span class="d2-chev">⌄</span>
+            </summary>
+            <ul class="d2-changelog">
+              <li><span class="d2-tag d2-tag-fix">Fix</span>修复多窗口拖拽 tab 时偶发的崩溃问题</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>支持 ⌘+Click 跳转到标题锚点或外链</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>PDF 导出支持自定义页边距</li>
+            </ul>
+          </details>
+
+          <div class="d2-actions">
+            <button class="d2-btn d2-btn-primary">立即更新</button>
+            <button class="d2-btn d2-btn-ghost">稍后</button>
+            <button class="d2-btn d2-btn-subtle">跳过本次更新</button>
+          </div>
+
+          <p class="d2-foot">下载中态：按钮区折叠为一行进度条 + <strong>32%</strong> · 5.4 MB / 16.8 MB</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== 3. PostUpdate × Paper ============== -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">PostUpdate · Paper</span>
+      <div class="d2-modal-backdrop">
+        <div class="d2-modal" role="dialog" aria-modal="true" aria-labelledby="d2-title-3">
+          <div class="d2-head">
+            <div class="d2-eyebrow d2-eyebrow-success">
+              <span class="d2-dot d2-dot-success"></span>
+              <span class="d2-eyebrow-text">已完成更新</span>
+            </div>
+            <h3 id="d2-title-3" class="d2-title">已更新到 Penraft 0.4.2</h3>
+            <p class="d2-subtitle">这些改进现在已经能用了</p>
+          </div>
+
+          <div class="d2-cards">
+            <div class="d2-card d2-card-done">
+              <div class="d2-card-icon">🛠️</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">多窗口稳定性</div>
+                <div class="d2-card-desc">修复拖拽 tab 偶发崩溃</div>
+              </div>
+              <div class="d2-card-check">✓</div>
+            </div>
+            <div class="d2-card d2-card-done">
+              <div class="d2-card-icon">🔗</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">快速跳转</div>
+                <div class="d2-card-desc">⌘+Click 跳到标题或链接</div>
+              </div>
+              <div class="d2-card-check">✓</div>
+            </div>
+            <div class="d2-card d2-card-done">
+              <div class="d2-card-icon">📄</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">PDF 导出</div>
+                <div class="d2-card-desc">自定义页边距</div>
+              </div>
+              <div class="d2-card-check">✓</div>
+            </div>
+          </div>
+
+          <details class="d2-details">
+            <summary class="d2-summary">
+              <span>查看完整更新说明</span>
+              <span class="d2-chev">⌄</span>
+            </summary>
+            <ul class="d2-changelog">
+              <li><span class="d2-tag d2-tag-fix">Fix</span>修复多窗口拖拽 tab 时偶发的崩溃问题</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>支持 ⌘+Click 跳转到标题锚点或外链</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>PDF 导出支持自定义页边距</li>
+            </ul>
+          </details>
+
+          <div class="d2-actions d2-actions-single">
+            <button class="d2-btn d2-btn-primary">知道了</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== 4. PostUpdate × Dark ============== -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">PostUpdate · Dark</span>
+      <div class="d2-modal-backdrop">
+        <div class="d2-modal" role="dialog" aria-modal="true" aria-labelledby="d2-title-4">
+          <div class="d2-head">
+            <div class="d2-eyebrow d2-eyebrow-success">
+              <span class="d2-dot d2-dot-success"></span>
+              <span class="d2-eyebrow-text">已完成更新</span>
+            </div>
+            <h3 id="d2-title-4" class="d2-title">已更新到 Penraft 0.4.2</h3>
+            <p class="d2-subtitle">这些改进现在已经能用了</p>
+          </div>
+
+          <div class="d2-cards">
+            <div class="d2-card d2-card-done">
+              <div class="d2-card-icon">🛠️</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">多窗口稳定性</div>
+                <div class="d2-card-desc">修复拖拽 tab 偶发崩溃</div>
+              </div>
+              <div class="d2-card-check">✓</div>
+            </div>
+            <div class="d2-card d2-card-done">
+              <div class="d2-card-icon">🔗</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">快速跳转</div>
+                <div class="d2-card-desc">⌘+Click 跳到标题或链接</div>
+              </div>
+              <div class="d2-card-check">✓</div>
+            </div>
+            <div class="d2-card d2-card-done">
+              <div class="d2-card-icon">📄</div>
+              <div class="d2-card-body">
+                <div class="d2-card-title">PDF 导出</div>
+                <div class="d2-card-desc">自定义页边距</div>
+              </div>
+              <div class="d2-card-check">✓</div>
+            </div>
+          </div>
+
+          <details class="d2-details">
+            <summary class="d2-summary">
+              <span>查看完整更新说明</span>
+              <span class="d2-chev">⌄</span>
+            </summary>
+            <ul class="d2-changelog">
+              <li><span class="d2-tag d2-tag-fix">Fix</span>修复多窗口拖拽 tab 时偶发的崩溃问题</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>支持 ⌘+Click 跳转到标题锚点或外链</li>
+              <li><span class="d2-tag d2-tag-feat">New</span>PDF 导出支持自定义页边距</li>
+            </ul>
+          </details>
+
+          <div class="d2-actions d2-actions-single">
+            <button class="d2-btn d2-btn-primary">知道了</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    /* ============ Scope ============ */
+    [data-design="2"] {
+      --d2-radius-card: 12px;
+      --d2-radius-btn: 10px;
+    }
+
+    [data-design="2"] .design-header {
+      margin-bottom: 20px;
+    }
+    [data-design="2"] .design-meta {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    [data-design="2"] .design-num {
+      font: 600 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: #7c746a;
+      letter-spacing: 0.04em;
+    }
+    [data-design="2"] .design-name {
+      margin: 0;
+      font: 600 22px/1.2 "PingFang SC", "Helvetica Neue", system-ui, sans-serif;
+      color: #24201a;
+    }
+    [data-design="2"] .design-tag {
+      font: 500 11px/1 "PingFang SC", system-ui, sans-serif;
+      color: #7c746a;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: rgba(36, 30, 21, 0.06);
+    }
+    [data-design="2"] .design-blurb {
+      margin: 10px 0 0;
+      font: 400 13px/1.6 "PingFang SC", system-ui, sans-serif;
+      color: #7c746a;
+      max-width: 720px;
+    }
+
+    [data-design="2"] .design-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 20px;
+    }
+    @media (max-width: 1120px) {
+      [data-design="2"] .design-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ============ Stage ============ */
+    [data-design="2"] .stage {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      min-height: 640px;
+      background: var(--bg);
+      border-radius: 18px;
+      padding: 36px 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    [data-design="2"] .stage-label {
+      position: absolute;
+      top: 12px; left: 14px;
+      font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+      padding: 5px 9px;
+      border-radius: 999px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+    }
+
+    /* ============ Backdrop + Modal ============ */
+    [data-design="2"] .d2-modal-backdrop {
+      width: 100%;
+      max-width: 460px;
+      padding: 22px 0;
+      border-radius: 22px;
+      background: var(--backdrop);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    [data-design="2"] .d2-modal {
+      width: calc(100% - 28px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 22px 22px 18px;
+      font-family: var(--font);
+      color: var(--text);
+    }
+
+    /* ============ Head ============ */
+    [data-design="2"] .d2-head {
+      margin-bottom: 16px;
+    }
+    [data-design="2"] .d2-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 10px 4px 8px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      margin-bottom: 10px;
+    }
+    [data-design="2"] .d2-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+    [data-design="2"][data-design="2"] [data-theme="dark"] .d2-dot { background: var(--accent); }
+    [data-design="2"] .d2-dot-success { background: #16a34a; }
+    [data-design="2"] [data-theme="dark"] .d2-dot-success { background: #4ade80; }
+    [data-design="2"] .d2-eyebrow-text {
+      font: 500 11px/1.2 var(--font);
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    [data-design="2"] [data-theme="dark"] .d2-eyebrow-text { color: var(--accent); }
+    [data-design="2"] .d2-eyebrow-success { background: rgba(22, 163, 74, 0.1); }
+    [data-design="2"] [data-theme="dark"] .d2-eyebrow-success { background: rgba(74, 222, 128, 0.12); }
+    [data-design="2"] .d2-eyebrow-success .d2-eyebrow-text { color: #15803d; }
+    [data-design="2"] [data-theme="dark"] .d2-eyebrow-success .d2-eyebrow-text { color: #4ade80; }
+
+    [data-design="2"] .d2-title {
+      margin: 0;
+      font: 600 19px/1.3 var(--font);
+      color: var(--text);
+      letter-spacing: -0.005em;
+    }
+    [data-design="2"] .d2-subtitle {
+      margin: 4px 0 0;
+      font: 400 13px/1.5 var(--font);
+      color: var(--muted);
+    }
+
+    /* ============ Cards ============ */
+    [data-design="2"] .d2-cards {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    [data-design="2"] .d2-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 13px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: var(--d2-radius-card);
+      transition: border-color 0.15s ease;
+    }
+    [data-design="2"] .d2-card:hover {
+      border-color: var(--line-strong);
+    }
+    [data-design="2"] .d2-card-icon {
+      flex: 0 0 32px;
+      width: 32px; height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      line-height: 1;
+      background: var(--accent-soft);
+      border-radius: 9px;
+    }
+    [data-design="2"] .d2-card-body {
+      flex: 1;
+      min-width: 0;
+    }
+    [data-design="2"] .d2-card-title {
+      font: 600 13.5px/1.35 var(--font);
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    [data-design="2"] .d2-card-desc {
+      font: 400 12.5px/1.45 var(--font);
+      color: var(--muted);
+    }
+    [data-design="2"] .d2-card-check {
+      flex: 0 0 22px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: rgba(22, 163, 74, 0.12);
+      color: #15803d;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      align-self: center;
+    }
+    [data-design="2"] [data-theme="dark"] .d2-card-check {
+      background: rgba(74, 222, 128, 0.16);
+      color: #4ade80;
+    }
+
+    /* ============ Details / Changelog ============ */
+    [data-design="2"] .d2-details {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      margin-bottom: 14px;
+    }
+    [data-design="2"] .d2-summary {
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font: 500 12.5px/1.4 var(--font);
+      color: var(--muted);
+      padding: 4px 2px;
+      user-select: none;
+    }
+    [data-design="2"] .d2-summary::-webkit-details-marker { display: none; }
+    [data-design="2"] .d2-summary:hover { color: var(--text); }
+    [data-design="2"] .d2-chev {
+      font-size: 13px;
+      color: var(--muted-2);
+      transition: transform 0.15s ease;
+    }
+    [data-design="2"] .d2-details[open] .d2-chev { transform: rotate(180deg); }
+    [data-design="2"] .d2-changelog {
+      list-style: none;
+      margin: 8px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    [data-design="2"] .d2-changelog li {
+      font: 400 12.5px/1.55 var(--font);
+      color: var(--text);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    [data-design="2"] .d2-tag {
+      flex-shrink: 0;
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font: 600 10px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    [data-design="2"] .d2-tag-fix {
+      background: rgba(180, 83, 9, 0.12);
+      color: #b45309;
+    }
+    [data-design="2"] [data-theme="dark"] .d2-tag-fix {
+      background: rgba(216, 164, 100, 0.15);
+      color: #d8a464;
+    }
+    [data-design="2"] .d2-tag-feat {
+      background: rgba(22, 101, 52, 0.1);
+      color: #15803d;
+    }
+    [data-design="2"] [data-theme="dark"] .d2-tag-feat {
+      background: rgba(74, 222, 128, 0.12);
+      color: #4ade80;
+    }
+
+    /* ============ Actions ============ */
+    [data-design="2"] .d2-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    [data-design="2"] .d2-actions-single { justify-content: flex-end; }
+    [data-design="2"] .d2-btn {
+      font: 500 13px/1 var(--font);
+      padding: 10px 16px;
+      border-radius: var(--d2-radius-btn);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+    [data-design="2"] .d2-btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    [data-design="2"] [data-theme="dark"] .d2-btn-primary {
+      background: var(--accent);
+      color: #1f1d1a;
+      border-color: var(--accent);
+    }
+    [data-design="2"] .d2-btn-primary:hover { filter: brightness(0.95); }
+    [data-design="2"] .d2-btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--line-strong);
+    }
+    [data-design="2"] .d2-btn-ghost:hover { background: var(--accent-soft); }
+    [data-design="2"] .d2-btn-subtle {
+      background: transparent;
+      color: var(--muted-2);
+      border-color: transparent;
+      margin-left: auto;
+      padding: 10px 8px;
+    }
+    [data-design="2"] .d2-btn-subtle:hover { color: var(--text); }
+
+    /* ============ Foot ============ */
+    [data-design="2"] .d2-foot {
+      margin: 12px 0 0;
+      padding-top: 10px;
+      border-top: 1px dashed var(--line);
+      font: 400 11px/1.5 var(--font);
+      color: var(--muted-2);
+    }
+    [data-design="2"] .d2-foot strong {
+      font-weight: 600;
+      color: var(--muted);
+    }
+  </style>
+</section>
+<section class="design-section" data-design="3">
+  <header class="design-header">
+    <div class="design-meta">
+      <span class="design-num">#3</span>
+      <h2 class="design-name">Editorial Newsletter</h2>
+      <span class="design-tag">杂志 · serif · 卷首语</span>
+    </div>
+    <p class="design-blurb">把更新当作一期出版物：刊号、卷首语、章节小标题，读起来像一封写给读者的信。</p>
+  </header>
+
+  <div class="design-grid">
+    <!-- 1. Prompt · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">Prompt · Paper</span>
+      <div class="d3-modal-backdrop">
+        <div class="d3-modal">
+          <header class="d3-mast">
+            <span class="d3-vol">VOL. 0.4.2 &middot; 2026 春</span>
+            <span class="d3-issue">PENRAFT &middot; 季刊</span>
+          </header>
+          <h1 class="d3-title">Penraft 新版可用</h1>
+          <p class="d3-lede">愿这一版让你的句子，走得更轻。</p>
+          <hr class="d3-rule" />
+          <section class="d3-section-block">
+            <h3 class="d3-section-title">本期内容 &middot; Changelog</h3>
+            <ol class="d3-list">
+              <li>
+                <span class="d3-num">01</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">修复多窗口拖拽 tab 偶发崩溃</span>
+              </li>
+              <li>
+                <span class="d3-num">02</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">新增 ⌘+Click 跳转到标题或链接</span>
+              </li>
+              <li>
+                <span class="d3-num">03</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">导出 PDF 支持自定义页边距</span>
+              </li>
+            </ol>
+          </section>
+          <footer class="d3-foot">
+            <p class="d3-colophon">下载中态：进度条嵌入卷尾 &middot; 32% &middot; 5.4&nbsp;MB / 16.8&nbsp;MB</p>
+            <div class="d3-actions">
+              <button class="d3-btn d3-btn-ghost">跳过本次更新</button>
+              <button class="d3-btn d3-btn-secondary">稍后</button>
+              <button class="d3-btn d3-btn-primary">立即更新</button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Prompt · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">Prompt · Dark</span>
+      <div class="d3-modal-backdrop">
+        <div class="d3-modal">
+          <header class="d3-mast">
+            <span class="d3-vol">VOL. 0.4.2 &middot; 2026 春</span>
+            <span class="d3-issue">PENRAFT &middot; 季刊</span>
+          </header>
+          <h1 class="d3-title">Penraft 新版可用</h1>
+          <p class="d3-lede">愿这一版让你的句子，走得更轻。</p>
+          <hr class="d3-rule" />
+          <section class="d3-section-block">
+            <h3 class="d3-section-title">本期内容 &middot; Changelog</h3>
+            <ol class="d3-list">
+              <li>
+                <span class="d3-num">01</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">修复多窗口拖拽 tab 偶发崩溃</span>
+              </li>
+              <li>
+                <span class="d3-num">02</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">新增 ⌘+Click 跳转到标题或链接</span>
+              </li>
+              <li>
+                <span class="d3-num">03</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">导出 PDF 支持自定义页边距</span>
+              </li>
+            </ol>
+          </section>
+          <footer class="d3-foot">
+            <p class="d3-colophon">下载中态：进度条嵌入卷尾 &middot; 32% &middot; 5.4&nbsp;MB / 16.8&nbsp;MB</p>
+            <div class="d3-actions">
+              <button class="d3-btn d3-btn-ghost">跳过本次更新</button>
+              <button class="d3-btn d3-btn-secondary">稍后</button>
+              <button class="d3-btn d3-btn-primary">立即更新</button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. postUpdate · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">PostUpdate · Paper</span>
+      <div class="d3-modal-backdrop">
+        <div class="d3-modal">
+          <header class="d3-mast">
+            <span class="d3-vol">VOL. 0.4.2 &middot; 已发布</span>
+            <span class="d3-issue">PENRAFT &middot; 主编寄语</span>
+          </header>
+          <h1 class="d3-title">你已收到 0.4.2</h1>
+          <p class="d3-lede">感谢你在每一行字里与我们同行。</p>
+          <hr class="d3-rule" />
+          <section class="d3-section-block">
+            <h3 class="d3-section-title">本期更新 &middot; Changelog</h3>
+            <ol class="d3-list">
+              <li>
+                <span class="d3-num">01</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">修复多窗口拖拽 tab 偶发崩溃</span>
+              </li>
+              <li>
+                <span class="d3-num">02</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">新增 ⌘+Click 跳转到标题或链接</span>
+              </li>
+              <li>
+                <span class="d3-num">03</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">导出 PDF 支持自定义页边距</span>
+              </li>
+            </ol>
+          </section>
+          <footer class="d3-foot d3-foot-single">
+            <p class="d3-colophon">— 主编 &middot; Penraft 编辑部</p>
+            <div class="d3-actions d3-actions-single">
+              <button class="d3-btn d3-btn-primary">知道了</button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. postUpdate · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">PostUpdate · Dark</span>
+      <div class="d3-modal-backdrop">
+        <div class="d3-modal">
+          <header class="d3-mast">
+            <span class="d3-vol">VOL. 0.4.2 &middot; 已发布</span>
+            <span class="d3-issue">PENRAFT &middot; 主编寄语</span>
+          </header>
+          <h1 class="d3-title">你已收到 0.4.2</h1>
+          <p class="d3-lede">感谢你在每一行字里与我们同行。</p>
+          <hr class="d3-rule" />
+          <section class="d3-section-block">
+            <h3 class="d3-section-title">本期更新 &middot; Changelog</h3>
+            <ol class="d3-list">
+              <li>
+                <span class="d3-num">01</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">修复多窗口拖拽 tab 偶发崩溃</span>
+              </li>
+              <li>
+                <span class="d3-num">02</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">新增 ⌘+Click 跳转到标题或链接</span>
+              </li>
+              <li>
+                <span class="d3-num">03</span>
+                <span class="d3-slash">/</span>
+                <span class="d3-item">导出 PDF 支持自定义页边距</span>
+              </li>
+            </ol>
+          </section>
+          <footer class="d3-foot d3-foot-single">
+            <p class="d3-colophon">— 主编 &middot; Penraft 编辑部</p>
+            <div class="d3-actions d3-actions-single">
+              <button class="d3-btn d3-btn-primary">知道了</button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* ------- product CSS vars (scoped) ------- */
+    [data-design="3"] [data-theme="paper"] {
+      --bg: #f5f3ef; --panel: #fbfaf8; --panel-strong: #ffffff;
+      --line: rgba(36, 30, 21, 0.12); --line-strong: rgba(36, 30, 21, 0.18);
+      --text: #24201a; --muted: #7c746a; --muted-2: #a49b90;
+      --accent: #111827; --accent-soft: rgba(17, 24, 39, 0.08);
+      --heading-accent: #b45309;
+      --backdrop: rgba(25, 21, 17, 0.36);
+      --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
+      --radius: 16px;
+      --font: "PingFang SC", "Helvetica Neue", system-ui, sans-serif;
+      --serif: "Source Han Serif SC", "Songti SC", Georgia, "Times New Roman", serif;
+      --on-accent: #ffffff;
+    }
+    [data-design="3"] [data-theme="dark"] {
+      --bg: #1f1d1a; --panel: #28251f; --panel-strong: #3a342a;
+      --line: rgba(255, 255, 255, 0.08); --line-strong: rgba(255, 255, 255, 0.14);
+      --text: #ffffff; --muted: #9b938a; --muted-2: #6a6258;
+      --accent: #d8a464; --accent-soft: rgba(216, 164, 100, 0.12);
+      --heading-accent: #d8a464;
+      --backdrop: rgba(0, 0, 0, 0.5);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+      --radius: 16px;
+      --font: "PingFang SC", "Helvetica Neue", system-ui, sans-serif;
+      --serif: "Source Han Serif SC", "Songti SC", Georgia, "Times New Roman", serif;
+      --on-accent: #1f1d1a;
+    }
+
+    /* ------- design header ------- */
+    [data-design="3"] {
+      font-family: "PingFang SC", "Helvetica Neue", system-ui, sans-serif;
+      color: #1a1a1a;
+    }
+    [data-design="3"] .design-header {
+      padding: 24px 28px 18px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    [data-design="3"] .design-meta {
+      display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    }
+    [data-design="3"] .design-num {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px; font-weight: 600; color: #b45309;
+      letter-spacing: 0.04em;
+    }
+    [data-design="3"] .design-name {
+      font-family: "Source Han Serif SC", "Songti SC", Georgia, serif;
+      font-size: 22px; margin: 0; font-weight: 600; letter-spacing: 0.01em;
+    }
+    [data-design="3"] .design-tag {
+      font-size: 12px; color: #7c746a;
+      padding: 2px 10px; border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 999px; letter-spacing: 0.04em;
+    }
+    [data-design="3"] .design-blurb {
+      margin: 10px 0 0; color: #5b5249; font-size: 13.5px; line-height: 1.6;
+      font-style: italic;
+      font-family: "Source Han Serif SC", "Songti SC", Georgia, serif;
+    }
+
+    /* ------- grid + stage ------- */
+    [data-design="3"] .design-grid {
+      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px; padding: 28px;
+    }
+    @media (max-width: 1180px) {
+      [data-design="3"] .design-grid { grid-template-columns: 1fr; }
+    }
+    [data-design="3"] .stage {
+      position: relative; background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 20px; padding: 36px 24px 24px;
+      min-height: 560px;
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden;
+    }
+    [data-design="3"] .stage-label {
+      position: absolute; top: 12px; left: 16px;
+      font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); font-weight: 600;
+    }
+
+    /* ------- modal ------- */
+    [data-design="3"] .d3-modal-backdrop {
+      width: 100%; max-width: 540px;
+      background: var(--backdrop);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+    [data-design="3"] .d3-modal {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 28px 30px 24px;
+      color: var(--text);
+      font-family: var(--font);
+      position: relative;
+    }
+
+    /* ------- masthead ------- */
+    [data-design="3"] .d3-mast {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 18px;
+    }
+    [data-design="3"] .d3-vol {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--heading-accent);
+    }
+    [data-design="3"] .d3-issue {
+      font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted-2); font-weight: 500;
+    }
+
+    /* ------- title + lede ------- */
+    [data-design="3"] .d3-title {
+      font-family: var(--serif);
+      font-size: 32px; line-height: 1.2;
+      margin: 0 0 10px; font-weight: 600;
+      letter-spacing: 0.005em;
+      color: var(--text);
+    }
+    [data-design="3"] .d3-lede {
+      font-family: var(--serif);
+      font-style: italic; font-size: 14.5px; line-height: 1.6;
+      color: var(--muted); margin: 0 0 18px;
+      padding-left: 14px;
+      border-left: 2px solid var(--heading-accent);
+    }
+
+    /* ------- divider ------- */
+    [data-design="3"] .d3-rule {
+      border: 0; height: 1px; background: var(--line);
+      margin: 4px 0 18px;
+    }
+
+    /* ------- section ------- */
+    [data-design="3"] .d3-section-title {
+      font-size: 11px; letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--muted); font-weight: 700;
+      margin: 0 0 14px;
+      font-variant: small-caps;
+    }
+    [data-design="3"] .d3-list {
+      list-style: none; padding: 0; margin: 0;
+      display: flex; flex-direction: column; gap: 10px;
+    }
+    [data-design="3"] .d3-list li {
+      display: grid;
+      grid-template-columns: auto auto 1fr;
+      align-items: baseline; gap: 10px;
+      padding: 6px 0;
+      border-bottom: 1px dotted var(--line);
+    }
+    [data-design="3"] .d3-list li:last-child { border-bottom: 0; }
+    [data-design="3"] .d3-num {
+      font-family: var(--serif);
+      font-variant-numeric: tabular-nums;
+      font-size: 13px; font-weight: 700;
+      color: var(--heading-accent);
+      letter-spacing: 0.04em;
+    }
+    [data-design="3"] .d3-slash {
+      color: var(--muted-2); font-weight: 400;
+      font-family: var(--serif); font-size: 14px;
+    }
+    [data-design="3"] .d3-item {
+      font-size: 14px; line-height: 1.55; color: var(--text);
+    }
+
+    /* ------- footer ------- */
+    [data-design="3"] .d3-foot {
+      margin-top: 22px; padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+    [data-design="3"] .d3-colophon {
+      font-family: var(--serif);
+      font-style: italic; font-size: 12px; line-height: 1.5;
+      color: var(--muted-2); margin: 0 0 14px;
+      letter-spacing: 0.01em;
+    }
+    [data-design="3"] .d3-actions {
+      display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+    }
+    [data-design="3"] .d3-actions-single { justify-content: flex-end; }
+
+    /* ------- buttons ------- */
+    [data-design="3"] .d3-btn {
+      font-family: var(--font);
+      font-size: 13px; font-weight: 500;
+      padding: 9px 16px; border-radius: 10px;
+      border: 1px solid transparent;
+      cursor: pointer; letter-spacing: 0.02em;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    [data-design="3"] .d3-btn-ghost {
+      background: transparent; color: var(--muted-2);
+      border-color: transparent;
+      padding-left: 4px; padding-right: 4px;
+      margin-right: auto;
+      font-size: 12px;
+      text-decoration: underline;
+      text-decoration-color: var(--line-strong);
+      text-underline-offset: 3px;
+    }
+    [data-design="3"] .d3-btn-secondary {
+      background: transparent; color: var(--text);
+      border-color: var(--line-strong);
+    }
+    [data-design="3"] .d3-btn-primary {
+      background: var(--accent); color: var(--on-accent);
+      border-color: var(--accent);
+      font-weight: 600;
+      padding: 9px 20px;
+    }
+  </style>
+</section>
+<section class="design-section" data-design="4">
+  <header class="design-header">
+    <div class="design-meta">
+      <span class="design-num">#4</span>
+      <h2 class="design-name">Friendly Illustrated</h2>
+      <span class="design-tag">温暖 · 插画 · 庆祝感</span>
+    </div>
+    <p class="design-blurb">像一张朋友塞进口袋的便签：抽象几何插画+温度文案，让"更新"这件事自带礼物感。</p>
+  </header>
+
+  <div class="design-grid">
+    <!-- 1. Prompt × Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">Prompt · Paper</span>
+      <div class="d4-modal-backdrop">
+        <div class="d4-modal">
+          <div class="d4-illust">
+            <div class="d4-shape d4-shape-blob"></div>
+            <div class="d4-shape d4-shape-ring"></div>
+            <div class="d4-shape d4-shape-bar"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-a"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-b"></div>
+            <div class="d4-shape d4-shape-tag">v0.4.2</div>
+          </div>
+          <div class="d4-body">
+            <h3 class="d4-title">Penraft 0.4.2 来啦 <span class="d4-emoji">✨</span></h3>
+            <p class="d4-sub">忙过这几周，给你带了三件小礼物，挑你顺手的用就好。</p>
+            <ul class="d4-list">
+              <li><span class="d4-li-icon">🛠️</span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d4-li-icon">⌘</span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d4-li-icon">📄</span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+            <div class="d4-actions">
+              <button class="d4-btn d4-btn-primary">立即更新</button>
+              <button class="d4-btn d4-btn-ghost">稍后</button>
+              <button class="d4-btn d4-btn-subtle">跳过本次更新</button>
+            </div>
+            <p class="d4-foot">下载中态：插画区切换为脉动状态指示 + 32% · 5.4 MB / 16.8 MB</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Prompt × Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">Prompt · Dark</span>
+      <div class="d4-modal-backdrop">
+        <div class="d4-modal">
+          <div class="d4-illust">
+            <div class="d4-shape d4-shape-blob"></div>
+            <div class="d4-shape d4-shape-ring"></div>
+            <div class="d4-shape d4-shape-bar"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-a"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-b"></div>
+            <div class="d4-shape d4-shape-tag">v0.4.2</div>
+          </div>
+          <div class="d4-body">
+            <h3 class="d4-title">Penraft 0.4.2 来啦 <span class="d4-emoji">✨</span></h3>
+            <p class="d4-sub">忙过这几周，给你带了三件小礼物，挑你顺手的用就好。</p>
+            <ul class="d4-list">
+              <li><span class="d4-li-icon">🛠️</span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d4-li-icon">⌘</span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d4-li-icon">📄</span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+            <div class="d4-actions">
+              <button class="d4-btn d4-btn-primary">立即更新</button>
+              <button class="d4-btn d4-btn-ghost">稍后</button>
+              <button class="d4-btn d4-btn-subtle">跳过本次更新</button>
+            </div>
+            <p class="d4-foot">下载中态：插画区切换为脉动状态指示 + 32% · 5.4 MB / 16.8 MB</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. PostUpdate × Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">PostUpdate · Paper</span>
+      <div class="d4-modal-backdrop">
+        <div class="d4-modal d4-modal-post">
+          <div class="d4-confetti" aria-hidden="true">
+            <span class="d4-conf d4-conf-1"></span>
+            <span class="d4-conf d4-conf-2"></span>
+            <span class="d4-conf d4-conf-3"></span>
+            <span class="d4-conf d4-conf-4"></span>
+            <span class="d4-conf d4-conf-5"></span>
+            <span class="d4-conf d4-conf-6"></span>
+          </div>
+          <div class="d4-illust d4-illust-post">
+            <div class="d4-shape d4-shape-blob d4-shape-blob-post"></div>
+            <div class="d4-shape d4-shape-ring d4-shape-ring-post"></div>
+            <div class="d4-shape d4-shape-heart"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-a"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-b"></div>
+          </div>
+          <div class="d4-body">
+            <h3 class="d4-title">已经更新到 0.4.2，谢谢你 <span class="d4-emoji">💚</span></h3>
+            <p class="d4-sub">愿这几个小改动，让你今天的写作更顺手一点。</p>
+            <ul class="d4-list">
+              <li><span class="d4-li-icon">🛠️</span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d4-li-icon">⌘</span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d4-li-icon">📄</span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+            <div class="d4-actions d4-actions-single">
+              <button class="d4-btn d4-btn-primary">知道了</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. PostUpdate × Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">PostUpdate · Dark</span>
+      <div class="d4-modal-backdrop">
+        <div class="d4-modal d4-modal-post">
+          <div class="d4-confetti" aria-hidden="true">
+            <span class="d4-conf d4-conf-1"></span>
+            <span class="d4-conf d4-conf-2"></span>
+            <span class="d4-conf d4-conf-3"></span>
+            <span class="d4-conf d4-conf-4"></span>
+            <span class="d4-conf d4-conf-5"></span>
+            <span class="d4-conf d4-conf-6"></span>
+          </div>
+          <div class="d4-illust d4-illust-post">
+            <div class="d4-shape d4-shape-blob d4-shape-blob-post"></div>
+            <div class="d4-shape d4-shape-ring d4-shape-ring-post"></div>
+            <div class="d4-shape d4-shape-heart"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-a"></div>
+            <div class="d4-shape d4-shape-dot d4-shape-dot-b"></div>
+          </div>
+          <div class="d4-body">
+            <h3 class="d4-title">已经更新到 0.4.2，谢谢你 <span class="d4-emoji">💚</span></h3>
+            <p class="d4-sub">愿这几个小改动，让你今天的写作更顺手一点。</p>
+            <ul class="d4-list">
+              <li><span class="d4-li-icon">🛠️</span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d4-li-icon">⌘</span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d4-li-icon">📄</span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+            <div class="d4-actions d4-actions-single">
+              <button class="d4-btn d4-btn-primary">知道了</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    [data-design="4"] .d4-modal-backdrop {
+      background: var(--backdrop);
+      width: 100%;
+      min-height: 560px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 28px;
+      border-radius: 18px;
+      box-sizing: border-box;
+    }
+    [data-design="4"] .d4-modal {
+      width: 100%;
+      max-width: 440px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: var(--radius, 16px);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      font-family: var(--font, "PingFang SC", "Helvetica Neue", system-ui, sans-serif);
+      color: var(--text);
+      position: relative;
+    }
+
+    /* —— 顶部插画区 —— */
+    [data-design="4"] .d4-illust {
+      position: relative;
+      height: 148px;
+      background:
+        radial-gradient(120% 100% at 20% 0%, var(--accent-soft), transparent 60%),
+        radial-gradient(80% 80% at 90% 100%, color-mix(in srgb, var(--heading-accent) 14%, transparent), transparent 70%),
+        var(--panel-strong);
+      border-bottom: 1px solid var(--line);
+      overflow: hidden;
+    }
+    [data-design="4"] .d4-shape {
+      position: absolute;
+      pointer-events: none;
+    }
+    /* 抽象 blob */
+    [data-design="4"] .d4-shape-blob {
+      width: 110px; height: 110px;
+      left: 36px; top: 18px;
+      border-radius: 58% 42% 64% 36% / 48% 52% 48% 52%;
+      background: linear-gradient(135deg, var(--heading-accent), color-mix(in srgb, var(--heading-accent) 50%, var(--accent)));
+      opacity: 0.85;
+      transform: rotate(-8deg);
+    }
+    /* 圆环 */
+    [data-design="4"] .d4-shape-ring {
+      width: 78px; height: 78px;
+      right: 64px; top: 22px;
+      border-radius: 50%;
+      border: 6px solid var(--accent);
+      opacity: 0.85;
+    }
+    /* 长条 */
+    [data-design="4"] .d4-shape-bar {
+      width: 64px; height: 14px;
+      right: 28px; bottom: 28px;
+      border-radius: 999px;
+      background: var(--accent);
+      opacity: 0.9;
+      transform: rotate(-12deg);
+    }
+    /* 小圆点 */
+    [data-design="4"] .d4-shape-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--heading-accent);
+    }
+    [data-design="4"] .d4-shape-dot-a { left: 24px; bottom: 26px; opacity: 0.9; }
+    [data-design="4"] .d4-shape-dot-b {
+      right: 18px; top: 14px;
+      width: 6px; height: 6px;
+      background: var(--accent);
+      opacity: 0.7;
+    }
+    /* 版本号小标签 */
+    [data-design="4"] .d4-shape-tag {
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) rotate(-4deg);
+      background: var(--panel);
+      border: 1px solid var(--line-strong);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 6px 12px;
+      border-radius: 999px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+
+    /* —— PostUpdate 插画变体 —— */
+    [data-design="4"] .d4-illust-post {
+      height: 140px;
+    }
+    [data-design="4"] .d4-shape-blob-post {
+      left: 50%;
+      transform: translateX(-50%) rotate(-4deg);
+      top: 18px;
+      width: 96px; height: 96px;
+      border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%;
+    }
+    [data-design="4"] .d4-shape-ring-post {
+      left: 28px;
+      top: 30px;
+      right: auto;
+      width: 50px;
+      height: 50px;
+      border-width: 4px;
+    }
+    /* 抽象"心"形：两个圆+一个旋转方块 */
+    [data-design="4"] .d4-shape-heart {
+      right: 36px;
+      top: 38px;
+      width: 36px;
+      height: 36px;
+      transform: rotate(45deg);
+      background: var(--accent);
+      border-radius: 6px;
+      opacity: 0.9;
+      box-shadow:
+        -14px -6px 0 0 var(--accent),
+        6px -14px 0 0 var(--accent);
+    }
+
+    /* —— 纸屑（confetti） —— */
+    [data-design="4"] .d4-confetti {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    [data-design="4"] .d4-conf {
+      position: absolute;
+      display: block;
+      width: 8px;
+      height: 14px;
+      border-radius: 2px;
+      opacity: 0.85;
+    }
+    [data-design="4"] .d4-conf-1 { left: 10%;  top: 8%;   background: var(--heading-accent); transform: rotate(18deg); }
+    [data-design="4"] .d4-conf-2 { left: 28%;  top: 4%;   background: var(--accent);         transform: rotate(-24deg); width: 10px; height: 10px; border-radius: 50%; }
+    [data-design="4"] .d4-conf-3 { right: 22%; top: 10%;  background: var(--heading-accent); transform: rotate(38deg); width: 6px; height: 12px; }
+    [data-design="4"] .d4-conf-4 { right: 8%;  top: 22%;  background: var(--accent);         transform: rotate(-12deg); }
+    [data-design="4"] .d4-conf-5 { left: 18%;  top: 28%;  background: var(--accent);         transform: rotate(52deg); width: 6px; height: 6px; border-radius: 50%; }
+    [data-design="4"] .d4-conf-6 { right: 34%; top: 30%;  background: var(--heading-accent); transform: rotate(-40deg); width: 8px; height: 8px; }
+
+    /* —— 内容区 —— */
+    [data-design="4"] .d4-body {
+      padding: 22px 26px 24px;
+    }
+    [data-design="4"] .d4-title {
+      margin: 0 0 8px;
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    [data-design="4"] .d4-emoji {
+      font-size: 18px;
+      line-height: 1;
+    }
+    [data-design="4"] .d4-sub {
+      margin: 0 0 16px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    [data-design="4"] .d4-list {
+      list-style: none;
+      margin: 0 0 20px;
+      padding: 14px 16px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+    }
+    [data-design="4"] .d4-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 13.5px;
+      color: var(--text);
+      line-height: 1.5;
+      padding: 6px 0;
+    }
+    [data-design="4"] .d4-list li + li {
+      border-top: 1px dashed var(--line);
+    }
+    [data-design="4"] .d4-li-icon {
+      flex: 0 0 22px;
+      height: 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      background: var(--accent-soft);
+      color: var(--heading-accent);
+      border-radius: 8px;
+      font-weight: 600;
+      margin-top: 1px;
+    }
+
+    /* —— 按钮 —— */
+    [data-design="4"] .d4-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    [data-design="4"] .d4-actions-single {
+      justify-content: flex-end;
+    }
+    [data-design="4"] .d4-btn {
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+      padding: 9px 16px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: transform 0.12s ease, background 0.15s ease;
+    }
+    [data-design="4"] .d4-btn:hover { transform: translateY(-1px); }
+    [data-design="4"] .d4-btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 24%, transparent);
+    }
+    [data-design="4"][data-theme] .stage[data-theme="dark"] .d4-btn-primary,
+    [data-design="4"] .stage[data-theme="dark"] .d4-btn-primary {
+      color: #1f1d1a;
+    }
+    [data-design="4"] .d4-btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border-color: var(--line-strong);
+    }
+    [data-design="4"] .d4-btn-subtle {
+      background: transparent;
+      color: var(--muted-2);
+      padding-left: 6px;
+      padding-right: 6px;
+      border-color: transparent;
+      margin-left: auto;
+    }
+    [data-design="4"] .d4-btn-subtle:hover {
+      color: var(--muted);
+      text-decoration: underline;
+    }
+
+    /* —— 注脚 —— */
+    [data-design="4"] .d4-foot {
+      margin: 16px 0 0;
+      color: var(--muted-2);
+      font-size: 11.5px;
+      line-height: 1.5;
+      border-top: 1px dashed var(--line);
+      padding-top: 10px;
+    }
+  </style>
+</section>
+<section class="design-section" data-design="5">
+  <header class="design-header">
+    <div class="design-meta">
+      <span class="design-num">#5</span>
+      <h2 class="design-name">Compact Floating Toast</h2>
+      <span class="design-tag">悬浮 · 紧凑 · 低打扰</span>
+    </div>
+    <p class="design-blurb">不抢夺焦点的小尺寸悬浮卡片，像 macOS 通知中心一样安静地停在右下角。</p>
+  </header>
+
+  <div class="design-grid">
+    <!-- 1. Prompt · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">Prompt · Paper</span>
+      <div class="d5-stage-inner">
+        <!-- 淡化的产品 UI 占位 -->
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <!-- toast -->
+        <div class="d5-toast">
+          <button class="d5-collapse" aria-label="折叠">⌃</button>
+
+          <div class="d5-toast-head">
+            <div class="d5-badge">
+              <span class="d5-badge-dot"></span>
+              <span class="d5-badge-num">4.2</span>
+            </div>
+            <div class="d5-toast-text">
+              <div class="d5-toast-title">Penraft 0.4.2 可用</div>
+              <div class="d5-toast-sub">3 项改进 · 1.6 MB</div>
+            </div>
+            <div class="d5-toast-cta">
+              <button class="d5-btn d5-btn--primary">立即更新</button>
+              <button class="d5-btn-icon" aria-label="关闭">✕</button>
+            </div>
+          </div>
+
+          <ul class="d5-changelog">
+            <li><span class="d5-cl-tag d5-cl-tag--fix">修复</span><span>多窗口拖拽 tab 偶发崩溃</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--new">新增</span><span>⌘+Click 跳转到标题或链接</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--imp">改进</span><span>导出 PDF 支持自定义页边距</span></li>
+          </ul>
+
+          <div class="d5-toast-foot">
+            <button class="d5-link">稍后</button>
+            <span class="d5-dot-sep">·</span>
+            <button class="d5-link d5-link--muted">跳过本次更新</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">下载中态：toast 缩成一条进度条 + “32% · 5.4 MB / 16.8 MB” 文字</p>
+    </div>
+
+    <!-- 2. Prompt · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">Prompt · Dark</span>
+      <div class="d5-stage-inner">
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <div class="d5-toast">
+          <button class="d5-collapse" aria-label="折叠">⌃</button>
+
+          <div class="d5-toast-head">
+            <div class="d5-badge">
+              <span class="d5-badge-dot"></span>
+              <span class="d5-badge-num">4.2</span>
+            </div>
+            <div class="d5-toast-text">
+              <div class="d5-toast-title">Penraft 0.4.2 可用</div>
+              <div class="d5-toast-sub">3 项改进 · 1.6 MB</div>
+            </div>
+            <div class="d5-toast-cta">
+              <button class="d5-btn d5-btn--primary">立即更新</button>
+              <button class="d5-btn-icon" aria-label="关闭">✕</button>
+            </div>
+          </div>
+
+          <ul class="d5-changelog">
+            <li><span class="d5-cl-tag d5-cl-tag--fix">修复</span><span>多窗口拖拽 tab 偶发崩溃</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--new">新增</span><span>⌘+Click 跳转到标题或链接</span></li>
+            <li><span class="d5-cl-tag d5-cl-tag--imp">改进</span><span>导出 PDF 支持自定义页边距</span></li>
+          </ul>
+
+          <div class="d5-toast-foot">
+            <button class="d5-link">稍后</button>
+            <span class="d5-dot-sep">·</span>
+            <button class="d5-link d5-link--muted">跳过本次更新</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">下载中态：toast 缩成一条进度条 + “32% · 5.4 MB / 16.8 MB” 文字</p>
+    </div>
+
+    <!-- 3. PostUpdate · Paper -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">PostUpdate · Paper</span>
+      <div class="d5-stage-inner">
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <div class="d5-toast d5-toast--mini">
+          <div class="d5-mini-row">
+            <span class="d5-check">✓</span>
+            <span class="d5-mini-text">已更新到 <strong>0.4.2</strong></span>
+            <button class="d5-link d5-link--inline">查看更新内容</button>
+            <button class="d5-btn-icon d5-btn-icon--sm" aria-label="关闭">✕</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">点击“查看更新内容”后会向上展开 changelog 列表</p>
+    </div>
+
+    <!-- 4. PostUpdate · Dark -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">PostUpdate · Dark</span>
+      <div class="d5-stage-inner">
+        <div class="d5-app-ghost">
+          <div class="d5-tabbar">
+            <span class="d5-tab d5-tab--active">README.md</span>
+            <span class="d5-tab">notes.md</span>
+            <span class="d5-tab">scratch</span>
+            <span class="d5-tab-plus">+</span>
+          </div>
+          <div class="d5-editor">
+            <p class="d5-line d5-line--h"># Penraft</p>
+            <p class="d5-line">一款专注于本地优先的 Markdown 笔记应用，</p>
+            <p class="d5-line">在 macOS 上提供轻盈、流畅的写作体验。</p>
+            <p class="d5-line d5-line--dim">- 多窗口 tab 拖拽</p>
+            <p class="d5-line d5-line--dim">- 自动保存 · 本地 vault</p>
+            <p class="d5-line d5-line--dim">- 端到端加密同步（规划中）</p>
+          </div>
+        </div>
+
+        <div class="d5-toast d5-toast--mini">
+          <div class="d5-mini-row">
+            <span class="d5-check">✓</span>
+            <span class="d5-mini-text">已更新到 <strong>0.4.2</strong></span>
+            <button class="d5-link d5-link--inline">查看更新内容</button>
+            <button class="d5-btn-icon d5-btn-icon--sm" aria-label="关闭">✕</button>
+          </div>
+        </div>
+      </div>
+      <p class="d5-stage-note">点击“查看更新内容”后会向上展开 changelog 列表</p>
+    </div>
+  </div>
+
+  <style>
+    [data-design="5"] .design-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+    [data-design="5"] .stage {
+      position: relative;
+      width: 100%;
+      max-width: 540px;
+      min-height: 360px;
+      background: var(--bg);
+      border-radius: 18px;
+      padding: 36px 18px 18px;
+      box-sizing: border-box;
+      overflow: hidden;
+      font-family: var(--font);
+      color: var(--text);
+    }
+    [data-design="5"] .stage-label {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* ===== stage inner: relative wrapper so the toast can pin to bottom-right ===== */
+    [data-design="5"] .d5-stage-inner {
+      position: relative;
+      width: 100%;
+      height: 320px;
+    }
+
+    /* ===== faded product UI ghost ===== */
+    [data-design="5"] .d5-app-ghost {
+      position: absolute;
+      inset: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      opacity: 0.92;
+    }
+    [data-design="5"] .d5-tabbar {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 32px;
+      padding: 0 10px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+    }
+    [data-design="5"] .d5-tab {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 5px 10px;
+      border-radius: 6px 6px 0 0;
+      white-space: nowrap;
+    }
+    [data-design="5"] .d5-tab--active {
+      color: var(--text);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-bottom: 1px solid var(--panel);
+      position: relative;
+      top: 1px;
+    }
+    [data-design="5"] .d5-tab-plus {
+      font-size: 13px;
+      color: var(--muted-2);
+      padding: 0 6px;
+    }
+    [data-design="5"] .d5-editor {
+      padding: 16px 20px;
+      color: var(--muted);
+    }
+    [data-design="5"] .d5-line {
+      margin: 0 0 6px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    [data-design="5"] .d5-line--h {
+      color: var(--heading-accent);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    [data-design="5"] .d5-line--dim {
+      color: var(--muted-2);
+    }
+
+    /* ===== floating toast (prompt) ===== */
+    [data-design="5"] .d5-toast {
+      position: absolute;
+      right: 14px;
+      bottom: 14px;
+      width: 340px;
+      background: var(--panel-strong);
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 12px 12px 10px;
+      box-sizing: border-box;
+      font-family: var(--font);
+      color: var(--text);
+    }
+    [data-design="5"] .d5-collapse {
+      position: absolute;
+      top: 6px;
+      left: 10px;
+      width: 16px;
+      height: 16px;
+      border: none;
+      background: transparent;
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1;
+      cursor: default;
+      padding: 0;
+    }
+
+    [data-design="5"] .d5-toast-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-left: 14px;
+    }
+    [data-design="5"] .d5-badge {
+      position: relative;
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+    [data-design="5"] .d5-badge-dot {
+      position: absolute;
+      top: -1px;
+      right: -1px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--heading-accent);
+      border: 2px solid var(--panel-strong);
+      box-sizing: content-box;
+    }
+    [data-design="5"] .d5-badge-num {
+      font-size: 11px;
+    }
+    [data-design="5"] .d5-toast-text {
+      flex: 1;
+      min-width: 0;
+    }
+    [data-design="5"] .d5-toast-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: -0.01em;
+    }
+    [data-design="5"] .d5-toast-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+    [data-design="5"] .d5-toast-cta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    [data-design="5"] .d5-btn {
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 7px;
+      padding: 5px 10px;
+      border: 1px solid var(--line-strong);
+      background: transparent;
+      color: var(--text);
+      cursor: default;
+      white-space: nowrap;
+    }
+    [data-design="5"] .d5-btn--primary {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-btn--primary {
+      color: #1f1d1a;
+    }
+    [data-design="5"] .d5-btn-icon {
+      width: 22px;
+      height: 22px;
+      border: none;
+      background: transparent;
+      color: var(--muted-2);
+      font-size: 11px;
+      line-height: 1;
+      border-radius: 6px;
+      cursor: default;
+      padding: 0;
+    }
+
+    /* changelog */
+    [data-design="5"] .d5-changelog {
+      list-style: none;
+      margin: 10px 0 0;
+      padding: 10px 0 4px 14px;
+      border-top: 1px solid var(--line);
+    }
+    [data-design="5"] .d5-changelog li {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    [data-design="5"] .d5-changelog li:last-child {
+      margin-bottom: 0;
+    }
+    [data-design="5"] .d5-cl-tag {
+      flex-shrink: 0;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.02em;
+      margin-top: 1px;
+    }
+    [data-design="5"] .stage[data-theme="paper"] .d5-cl-tag--fix {
+      background: rgba(180, 83, 9, 0.10);
+      color: #b45309;
+    }
+    [data-design="5"] .stage[data-theme="paper"] .d5-cl-tag--new {
+      background: rgba(17, 24, 39, 0.08);
+      color: #111827;
+    }
+    [data-design="5"] .stage[data-theme="paper"] .d5-cl-tag--imp {
+      background: rgba(124, 116, 106, 0.14);
+      color: #5a5247;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-cl-tag--fix {
+      background: rgba(216, 164, 100, 0.18);
+      color: #d8a464;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-cl-tag--new {
+      background: rgba(255, 255, 255, 0.10);
+      color: #ffffff;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-cl-tag--imp {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+    }
+
+    /* foot */
+    [data-design="5"] .d5-toast-foot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 0 0 14px;
+      margin-top: 6px;
+      border-top: 1px dashed var(--line);
+    }
+    [data-design="5"] .d5-link {
+      font-family: inherit;
+      font-size: 11px;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      padding: 2px 0;
+      cursor: default;
+    }
+    [data-design="5"] .d5-link--muted {
+      color: var(--muted-2);
+    }
+    [data-design="5"] .d5-dot-sep {
+      color: var(--muted-2);
+      font-size: 11px;
+    }
+
+    /* ===== mini toast (postUpdate) ===== */
+    [data-design="5"] .d5-toast--mini {
+      width: 240px;
+      padding: 9px 10px 9px 12px;
+    }
+    [data-design="5"] .d5-toast--mini .d5-collapse {
+      display: none;
+    }
+    [data-design="5"] .d5-mini-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    [data-design="5"] .d5-check {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent-soft);
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-check {
+      color: var(--heading-accent);
+    }
+    [data-design="5"] .d5-mini-text {
+      font-size: 12px;
+      color: var(--text);
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    [data-design="5"] .d5-mini-text strong {
+      font-weight: 600;
+    }
+    [data-design="5"] .d5-link--inline {
+      font-size: 11px;
+      color: var(--accent);
+      background: transparent;
+      border: none;
+      padding: 0;
+      white-space: nowrap;
+      cursor: default;
+    }
+    [data-design="5"] .stage[data-theme="dark"] .d5-link--inline {
+      color: var(--heading-accent);
+    }
+    [data-design="5"] .d5-btn-icon--sm {
+      width: 18px;
+      height: 18px;
+      font-size: 10px;
+    }
+
+    /* stage note */
+    [data-design="5"] .d5-stage-note {
+      margin: 12px 0 0;
+      font-size: 11px;
+      color: var(--muted);
+      font-style: italic;
+      line-height: 1.5;
+    }
+  </style>
+</section>
+<section class="design-section" data-design="6">
+  <header class="design-header">
+    <div class="design-meta">
+      <span class="design-num">#6</span>
+      <h2 class="design-name">Hero Bold</h2>
+      <span class="design-tag">大号 · hero · 酷</span>
+    </div>
+    <p class="design-blurb">把版本号当成主视觉——半屏 hero、巨大 typography、ghost 副数字叠影，让"更新"这件事像一场发布会。</p>
+  </header>
+
+  <div class="design-grid">
+
+    <!-- ============== 1. Prompt × Paper ============== -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">Prompt · Paper</span>
+      <div class="d6-modal-backdrop">
+        <div class="d6-modal">
+          <div class="d6-hero">
+            <span class="d6-eyebrow">NEW VERSION · AVAILABLE</span>
+            <div class="d6-version-wrap">
+              <span class="d6-version-ghost">0.4.1</span>
+              <span class="d6-version">0.4.2</span>
+            </div>
+            <span class="d6-hero-meta">PENRAFT · UPDATE</span>
+          </div>
+
+          <div class="d6-divider"></div>
+
+          <div class="d6-body">
+            <h3 class="d6-section-title">本次改进</h3>
+            <ul class="d6-changelog">
+              <li><span class="d6-bullet"></span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d6-bullet"></span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d6-bullet"></span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+
+            <div class="d6-actions">
+              <button class="d6-btn d6-btn-primary">立即更新</button>
+              <div class="d6-actions-row">
+                <button class="d6-btn d6-btn-ghost">稍后</button>
+                <button class="d6-btn d6-btn-subtle">跳过本次更新</button>
+              </div>
+            </div>
+
+            <p class="d6-footnote">下载中态：hero 区变成全宽进度条 + 32% · 5.4 MB / 16.8 MB</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== 2. Prompt × Dark ============== -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">Prompt · Dark</span>
+      <div class="d6-modal-backdrop">
+        <div class="d6-modal">
+          <div class="d6-hero">
+            <span class="d6-eyebrow">NEW VERSION · AVAILABLE</span>
+            <div class="d6-version-wrap">
+              <span class="d6-version-ghost">0.4.1</span>
+              <span class="d6-version">0.4.2</span>
+            </div>
+            <span class="d6-hero-meta">PENRAFT · UPDATE</span>
+          </div>
+
+          <div class="d6-divider"></div>
+
+          <div class="d6-body">
+            <h3 class="d6-section-title">本次改进</h3>
+            <ul class="d6-changelog">
+              <li><span class="d6-bullet"></span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d6-bullet"></span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d6-bullet"></span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+
+            <div class="d6-actions">
+              <button class="d6-btn d6-btn-primary">立即更新</button>
+              <div class="d6-actions-row">
+                <button class="d6-btn d6-btn-ghost">稍后</button>
+                <button class="d6-btn d6-btn-subtle">跳过本次更新</button>
+              </div>
+            </div>
+
+            <p class="d6-footnote">下载中态：hero 区变成全宽进度条 + 32% · 5.4 MB / 16.8 MB</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== 3. postUpdate × Paper ============== -->
+    <div class="stage" data-theme="paper">
+      <span class="stage-label">PostUpdate · Paper</span>
+      <div class="d6-modal-backdrop">
+        <div class="d6-modal">
+          <div class="d6-hero">
+            <span class="d6-eyebrow">UPDATED TO</span>
+            <div class="d6-version-wrap">
+              <span class="d6-version-ghost">0.4.1</span>
+              <span class="d6-version">0.4.2</span>
+            </div>
+            <span class="d6-hero-meta">PENRAFT · LIVE</span>
+          </div>
+
+          <div class="d6-divider"></div>
+
+          <div class="d6-body">
+            <h3 class="d6-section-title">本次改进</h3>
+            <ul class="d6-changelog">
+              <li><span class="d6-bullet"></span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d6-bullet"></span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d6-bullet"></span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+
+            <div class="d6-actions d6-actions-single">
+              <button class="d6-btn d6-btn-primary d6-btn-wide">知道了</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== 4. postUpdate × Dark ============== -->
+    <div class="stage" data-theme="dark">
+      <span class="stage-label">PostUpdate · Dark</span>
+      <div class="d6-modal-backdrop">
+        <div class="d6-modal">
+          <div class="d6-hero">
+            <span class="d6-eyebrow">UPDATED TO</span>
+            <div class="d6-version-wrap">
+              <span class="d6-version-ghost">0.4.1</span>
+              <span class="d6-version">0.4.2</span>
+            </div>
+            <span class="d6-hero-meta">PENRAFT · LIVE</span>
+          </div>
+
+          <div class="d6-divider"></div>
+
+          <div class="d6-body">
+            <h3 class="d6-section-title">本次改进</h3>
+            <ul class="d6-changelog">
+              <li><span class="d6-bullet"></span><span>修复多窗口拖拽 tab 偶发崩溃</span></li>
+              <li><span class="d6-bullet"></span><span>新增 ⌘+Click 跳转到标题或链接</span></li>
+              <li><span class="d6-bullet"></span><span>导出 PDF 支持自定义页边距</span></li>
+            </ul>
+
+            <div class="d6-actions d6-actions-single">
+              <button class="d6-btn d6-btn-primary d6-btn-wide">知道了</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    /* ===== scope: design #6 / Hero Bold ===== */
+    [data-design="6"] .design-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px;
+    }
+    [data-design="6"] .stage {
+      position: relative;
+      width: 100%;
+      max-width: 620px;
+      min-height: 720px;
+      background: var(--bg);
+      border-radius: 18px;
+      overflow: hidden;
+      padding: 56px 28px 32px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    [data-design="6"] .stage-label {
+      position: absolute;
+      top: 16px;
+      left: 18px;
+      font: 600 11px/1 var(--font);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    /* backdrop + modal shell */
+    [data-design="6"] .d6-modal-backdrop {
+      width: 100%;
+      background: var(--backdrop);
+      border-radius: 14px;
+      padding: 22px;
+      box-sizing: border-box;
+      display: flex;
+      justify-content: center;
+    }
+    [data-design="6"] .d6-modal {
+      width: 100%;
+      max-width: 540px;
+      background: var(--panel);
+      border-radius: var(--radius, 16px);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      overflow: hidden;
+      font-family: var(--font);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HERO */
+    [data-design="6"] .d6-hero {
+      position: relative;
+      background: var(--accent-soft);
+      padding: 34px 32px 28px;
+      min-height: 280px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+    [data-design="6"] .d6-eyebrow {
+      position: relative;
+      z-index: 2;
+      font: 700 11px/1 var(--font);
+      letter-spacing: 0.32em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    [data-design="6"] .d6-version-wrap {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      align-items: flex-end;
+      line-height: 0.9;
+      margin: 14px 0 6px;
+    }
+    [data-design="6"] .d6-version {
+      position: relative;
+      z-index: 2;
+      font: 800 104px/0.85 var(--font);
+      letter-spacing: -0.04em;
+      color: var(--accent);
+      font-feature-settings: "tnum" 1;
+    }
+    [data-design="6"] .d6-version-ghost {
+      position: absolute;
+      left: 28px;
+      top: -6px;
+      font: 800 132px/0.85 var(--font);
+      letter-spacing: -0.04em;
+      color: var(--text);
+      opacity: 0.06;
+      z-index: 1;
+      pointer-events: none;
+      user-select: none;
+      white-space: nowrap;
+    }
+    [data-design="6"] .stage[data-theme="dark"] .d6-version-ghost {
+      color: var(--accent);
+      opacity: 0.12;
+    }
+    [data-design="6"] .d6-hero-meta {
+      position: relative;
+      z-index: 2;
+      font: 600 10px/1 var(--font);
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+      color: var(--muted-2);
+      margin-top: 14px;
+    }
+
+    /* divider - thick bar */
+    [data-design="6"] .d6-divider {
+      height: 5px;
+      width: 100%;
+      background: var(--accent);
+    }
+    [data-design="6"] .stage[data-theme="paper"] .d6-divider {
+      background: var(--text);
+    }
+
+    /* body */
+    [data-design="6"] .d6-body {
+      padding: 26px 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    [data-design="6"] .d6-section-title {
+      margin: 0;
+      font: 700 13px/1 var(--font);
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--heading-accent);
+    }
+    [data-design="6"] .d6-changelog {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    [data-design="6"] .d6-changelog li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font: 500 15px/1.5 var(--font);
+      color: var(--text);
+    }
+    [data-design="6"] .d6-bullet {
+      flex: none;
+      width: 8px;
+      height: 8px;
+      margin-top: 8px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* actions */
+    [data-design="6"] .d6-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    [data-design="6"] .d6-actions-row {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+    [data-design="6"] .d6-actions-single {
+      align-items: stretch;
+    }
+
+    [data-design="6"] .d6-btn {
+      font-family: var(--font);
+      border: none;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: transform 0.15s ease;
+    }
+    [data-design="6"] .d6-btn-primary {
+      height: 52px;
+      width: 100%;
+      background: var(--accent);
+      color: #ffffff;
+      font: 800 16px/1 var(--font);
+      letter-spacing: 0.04em;
+      box-shadow: 0 6px 18px rgba(17, 24, 39, 0.16);
+    }
+    [data-design="6"] .stage[data-theme="dark"] .d6-btn-primary {
+      color: #1f1d1a;
+      box-shadow: 0 6px 22px rgba(216, 164, 100, 0.28);
+    }
+    [data-design="6"] .d6-btn-wide {
+      width: 100%;
+    }
+    [data-design="6"] .d6-btn-ghost {
+      flex: 1;
+      height: 44px;
+      background: transparent;
+      color: var(--text);
+      border: 1.5px solid var(--line-strong);
+      font: 700 14px/1 var(--font);
+    }
+    [data-design="6"] .d6-btn-subtle {
+      flex: 1;
+      height: 44px;
+      background: transparent;
+      color: var(--muted);
+      font: 600 13px/1 var(--font);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1px;
+    }
+
+    [data-design="6"] .d6-footnote {
+      margin: 6px 0 0;
+      font: 500 12px/1.5 var(--font);
+      color: var(--muted-2);
+      letter-spacing: 0.01em;
+    }
+  </style>
+</section>
+
+<footer class="page-foot">
+  <p>
+    <strong>选定方向后</strong>，我会把对应风格落到
+    <code>src/components/ChangelogModal.tsx</code> + <code>src/styles/global.css</code>，
+    替换当前的视觉。下载中态 / 错误态会沿用所选风格统一打磨。
+  </p>
+  <p>
+    Light 中间主题暂未画（与 Paper 差异小，选定方向后一起补上）。
+  </p>
+</footer>
+
+</body>
+</html>
