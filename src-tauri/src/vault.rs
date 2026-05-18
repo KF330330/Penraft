@@ -113,6 +113,28 @@ pub fn reveal_in_finder(path: String) -> CommandResult<()> {
     Err("当前平台不支持".to_string())
 }
 
+pub fn open_notes_folder() -> CommandResult<()> {
+    ensure_vault_dirs()?;
+    let target = notes_dir();
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open").arg(&target).status().map_err(to_err)?;
+        return Ok(());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer").arg(&target).status().map_err(to_err)?;
+        return Ok(());
+    }
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        Command::new("xdg-open").arg(&target).status().map_err(to_err)?;
+        return Ok(());
+    }
+    #[allow(unreachable_code)]
+    Err("当前平台不支持".to_string())
+}
+
 pub fn search_notes(query: String) -> CommandResult<Vec<NoteSummary>> {
     let query = query.trim().to_lowercase();
     let all = list_notes_internal()?;

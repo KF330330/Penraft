@@ -83,6 +83,11 @@ fn reveal_in_finder(path: String) -> CommandResult<()> {
 }
 
 #[tauri::command]
+fn open_notes_folder() -> CommandResult<()> {
+    vault::open_notes_folder()
+}
+
+#[tauri::command]
 fn search_notes(query: String) -> CommandResult<Vec<NoteSummary>> {
     vault::search_notes(query)
 }
@@ -231,6 +236,7 @@ pub fn run() {
             rename_note,
             delete_note,
             reveal_in_finder,
+            open_notes_folder,
             search_notes,
             load_tabs,
             save_tabs,

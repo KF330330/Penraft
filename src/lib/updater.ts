@@ -104,6 +104,26 @@ export async function consumePendingChangelogForCurrentVersion(): Promise<Pendin
 }
 
 /**
+ * 手动触发：用户在设置菜单里主动点「检查更新」时调用。
+ * 与 checkForUpdate 不同，这里完全不参与去重 state，不论用户之前是否
+ * dismiss 过都返回真实结果，由 caller 自行决定如何展示。
+ */
+export async function manualCheckForUpdate(): Promise<PendingUpdate | null> {
+  let update: Update | null = null;
+  try {
+    update = await check();
+  } catch (e) {
+    throw e instanceof Error ? e : new Error(String(e));
+  }
+  if (!update || !update.available) return null;
+  const v = update.version;
+  let appVersion = '';
+  try { appVersion = await getVersion(); } catch { /* ignore */ }
+  if (appVersion && appVersion === v) return null;
+  return { version: v, notes: update.body, date: update.date, update };
+}
+
+/**
  * 检查是否应该提醒用户。
  * 返回 PendingUpdate 表示需要展示 banner；返回 null 表示无需提示。
  *

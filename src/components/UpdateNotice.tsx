@@ -48,6 +48,22 @@ export default function UpdateNotice() {
     return cancel;
   }, []);
 
+  // 设置菜单里「检查更新」走旁路触发：通过 window event 注入 pending，
+  // 复用同一套 ChangelogModal + 下载/安装流程
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<PendingUpdate>).detail;
+      if (detail) {
+        setPending(detail);
+        setPhase("idle");
+        setProgress({ downloaded: 0, total: null });
+        setErrMsg(null);
+      }
+    };
+    window.addEventListener("penraft:show-update-modal", handler);
+    return () => window.removeEventListener("penraft:show-update-modal", handler);
+  }, []);
+
   // 触发点 B 优先：先看完旧的，再提示新的
   if (postUpdate) {
     return (

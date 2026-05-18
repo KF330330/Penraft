@@ -1,8 +1,9 @@
-import { Code2, Eye, Plus, Search, X } from "lucide-react";
+import { Code2, Eye, FolderOpen, Plus, Search, X } from "lucide-react";
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { cursorPosition, getCurrentWindow } from "@tauri-apps/api/window";
 import type { Theme } from "./MarkdownEditor";
 import { ThemePicker } from "./ThemePicker";
+import { openNotesFolder } from "../lib/tauri";
 import {
   TEAR_OUT_OUTSIDE_MARGIN_PHYS,
   TEAR_OUT_VERTICAL_THRESHOLD_CSS,
@@ -263,6 +264,14 @@ export const TabBar = forwardRef<TabBarHandle, TabBarProps>(function TabBar({
 
       <button className="tab-bar-icon" onClick={onToggleMode} title={mode === "render" ? "切到源码 (⌘+/)" : "切到渲染 (⌘+/)"}>
         {mode === "render" ? <Code2 size={16} /> : <Eye size={16} />}
+      </button>
+
+      <button
+        className="tab-bar-icon"
+        title="打开 Vault 文件夹"
+        onClick={() => { void openNotesFolder(); }}
+      >
+        <FolderOpen size={16} />
       </button>
 
       <ThemePicker theme={theme} onChange={onThemeChange} />
