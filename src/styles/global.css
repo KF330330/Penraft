@@ -682,6 +682,7 @@ button {
   display: flex;
   flex-direction: column;
   max-height: 80vh;
+  background: var(--bg);
 }
 
 .changelog-modal-header {
