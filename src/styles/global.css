@@ -515,6 +515,22 @@ button {
   border-radius: 0;
 }
 
+/* YAML frontmatter（首段代码块）专属样式：GitHub callout 风格 + 长行换行。
+   仅命中文档首块；不影响正文里的普通代码块。 */
+.wysiwyg-column .ProseMirror > pre:first-child {
+  background: #eff6ff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+  overflow-x: hidden;
+}
+
+.wysiwyg-column .ProseMirror > pre:first-child code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  display: block;
+}
+
 .wysiwyg-column .ProseMirror table {
   display: block;
   width: 100%;

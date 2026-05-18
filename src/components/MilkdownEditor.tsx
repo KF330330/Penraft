@@ -11,6 +11,7 @@ import {
   frontmatterToYamlFence,
   yamlFenceToFrontmatter,
   installAnchorClickHandler,
+  installScopedSelectAll,
 } from "./markdown-utils";
 
 interface MilkdownEditorProps {
@@ -166,7 +167,7 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
   }, [value, get]);
 
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
+    const cleanups: Array<() => void> = [];
     let cancelled = false;
     const install = () => {
       if (cancelled) return;
@@ -177,13 +178,14 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
       }
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-        cleanup = installAnchorClickHandler(view.dom as HTMLElement);
+        cleanups.push(installAnchorClickHandler(view.dom as HTMLElement));
+        cleanups.push(installScopedSelectAll(view));
       });
     };
     install();
     return () => {
       cancelled = true;
-      cleanup?.();
+      cleanups.forEach((fn) => fn());
     };
   }, [get]);
 

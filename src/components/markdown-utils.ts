@@ -43,6 +43,41 @@ export function slugify(text: string): string {
     .replace(/[^\p{L}\p{N}\-_]/gu, "");
 }
 
+// ⌘A 限定到 frontmatter 框：光标在 code_block 内首次按 ⌘A，只选中该块内容；
+// 已经处于「整块选中」时不拦截，让 ProseMirror 默认 selectAll 展到全文（VS Code /
+// Typora 行为）。光标不在 code_block 时也不拦截。返回 cleanup。
+import { TextSelection } from "@milkdown/prose/state";
+import type { EditorView } from "@milkdown/prose/view";
+
+export function installScopedSelectAll(view: EditorView): () => void {
+  const handler = (e: KeyboardEvent) => {
+    if (!(e.metaKey || e.ctrlKey)) return;
+    if (e.shiftKey || e.altKey) return;
+    if (e.key !== "a" && e.key !== "A") return;
+
+    const { state } = view;
+    const { $from } = state.selection;
+
+    let depth = $from.depth;
+    while (depth > 0 && $from.node(depth).type.name !== "code_block") depth--;
+    if (depth === 0 || $from.node(depth).type.name !== "code_block") return;
+
+    const blockStart = $from.start(depth);
+    const blockEnd = $from.end(depth);
+
+    const sel = state.selection;
+    if (sel.from === blockStart && sel.to === blockEnd) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    view.dispatch(
+      state.tr.setSelection(TextSelection.create(state.doc, blockStart, blockEnd)),
+    );
+  };
+  view.dom.addEventListener("keydown", handler, true);
+  return () => view.dom.removeEventListener("keydown", handler, true);
+}
+
 // 给容器内的锚点链接装上 ⌘/Ctrl+Click 跳转：按住修饰键点 `<a href="#...">` 时，
 // 阻止 ProseMirror 的默认选区行为，按 slug 匹配容器内的标题并平滑滚动过去。
 // 返回 cleanup 函数；在 useEffect 中调用并在 unmount 时执行。
