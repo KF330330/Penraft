@@ -22,3 +22,20 @@ package-lock.json.bak
 
 # AI image generation drafts (design process artifacts)
 gen_images/
+
+# Secrets & credentials
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.jks
+*.keystore
+id_rsa
+id_rsa.pub
+
+# Internal ops docs (kept locally only — see ~/Penraft-local-sops-backup/)
+docs/ANALYTICS_UPDATER_SOP.md
+docs/DEPLOY_SOP.md
