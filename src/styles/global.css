@@ -515,15 +515,20 @@ button {
   border-radius: 0;
 }
 
-/* YAML frontmatter（首段代码块）专属样式：米色便签风格 + 长行换行。
+/* YAML frontmatter（首段代码块）专属样式：v2 floating-card —— 浮起的卡片
+   骨架，颜色用主题变量自适应（暖白 / 纯白 / 暗色三套主题分别浮起）。
    仅命中文档首块；不影响正文里的普通代码块。 */
 .wysiwyg-column .ProseMirror > pre:first-child {
-  background: #fdf6e3;
-  border: none;
-  border-radius: 10px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
   padding: 16px 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
   overflow-x: hidden;
+}
+
+[data-theme="dark"] .wysiwyg-column .ProseMirror > pre:first-child {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .wysiwyg-column .ProseMirror > pre:first-child code {
