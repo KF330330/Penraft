@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8" />
+<title>T2 sepia · 6 个 frontmatter 变体</title>
+<style>
+  :root {
+    --bg: #f4ecd8;
+    --text: #3a322a;
+    --accent: #b58900;
+    --muted: #857f72;
+    --hairline: #d8cda8;
+    --inset: #ebe2c8;
+    --float: #fbf6e6;
+    --accent-bg: #f0e6c8;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  .page-header {
+    margin-bottom: 36px;
+  }
+
+  .page-header h1 {
+    margin: 0 0 8px;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+    color: var(--text);
+  }
+
+  .page-header p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+  }
+
+  .variant {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .variant-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(181, 137, 0, 0.12);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  .variant-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* shared frontmatter block typography */
+  .fm {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 15px 16px;
+    border-radius: 6px;
+  }
+
+  .fm .k { color: var(--muted); }
+  .fm .v { color: var(--text); }
+
+  /* v1 inset-soft */
+  .fm-v1 {
+    background: var(--inset);
+    border: none;
+    box-shadow: none;
+  }
+
+  /* v2 floating-card */
+  .fm-v2 {
+    background: var(--float);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(80, 60, 20, 0.08);
+    border: none;
+  }
+
+  /* v3 outline-hairline */
+  .fm-v3 {
+    background: transparent;
+    border: 1px solid var(--hairline);
+    box-shadow: none;
+  }
+
+  /* v4 accent-bar */
+  .fm-v4 {
+    background: var(--accent-bg);
+    border-left: 3px solid var(--accent);
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  /* v5 kv-grid */
+  .fm-v5 {
+    background: transparent;
+    border: none;
+    padding: 15px 16px;
+  }
+  .fm-v5 dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+  }
+  .fm-v5 dt {
+    text-align: right;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .fm-v5 dd {
+    margin: 0;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* v6 chip-tag */
+  .fm-v6 {
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+  .chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border: 1px solid var(--accent);
+    background: rgba(181, 137, 0, 0.08);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.6px;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    border-radius: 3px;
+    margin-bottom: 10px;
+  }
+  .fm-v6 .body {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <h1>T2 sepia · 6 个 frontmatter 变体</h1>
+      <p>米黄写作主题底色（#f4ecd8）上展示 6 种 frontmatter 块的视觉骨架，供视觉对比挑选。</p>
+    </header>
+
+    <div class="grid">
+
+      <!-- v1 inset-soft -->
+      <section class="variant">
+        <div class="variant-head">
+          <span class="badge">T2-v1</span>
+          <span class="variant-desc">inset-soft · 低对比内嵌块，无边无影</span>
+        </div>
+        <div class="fm fm-v1"><span class="k">title</span>: <span class="v">Ptengine 产品全模块培训</span>
+<span class="k">summary</span>: <span class="v">本文是 Ptengine 产品全模块的内部培训转录。首先讲解产品背景与 Inside、Experience、Studio、AI 引擎四个模块的由来，以及面向品牌出海客户的购物场景定位。</span>
+<span class="k">markdown_path</span>: <span class="v">/Users/rl/Desktop/莉莉姐培训.enhanced.md</span>
+<span class="k">generated_at</span>: <span class="v">"2026-05-14T17:33:59+08:00"</span></div>
+      </section>
+
+      <!-- v2 floating-card -->
+      <section class="variant">
+        <div class="variant-head">
+          <span class="badge">T2-v2</span>
+          <span class="variant-desc">floating-card · 奶油色 + 圆角 + 柔阴影，浮起</span>
+        </div>
+        <div class="fm fm-v2"><span class="k">title</span>: <span class="v">Ptengine 产品全模块培训</span>
+<span class="k">summary</span>: <span class="v">本文是 Ptengine 产品全模块的内部培训转录。首先讲解产品背景与 Inside、Experience、Studio、AI 引擎四个模块的由来，以及面向品牌出海客户的购物场景定位。</span>
+<span class="k">markdown_path</span>: <span class="v">/Users/rl/Desktop/莉莉姐培训.enhanced.md</span>
+<span class="k">generated_at</span>: <span class="v">"2026-05-14T17:33:59+08:00"</span></div>
+      </section>
+
+      <!-- v3 outline-hairline -->
+      <section class="variant">
+        <div class="variant-head">
+          <span class="badge">T2-v3</span>
+          <span class="variant-desc">outline-hairline · 透明填充 + 1 px 暖灰描边</span>
+        </div>
+        <div class="fm fm-v3"><span class="k">title</span>: <span class="v">Ptengine 产品全模块培训</span>
+<span class="k">summary</span>: <span class="v">本文是 Ptengine 产品全模块的内部培训转录。首先讲解产品背景与 Inside、Experience、Studio、AI 引擎四个模块的由来，以及面向品牌出海客户的购物场景定位。</span>
+<span class="k">markdown_path</span>: <span class="v">/Users/rl/Desktop/莉莉姐培训.enhanced.md</span>
+<span class="k">generated_at</span>: <span class="v">"2026-05-14T17:33:59+08:00"</span></div>
+      </section>
+
+      <!-- v4 accent-bar -->
+      <section class="variant">
+        <div class="variant-head">
+          <span class="badge">T2-v4</span>
+          <span class="variant-desc">accent-bar · 左侧强调色条 + 极浅米色底</span>
+        </div>
+        <div class="fm fm-v4"><span class="k">title</span>: <span class="v">Ptengine 产品全模块培训</span>
+<span class="k">summary</span>: <span class="v">本文是 Ptengine 产品全模块的内部培训转录。首先讲解产品背景与 Inside、Experience、Studio、AI 引擎四个模块的由来，以及面向品牌出海客户的购物场景定位。</span>
+<span class="k">markdown_path</span>: <span class="v">/Users/rl/Desktop/莉莉姐培训.enhanced.md</span>
+<span class="k">generated_at</span>: <span class="v">"2026-05-14T17:33:59+08:00"</span></div>
+      </section>
+
+      <!-- v5 kv-grid -->
+      <section class="variant">
+        <div class="variant-head">
+          <span class="badge">T2-v5</span>
+          <span class="variant-desc">kv-grid · 双列 dl，key 右对齐加粗，无边无底</span>
+        </div>
+        <div class="fm-v5">
+          <dl>
+            <dt>title</dt><dd>Ptengine 产品全模块培训</dd>
+            <dt>summary</dt><dd>本文是 Ptengine 产品全模块的内部培训转录。首先讲解产品背景与 Inside、Experience、Studio、AI 引擎四个模块的由来，以及面向品牌出海客户的购物场景定位。</dd>
+            <dt>markdown_path</dt><dd>/Users/rl/Desktop/莉莉姐培训.enhanced.md</dd>
+            <dt>generated_at</dt><dd>"2026-05-14T17:33:59+08:00"</dd>
+          </dl>
+        </div>
+      </section>
+
+      <!-- v6 chip-tag -->
+      <section class="variant">
+        <div class="variant-head">
+          <span class="badge">T2-v6</span>
+          <span class="variant-desc">chip-tag · 顶部独立 METADATA 小 chip + 裸内容</span>
+        </div>
+        <div class="fm-v6">
+          <span class="chip">METADATA</span>
+          <div class="body"><span style="color:var(--muted)">title</span>: Ptengine 产品全模块培训
+<span style="color:var(--muted)">summary</span>: 本文是 Ptengine 产品全模块的内部培训转录。首先讲解产品背景与 Inside、Experience、Studio、AI 引擎四个模块的由来，以及面向品牌出海客户的购物场景定位。
+<span style="color:var(--muted)">markdown_path</span>: /Users/rl/Desktop/莉莉姐培训.enhanced.md
+<span style="color:var(--muted)">generated_at</span>: "2026-05-14T17:33:59+08:00"</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</body>
+</html>
