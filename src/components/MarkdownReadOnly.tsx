@@ -1,27 +1,24 @@
-import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx } from "@milkdown/core";
+import { useEffect } from "react";
+import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx, editorViewCtx } from "@milkdown/core";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { gfm } from "@milkdown/preset-gfm";
+import {
+  cleanMarkdown,
+  frontmatterToYamlFence,
+  installAnchorClickHandler,
+} from "./markdown-utils";
 
 interface Props {
   value: string;
 }
 
-function cleanMarkdown(md: string): string {
-  return md
-    .replace(/ {2}\n/g, "\n")
-    .replace(/\\\n/g, "\n")
-    .replace(/^[ \t]*<br\s*\/?>[ \t]*$/gim, "")
-    .replace(/<!--\s*([\s\S]*?)\s*-->/g, "$1")
-    .replace(/^\n+/, "");
-}
-
 function Inner({ value }: Props) {
-  useEditor((root) =>
+  const { get } = useEditor((root) =>
     Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, root);
-        ctx.set(defaultValueCtx, cleanMarkdown(value));
+        ctx.set(defaultValueCtx, frontmatterToYamlFence(cleanMarkdown(value)));
         ctx.update(editorViewOptionsCtx, (prev) => ({
           ...prev,
           editable: () => false,
@@ -30,6 +27,28 @@ function Inner({ value }: Props) {
       .use(commonmark)
       .use(gfm)
   , [value]);
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    let cancelled = false;
+    const install = () => {
+      if (cancelled) return;
+      const editor = get();
+      if (!editor) {
+        requestAnimationFrame(install);
+        return;
+      }
+      editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        cleanup = installAnchorClickHandler(view.dom as HTMLElement);
+      });
+    };
+    install();
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, [get]);
 
   return <Milkdown />;
 }
