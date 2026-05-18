@@ -6,21 +6,16 @@ import { gfm } from "@milkdown/preset-gfm";
 import { history } from "@milkdown/plugin-history";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { Slice } from "@milkdown/prose/model";
+import {
+  cleanMarkdown,
+  frontmatterToYamlFence,
+  yamlFenceToFrontmatter,
+  installAnchorClickHandler,
+} from "./markdown-utils";
 
 interface MilkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
-}
-
-// 通用清洗：剥掉历史 round-trip 留下的 <br />、HTML 注释以及 CommonMark 硬换行
-// 标记，让源码与磁盘里的 Markdown 维持干净。不折叠连续空行——用户写几行就保留几行。
-function cleanMarkdown(md: string): string {
-  return md
-    .replace(/ {2}\n/g, "\n")
-    .replace(/\\\n/g, "\n")
-    .replace(/^[ \t]*<br\s*\/?>[ \t]*$/gim, "")
-    .replace(/<!--\s*([\s\S]*?)\s*-->/g, "$1")
-    .replace(/^\n+/, "");
 }
 
 // 仅含一个 NBSP 的行作为「视觉空段」占位符。CommonMark 不把 NBSP 视为空白，
@@ -111,8 +106,10 @@ function applyHardBreaks(md: string): string {
     .join("\n");
 }
 
-const toMilkdown = (md: string) => applyHardBreaks(expandBlankRuns(cleanMarkdown(md)));
-const fromMilkdown = (md: string) => cleanMarkdown(collapsePlaceholders(md));
+const toMilkdown = (md: string) =>
+  applyHardBreaks(expandBlankRuns(frontmatterToYamlFence(cleanMarkdown(md))));
+const fromMilkdown = (md: string) =>
+  yamlFenceToFrontmatter(cleanMarkdown(collapsePlaceholders(md)));
 
 function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
   const onChangeRef = useRef(onChange);
@@ -167,6 +164,28 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
       lastInternalRef.current = value;
     });
   }, [value, get]);
+
+  useEffect(() => {
+    let cleanup: (() => void) | undefined;
+    let cancelled = false;
+    const install = () => {
+      if (cancelled) return;
+      const editor = get();
+      if (!editor) {
+        requestAnimationFrame(install);
+        return;
+      }
+      editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        cleanup = installAnchorClickHandler(view.dom as HTMLElement);
+      });
+    };
+    install();
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
+  }, [get]);
 
   return <Milkdown />;
 }
