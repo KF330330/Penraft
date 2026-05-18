@@ -125,10 +125,17 @@
 
     .changelog-modal-footer {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
+      align-items: center;
       gap: 10px;
       padding: 14px 22px 18px;
       border-top: 1px solid var(--line);
+    }
+
+    .changelog-modal-footer-right {
+      display: flex;
+      gap: 10px;
+      margin-left: auto;
     }
 
     .changelog-modal-btn {
@@ -157,6 +164,17 @@
     .changelog-modal-btn.primary:hover {
       background: var(--accent);
       opacity: 0.9;
+    }
+
+    .changelog-modal-btn.subtle {
+      border-color: transparent;
+      color: var(--muted);
+      background: transparent;
+    }
+
+    .changelog-modal-btn.subtle:hover {
+      background: var(--line);
+      color: var(--text);
     }
 
     /* === 只读 Markdown 视图样式（与 global.css 中 .markdown-readonly .ProseMirror 对齐） === */
@@ -252,8 +270,11 @@
           </div>
 
           <div class="changelog-modal-footer">
-            <button class="changelog-modal-btn" type="button">稍后</button>
-            <button class="changelog-modal-btn primary" type="button">立即更新</button>
+            <button class="changelog-modal-btn subtle" type="button">跳过本次更新</button>
+            <div class="changelog-modal-footer-right">
+              <button class="changelog-modal-btn" type="button">稍后</button>
+              <button class="changelog-modal-btn primary" type="button">立即更新</button>
+            </div>
           </div>
         </div>
       </div>
@@ -291,7 +312,9 @@
           </div>
 
           <div class="changelog-modal-footer">
-            <button class="changelog-modal-btn primary" type="button">知道了</button>
+            <div class="changelog-modal-footer-right">
+              <button class="changelog-modal-btn primary" type="button">知道了</button>
+            </div>
           </div>
         </div>
       </div>

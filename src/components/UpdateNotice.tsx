@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   scheduleChecks,
   snooze,
+  dismissVersion,
   applyUpdate,
   consumePendingChangelogForCurrentVersion,
   type PendingUpdate,
@@ -66,6 +67,11 @@ export default function UpdateNotice() {
     setPending(null);
   };
 
+  const onDismiss = () => {
+    dismissVersion(pending.version);
+    setPending(null);
+  };
+
   const onUpdate = async () => {
     setPhase("downloading");
     setErrMsg(null);
@@ -89,6 +95,7 @@ export default function UpdateNotice() {
       errMsg={errMsg}
       onLater={onLater}
       onUpdate={onUpdate}
+      onDismiss={onDismiss}
     />
   );
 }

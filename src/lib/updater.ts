@@ -196,6 +196,16 @@ export function snooze() {
 }
 
 /**
+ * 用户点了"跳过本次更新"——把当前 manifest 版本直接写入 dismissedVersion，
+ * 之后 checkForUpdate 会因 state.dismissedVersion === v 而短路返回 null，
+ * 直到 manifest 给出新版本号为止。
+ */
+export function dismissVersion(version: string) {
+  const s = readState();
+  writeState({ ...s, lastSeenVersion: version, dismissedVersion: version });
+}
+
+/**
  * 用户主动点了"立即更新"。
  * 下载并安装；完成后重启。任何阶段失败都抛错给 caller 显示。
  * 安装前会把本次更新的 notes 落盘，relaunch 后由 consumePendingChangelogForCurrentVersion 读出弹窗。

@@ -11,6 +11,7 @@ interface PromptProps {
   errMsg: string | null;
   onLater: () => void;
   onUpdate: () => void;
+  onDismiss: () => void;
 }
 
 interface PostUpdateProps {
@@ -87,18 +88,25 @@ export default function ChangelogModal(props: Props) {
           {props.mode === "prompt" ? (
             props.phase === "downloading" ? null : (
               <>
-                <button className="changelog-modal-btn" onClick={props.onLater}>
-                  稍后
+                <button className="changelog-modal-btn subtle" onClick={props.onDismiss}>
+                  跳过本次更新
                 </button>
-                <button className="changelog-modal-btn primary" onClick={props.onUpdate}>
-                  {props.phase === "error" ? "重试" : "立即更新"}
-                </button>
+                <div className="changelog-modal-footer-right">
+                  <button className="changelog-modal-btn" onClick={props.onLater}>
+                    稍后
+                  </button>
+                  <button className="changelog-modal-btn primary" onClick={props.onUpdate}>
+                    {props.phase === "error" ? "重试" : "立即更新"}
+                  </button>
+                </div>
               </>
             )
           ) : (
-            <button className="changelog-modal-btn primary" onClick={props.onAck}>
-              知道了
-            </button>
+            <div className="changelog-modal-footer-right">
+              <button className="changelog-modal-btn primary" onClick={props.onAck}>
+                知道了
+              </button>
+            </div>
           )}
         </div>
       </div>

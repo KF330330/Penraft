@@ -700,10 +700,17 @@ button {
 
 .changelog-modal-footer {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
   gap: 10px;
   padding: 14px 22px 18px;
   border-top: 1px solid var(--line);
+}
+
+.changelog-modal-footer-right {
+  display: flex;
+  gap: 10px;
+  margin-left: auto;
 }
 
 .changelog-modal-progress {
@@ -765,6 +772,17 @@ button {
 .changelog-modal-btn.primary:hover {
   background: var(--accent);
   opacity: 0.9;
+}
+
+.changelog-modal-btn.subtle {
+  border-color: transparent;
+  color: var(--muted);
+  background: transparent;
+}
+
+.changelog-modal-btn.subtle:hover {
+  background: var(--line);
+  color: var(--text);
 }
 
 /* Read-only Milkdown 视图样式（modal 里展示更新说明用） */
