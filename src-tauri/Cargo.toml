@@ -31,3 +31,6 @@ uuid = { version = "1", features = ["v4", "serde"] }
 tokio = { version = "1", features = ["time"] }
 os_info = "3"
 sys-locale = "0.3"
+
+[profile.release]
+strip = "symbols"
