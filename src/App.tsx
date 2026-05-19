@@ -9,6 +9,7 @@ import { SearchPanel } from "./components/SearchPanel";
 import { TabBar, type TabBarHandle } from "./components/TabBar";
 import { ThemePicker } from "./components/ThemePicker";
 import UpdateNotice from "./components/UpdateNotice";
+import ChangelogPreview from "./components/_ChangelogPreview"; // TEMP: 设计预览，验完删
 import {
   createNote,
   deleteNote,
@@ -627,6 +628,7 @@ export default function App() {
 
       {toast ? <div className="toast">{toast}</div> : null}
       <UpdateNotice />
+      <ChangelogPreview />
     </>
   );
 }
