@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Penraft · 更新流程完整演示</title>
+<style>
+  :root {
+    --panel: #fbfaf8;
+    --panel-strong: #ffffff;
+    --line: rgba(36, 30, 21, 0.12);
+    --line-strong: rgba(36, 30, 21, 0.18);
+    --text: #24201a;
+    --muted: #7c746a;
+    --muted-2: #a49b90;
+    --accent: #111827;
+    --accent-soft: rgba(17, 24, 39, 0.08);
+    --heading-accent: #b45309;
+    --backdrop: rgba(25, 21, 17, 0.36);
+    --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
+    --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", system-ui, sans-serif;
+    --tab-bar-height: 40px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100vh; overflow: hidden; }
+  body { font-family: var(--font); color: var(--text); background: #f5f3ef; }
+
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* TabBar (模拟 Penraft 顶部) */
+  .tab-bar {
+    height: var(--tab-bar-height);
+    display: flex; align-items: center; gap: 6px;
+    padding: 0 8px; background: var(--panel);
+    border-bottom: 1px solid var(--line); flex-shrink: 0;
+  }
+  .tab-bar-icon {
+    width: 30px; height: 30px; display: grid; place-items: center;
+    border: none; background: transparent; color: var(--muted);
+    cursor: pointer; border-radius: 8px; font-size: 14px;
+    font-family: inherit;
+  }
+  .tab-bar-icon:hover { background: var(--accent-soft); color: var(--text); }
+  .tab-bar-tabs { display: flex; flex: 1; gap: 4px; min-width: 0; overflow: hidden; }
+  .tab {
+    padding: 6px 12px; border-radius: 8px;
+    color: var(--muted); font-size: 13px; cursor: pointer;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .tab.active { background: var(--panel-strong); color: var(--text); }
+
+  /* 更新进度圆环（TabBar 内） */
+  .tab-bar-progress-slot:empty { display: none; }
+  .update-progress {
+    position: relative; width: 30px; height: 30px;
+    display: grid; place-items: center; border: none;
+    background: transparent; cursor: pointer; border-radius: 8px;
+  }
+  .update-progress:hover { background: var(--accent-soft); }
+  .update-progress__ring { width: 26px; height: 26px; transform: rotate(-90deg); }
+  .update-progress__ring-bg { fill: none; stroke: var(--line-strong); stroke-width: 2; }
+  .update-progress__ring-fg {
+    fill: none; stroke-width: 2; stroke-linecap: round;
+    transition: stroke-dashoffset 0.35s ease, stroke 0.2s ease;
+  }
+  .update-progress[data-phase="downloading"] .update-progress__ring-fg { stroke: var(--text); }
+  .update-progress[data-phase="done"] .update-progress__ring-fg { stroke: #22c55e; }
+  .update-progress[data-phase="error"] .update-progress__ring-fg { stroke: #dc2626; }
+
+  .update-progress__icon {
+    position: absolute; pointer-events: none;
+    display: grid; place-items: center; color: var(--muted);
+  }
+  .update-progress[data-phase="done"] .update-progress__icon { color: #22c55e; }
+  .update-progress[data-phase="error"] .update-progress__icon { color: #dc2626; }
+
+  .update-progress__tooltip {
+    position: absolute; top: 36px; right: 0; min-width: 200px;
+    padding: 10px 12px; background: var(--panel-strong);
+    border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: var(--shadow); display: none;
+    pointer-events: none; z-index: 85; text-align: left;
+  }
+  .update-progress:hover .update-progress__tooltip { display: block; }
+  .update-progress__tooltip-title {
+    font-size: 12px; font-weight: 500; margin: 0 0 4px; color: var(--text);
+  }
+  .update-progress__tooltip-meta {
+    font-size: 11px; color: var(--muted); margin: 0; line-height: 1.5;
+  }
+
+  /* 编辑区（模拟正在编辑笔记） */
+  .editor {
+    flex: 1; overflow: auto; padding: 40px 60px;
+    max-width: 760px; margin: 0 auto; width: 100%;
+  }
+  .editor h1 { font-size: 28px; margin: 0 0 12px; font-weight: 500; }
+  .editor p { font-size: 14px; line-height: 1.7; margin: 0 0 16px; }
+  .editor [contenteditable] {
+    outline: none; border-left: 2px solid transparent;
+    padding-left: 10px; margin-left: -12px;
+    transition: border-color 0.15s;
+  }
+  .editor [contenteditable]:focus { border-left-color: var(--heading-accent); }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: var(--backdrop);
+    display: grid; place-items: center; padding: 28px; z-index: 50;
+  }
+  .modal {
+    width: min(460px, 94vw); display: flex; flex-direction: column;
+    max-height: 80vh; background: var(--panel-strong);
+    border-radius: 20px; padding: 32px 32px 24px;
+    box-shadow: var(--shadow);
+  }
+  .changelog-modal-head { display: flex; flex-direction: column; gap: 14px; }
+  .changelog-modal-eyebrow {
+    font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--muted-2); font-weight: 500;
+  }
+  .changelog-modal-title-row {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  }
+  .changelog-modal-title { margin: 0; font-size: 22px; font-weight: 500; }
+  .changelog-modal-version {
+    font-family: "Times New Roman", "Iowan Old Style", "Songti SC", serif;
+    font-size: 44px; font-weight: 300; line-height: 1;
+    letter-spacing: -0.02em; color: var(--heading-accent);
+  }
+  .changelog-modal-hairline { border: none; border-top: 1px solid var(--line); margin: 22px 0 6px; }
+  .changelog-modal-body { padding: 0; overflow: auto; flex: 1; }
+  .changelog-modal-body h4 { margin: 12px 0 8px; font-size: 14px; font-weight: 600; }
+  .changelog-modal-body ul { padding-left: 20px; margin: 4px 0 12px; }
+  .changelog-modal-body li { font-size: 13px; line-height: 1.7; }
+  .body-text { margin: 8px 0 4px; font-size: 14px; line-height: 1.7; }
+  .body-meta { margin: 6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.6; }
+  .body-err { color: #dc2626; }
+
+  .changelog-modal-footer {
+    display: flex; justify-content: space-between;
+    align-items: center; gap: 12px; padding: 18px 0 0;
+  }
+  .changelog-modal-footer-right { display: flex; gap: 10px; margin-left: auto; }
+  .changelog-modal-btn {
+    appearance: none; font-family: inherit;
+    border: 1px solid var(--line-strong);
+    background: transparent; color: var(--text);
+    padding: 9px 16px; border-radius: 10px;
+    font-size: 13px; cursor: pointer;
+    transition: opacity 0.15s, background 0.15s;
+  }
+  .changelog-modal-btn:hover { opacity: 0.85; }
+  .changelog-modal-btn.primary {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--panel-strong); padding: 9px 20px; font-weight: 500;
+  }
+  .changelog-modal-btn.subtle {
+    border: none; padding: 6px 0;
+    color: var(--muted); background: transparent; font-size: 12px;
+  }
+  .changelog-modal-btn.subtle:hover { color: var(--text); }
+
+  /* 演示控制台 */
+  .demo-controls {
+    position: fixed; bottom: 16px; left: 16px;
+    display: flex; align-items: center; gap: 8px;
+    z-index: 100; padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid var(--line); border-radius: 12px;
+    box-shadow: var(--shadow); font-size: 11px;
+  }
+  .demo-controls .lbl { color: var(--muted); }
+  .demo-controls button {
+    appearance: none; border: 1px solid var(--line); background: white;
+    padding: 6px 10px; border-radius: 8px; font-size: 11px;
+    cursor: pointer; font-family: inherit;
+  }
+  .demo-controls button:hover { background: var(--accent-soft); }
+  .demo-controls .phase-tag {
+    font-family: ui-monospace, "SF Mono", monospace;
+    background: var(--accent-soft); padding: 4px 8px;
+    border-radius: 6px; color: var(--text);
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="tab-bar">
+    <button class="tab-bar-icon" title="搜索">🔍</button>
+    <div class="tab-bar-tabs">
+      <div class="tab active">Untitled.md</div>
+      <div class="tab">读书笔记.md</div>
+    </div>
+    <button class="tab-bar-icon" title="新建标签">＋</button>
+    <button class="tab-bar-icon" title="源码/渲染切换">⟨⟩</button>
+    <button class="tab-bar-icon" title="打开文件夹">📁</button>
+    <!-- React Portal slot：实际代码里这里挂 <UpdateProgressIndicator /> -->
+    <div class="tab-bar-progress-slot" id="progress-slot"></div>
+    <button class="tab-bar-icon" title="设置/检查更新">⚙</button>
+  </div>
+
+  <div class="editor">
+    <h1>更新流程完整演示</h1>
+    <p>这是模拟的 Penraft 编辑器。当下载在 TabBar 右上角进行时，<strong>整个编辑区域完全可用</strong>——你可以试着点击、选中、编辑下面这段文字：</p>
+    <p contenteditable="true">下载中也能正常编辑这段，这就是 non-modal 设计的目的。Cmd+A 全选试试，或者拖拽文字。</p>
+    <p>跟着右下角"演示控制台"切换流程节点。当前阶段会显示在控制台里。</p>
+  </div>
+</div>
+
+<!-- 中央 modal 渲染节点 -->
+<div id="modal-root"></div>
+
+<!-- 演示控制台 -->
+<div class="demo-controls">
+  <span class="lbl">演示：</span>
+  <span class="phase-tag" id="phase-tag">prompt</span>
+  <button onclick="resetFlow()">↻ 重新开始</button>
+  <button onclick="simulateError()">⚠ 模拟下载失败</button>
+</div>
+
+<script>
+  const TOTAL_BYTES = 12 * 1024 * 1024;
+  let phase = 'prompt';   // prompt | downloading | done | installed | error_ring | error | closed
+  let progress = 0;       // 0..100
+  let timer = null;
+
+  const modalRoot = document.getElementById('modal-root');
+  const slot = document.getElementById('progress-slot');
+  const phaseTag = document.getElementById('phase-tag');
+
+  function fmt(b) {
+    if (b < 1024) return b.toFixed(0) + ' B';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1024 / 1024).toFixed(1) + ' MB';
+  }
+
+  function renderModal() {
+    if (phase === 'prompt') {
+      modalRoot.innerHTML = modalHtml({
+        eyebrow: '更新可用',
+        body: `
+          <h4>新增</h4>
+          <ul>
+            <li>更新弹窗 Minimal Refined 风格</li>
+            <li>Rust strip 减小二进制体积</li>
+          </ul>
+          <h4>修复</h4>
+          <ul>
+            <li>切窗口时偶发的 tab 顺序错乱</li>
+          </ul>`,
+        footer: `
+          <button class="changelog-modal-btn subtle" onclick="dismissUpdate()">跳过本次更新</button>
+          <div class="changelog-modal-footer-right">
+            <button class="changelog-modal-btn" onclick="laterUpdate()">稍后</button>
+            <button class="changelog-modal-btn primary" onclick="startDownload()">立即更新</button>
+          </div>`
+      });
+    } else if (phase === 'installed') {
+      modalRoot.innerHTML = modalHtml({
+        eyebrow: '更新已就绪',
+        body: `
+          <p class="body-text">新版已下载完成，<strong>下次启动时将自动应用</strong>，当前不会中断你的工作。</p>
+          <p class="body-meta">你可以继续使用现在这个版本。Cmd+Q 关闭后再打开 Penraft，即升级到 0.3.2。</p>`,
+        footer: `
+          <button class="changelog-modal-btn subtle" onclick="restartNow()">立即重启使用新版本</button>
+          <div class="changelog-modal-footer-right">
+            <button class="changelog-modal-btn primary" onclick="closeInstalled()">好的</button>
+          </div>`
+      });
+    } else if (phase === 'error') {
+      modalRoot.innerHTML = modalHtml({
+        eyebrow: '更新可用',
+        body: `
+          <p class="body-text body-err">更新失败:连接超时</p>
+          <p class="body-meta">网络不稳定时可能发生。请检查网络后重试。</p>`,
+        footer: `
+          <button class="changelog-modal-btn subtle" onclick="dismissUpdate()">跳过本次更新</button>
+          <div class="changelog-modal-footer-right">
+            <button class="changelog-modal-btn" onclick="laterUpdate()">稍后</button>
+            <button class="changelog-modal-btn primary" onclick="startDownload()">重试</button>
+          </div>`
+      });
+    } else {
+      modalRoot.innerHTML = '';
+    }
+  }
+
+  function modalHtml({ eyebrow, body, footer }) {
+    return `
+      <div class="modal-backdrop" role="presentation">
+        <div class="modal" role="alertdialog" aria-modal="true">
+          <div class="changelog-modal-head">
+            <span class="changelog-modal-eyebrow">${eyebrow}</span>
+            <div class="changelog-modal-title-row">
+              <h3 class="changelog-modal-title">Penraft</h3>
+              <span class="changelog-modal-version">0.3.2</span>
+            </div>
+          </div>
+          <hr class="changelog-modal-hairline" />
+          <div class="changelog-modal-body">${body}</div>
+          <div class="changelog-modal-footer">${footer}</div>
+        </div>
+      </div>`;
+  }
+
+  function renderRing() {
+    if (phase !== 'downloading' && phase !== 'done' && phase !== 'error_ring') {
+      slot.innerHTML = '';
+      return;
+    }
+    const ringPhase = phase === 'error_ring' ? 'error' : phase;
+    const CIRC = 2 * Math.PI * 11;
+    const offset = ringPhase === 'done' ? 0
+                 : CIRC * (1 - progress / 100);
+
+    const icon = ringPhase === 'downloading' ? `
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="11" height="11">
+          <path d="M14 10v2.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 12.5V10"/>
+          <polyline points="5 7 8 10 11 7"/>
+          <line x1="8" y1="10" x2="8" y2="2"/>
+        </svg>`
+      : ringPhase === 'done' ? `
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+          <polyline points="13 4.5 6.5 11 3 7.5"/>
+        </svg>`
+      : `
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" width="12" height="12">
+          <line x1="4" y1="4" x2="12" y2="12"/>
+          <line x1="12" y1="4" x2="4" y2="12"/>
+        </svg>`;
+
+    const tooltipTitle = ringPhase === 'downloading' ? '正在下载更新…'
+                      : ringPhase === 'done' ? 'v0.3.2 下载完成'
+                      : '下载失败';
+    const downloaded = TOTAL_BYTES * (progress / 100);
+    const tooltipMeta = ringPhase === 'downloading'
+        ? `${fmt(downloaded)} / ${fmt(TOTAL_BYTES)}（${Math.round(progress)}%）`
+      : ringPhase === 'done' ? '即将切换到"更新已就绪"提示'
+      : '连接超时，请检查网络后重试';
+
+    slot.innerHTML = `
+      <button class="update-progress" data-phase="${ringPhase}" aria-label="更新下载进度">
+        <svg class="update-progress__ring" viewBox="0 0 26 26">
+          <circle class="update-progress__ring-bg" cx="13" cy="13" r="11"></circle>
+          <circle class="update-progress__ring-fg" cx="13" cy="13" r="11"
+            stroke-dasharray="${CIRC.toFixed(3)}"
+            stroke-dashoffset="${offset.toFixed(3)}"></circle>
+        </svg>
+        <span class="update-progress__icon">${icon}</span>
+        <div class="update-progress__tooltip">
+          <p class="update-progress__tooltip-title">${tooltipTitle}</p>
+          <p class="update-progress__tooltip-meta">${tooltipMeta}</p>
+        </div>
+      </button>`;
+  }
+
+  function render() {
+    renderModal();
+    renderRing();
+    phaseTag.textContent = phase;
+  }
+
+  // === Actions ===
+  function resetFlow() {
+    if (timer) { clearInterval(timer); timer = null; }
+    phase = 'prompt'; progress = 0; render();
+  }
+  function dismissUpdate() { phase = 'closed'; render(); }
+  function laterUpdate() { phase = 'closed'; render(); }
+  function closeInstalled() { phase = 'closed'; render(); }
+  function restartNow() { alert('真实行为：调用 @tauri-apps/plugin-process 的 relaunch()，立刻重启进入新版本'); }
+
+  function startDownload() {
+    if (timer) clearInterval(timer);
+    phase = 'downloading'; progress = 0; render();
+    timer = setInterval(() => {
+      progress += Math.random() * 5 + 2;  // 每 200ms 加 2~7%，总耗时约 4~6s
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(timer); timer = null;
+        renderRing();
+        // 进入 done 态短暂展示绿勾
+        phase = 'done';
+        render();
+        setTimeout(() => {
+          phase = 'installed'; progress = 0; render();
+        }, 700);
+      } else {
+        renderRing();
+        phaseTag.textContent = phase + ' ' + Math.round(progress) + '%';
+      }
+    }, 200);
+  }
+
+  function simulateError() {
+    if (timer) clearInterval(timer);
+    phase = 'error_ring'; progress = 38; render();
+    setTimeout(() => {
+      phase = 'error'; progress = 0; render();
+    }, 2000);
+  }
+
+  // 初始：默认弹"更新可用"卡片
+  render();
+</script>
+</body>
+</html>
