@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Penraft · Download Toast Preview</title>
+<style>
+  :root {
+    --bg: #f5f3ef;
+    --bg-2: #efece6;
+    --surface: #fbfaf8;
+    --surface-2: #ffffff;
+    --ink: #24201a;
+    --ink-strong: #111827;
+    --muted: #7c746a;
+    --muted-2: #a49b90;
+    --line: #e8e2d8;
+    --line-strong: #d8d0c2;
+    --accent: #22c55e;
+    --radius-sm: 10px;
+    --radius: 16px;
+    --radius-lg: 22px;
+    --shadow-card: 0 1px 0 rgba(28, 22, 16, 0.04), 0 6px 18px rgba(28, 22, 16, 0.06);
+    --shadow-float: 0 18px 50px rgba(28, 22, 16, 0.14);
+    --ff-sans: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--ff-sans);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 24px;
+  }
+
+  /* —— 模拟 hero 区域 —— */
+  .demo-hero {
+    text-align: center;
+    max-width: 720px;
+  }
+  .demo-hero .eyebrow {
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .demo-hero h1 {
+    font-size: 56px;
+    line-height: 1.1;
+    margin: 0 0 18px;
+    color: var(--ink-strong);
+    letter-spacing: -0.02em;
+  }
+  .demo-hero p {
+    font-size: 18px;
+    color: var(--muted);
+    margin: 0 0 32px;
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 28px;
+    background: var(--ink-strong);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    box-shadow: var(--shadow-card);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-float); }
+  .btn-primary:active { transform: translateY(0); }
+
+  /* —— 右上角 Toast —— */
+  .toast-stack {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+  .toast {
+    pointer-events: auto;
+    width: 320px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-float);
+    overflow: hidden;
+    transform: translateX(calc(100% + 30px));
+    opacity: 0;
+    transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  }
+  .toast.is-visible {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  .toast.is-leaving {
+    transform: translateX(calc(100% + 30px));
+    opacity: 0;
+  }
+
+  .toast-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 14px 12px;
+  }
+  .toast-icon {
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .toast-icon svg { width: 18px; height: 18px; }
+  .toast-content { flex: 1; min-width: 0; }
+  .toast-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-strong);
+    margin: 0 0 2px;
+    line-height: 1.3;
+  }
+  .toast-meta {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .toast-close {
+    flex: 0 0 24px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--muted-2);
+    cursor: pointer;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+    margin-top: -2px;
+  }
+  .toast-close:hover { background: var(--bg-2); color: var(--ink); }
+  .toast-close svg { width: 14px; height: 14px; }
+
+  .toast-progress {
+    height: 2px;
+    background: rgba(28, 22, 16, 0.05);
+    overflow: hidden;
+  }
+  .toast-progress-bar {
+    height: 100%;
+    background: var(--accent);
+    width: 100%;
+    transform-origin: left center;
+    animation: toast-progress 5s linear forwards;
+  }
+  @keyframes toast-progress {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+  }
+
+  @media (max-width: 480px) {
+    .toast-stack { top: 12px; right: 12px; left: 12px; }
+    .toast { width: auto; }
+  }
+
+  .hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<section class="demo-hero">
+  <p class="eyebrow">PENRAFT · DOWNLOAD TOAST PREVIEW</p>
+  <h1>右上角下载提示样稿</h1>
+  <p>点击下方按钮，看右上角的 toast 行为</p>
+  <button id="trigger" class="btn-primary" type="button">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 10 12 15 17 10" />
+      <line x1="12" y1="15" x2="12" y2="3" />
+    </svg>
+    下载 Mac 版
+  </button>
+</section>
+
+<div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+
+<p class="hint">样稿 · 实际接入会把 toast 触发逻辑嵌入官网 script.js</p>
+
+<script>
+  const TOAST_TTL = 5000;
+  const stack = document.getElementById('toastStack');
+
+  function showDownloadToast({ filename = 'Penraft-mac-arm64.dmg', archLabel = 'Apple Silicon' } = {}) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML = `
+      <div class="toast-body">
+        <div class="toast-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <div class="toast-content">
+          <p class="toast-title">下载已开始</p>
+          <p class="toast-meta" title="${filename}">${filename} · ${archLabel}</p>
+        </div>
+        <button class="toast-close" type="button" aria-label="关闭">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <div class="toast-progress"><div class="toast-progress-bar"></div></div>
+    `;
+    stack.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => toast.classList.add('is-visible'));
+    });
+
+    const dismiss = () => {
+      if (toast.dataset.leaving === '1') return;
+      toast.dataset.leaving = '1';
+      toast.classList.add('is-leaving');
+      toast.classList.remove('is-visible');
+      toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    };
+
+    toast.querySelector('.toast-close').addEventListener('click', dismiss);
+    setTimeout(dismiss, TOAST_TTL);
+  }
+
+  document.getElementById('trigger').addEventListener('click', () => {
+    showDownloadToast({
+      filename: 'Penraft-mac-arm64.dmg',
+      archLabel: 'Apple Silicon',
+    });
+  });
+</script>
+</body>
+</html>

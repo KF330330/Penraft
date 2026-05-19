@@ -1,6 +1,6 @@
 import MarkdownReadOnly from "./MarkdownReadOnly";
 
-type Phase = "idle" | "downloading" | "error";
+type Phase = "idle" | "downloading" | "installed" | "error";
 
 interface PromptProps {
   mode: "prompt";
@@ -12,6 +12,8 @@ interface PromptProps {
   onLater: () => void;
   onUpdate: () => void;
   onDismiss: () => void;
+  onClose: () => void;
+  onRestartNow: () => void;
 }
 
 interface PostUpdateProps {
@@ -30,10 +32,18 @@ function formatBytes(n: number): string {
 }
 
 export default function ChangelogModal(props: Props) {
-  const eyebrow = props.mode === "prompt" ? "更新可用" : "已完成更新";
+  const isInstalled = props.mode === "prompt" && props.phase === "installed";
+  const eyebrow =
+    props.mode === "prompt"
+      ? isInstalled
+        ? "更新已就绪"
+        : "更新可用"
+      : "已完成更新";
   const ariaTitle =
     props.mode === "prompt"
-      ? `Penraft ${props.version} 可用`
+      ? isInstalled
+        ? `Penraft ${props.version} 已就绪`
+        : `Penraft ${props.version} 可用`
       : `已更新到 Penraft ${props.version}`;
 
   const notes = (props.notes ?? "").trim();
@@ -62,7 +72,16 @@ export default function ChangelogModal(props: Props) {
         <hr className="changelog-modal-hairline" />
 
         <div className="changelog-modal-body">
-          {notes ? (
+          {isInstalled ? (
+            <>
+              <p className="changelog-modal-installed-text">
+                新版已下载完成，<strong>下次启动时将自动应用</strong>，当前不会中断你的工作。
+              </p>
+              <p className="changelog-modal-installed-meta">
+                你可以继续使用现在这个版本。Cmd+Q 关闭后再打开 Penraft，即升级到 {props.version}。
+              </p>
+            </>
+          ) : notes ? (
             <MarkdownReadOnly value={notes} />
           ) : (
             <div className="changelog-modal-empty">本次更新无说明。</div>
@@ -97,7 +116,18 @@ export default function ChangelogModal(props: Props) {
 
         <div className="changelog-modal-footer">
           {props.mode === "prompt" ? (
-            props.phase === "downloading" ? null : (
+            props.phase === "downloading" ? null : isInstalled ? (
+              <>
+                <button className="changelog-modal-btn subtle" onClick={props.onRestartNow}>
+                  立即重启使用新版本
+                </button>
+                <div className="changelog-modal-footer-right">
+                  <button className="changelog-modal-btn primary" onClick={props.onClose}>
+                    好的
+                  </button>
+                </div>
+              </>
+            ) : (
               <>
                 <button className="changelog-modal-btn subtle" onClick={props.onDismiss}>
                   跳过本次更新

@@ -227,12 +227,17 @@ export function dismissVersion(version: string) {
 
 /**
  * 用户主动点了"立即更新"。
- * 下载并安装；完成后重启。任何阶段失败都抛错给 caller 显示。
- * 安装前会把本次更新的 notes 落盘，relaunch 后由 consumePendingChangelogForCurrentVersion 读出弹窗。
+ * 下载并安装到磁盘；完成后 *不* 自动重启 —— 改由 onInstalled 回调通知 caller 切到
+ * "更新已就绪"弹窗态，用户可以继续工作，下次手动启动 App 即用新版本。
+ * 想立即重启的用户可调用 restartNow()。
+ *
+ * 安装前会把本次更新的 notes 落盘，下次启动时由 consumePendingChangelogForCurrentVersion
+ * 读出弹 postUpdate 窗。
  */
 export async function applyUpdate(
   pending: PendingUpdate,
   onProgress?: (downloaded: number, total: number | null) => void,
+  onInstalled?: () => void,
 ): Promise<void> {
   persistPendingChangelog(pending.version, pending.notes);
   let downloaded = 0;
@@ -254,6 +259,13 @@ export async function applyUpdate(
   });
   // 成功安装：清 state（下次启动 manifest === appVersion 时也会自清，这里只是 best effort）
   clearState();
+  if (onInstalled) onInstalled();
+}
+
+/**
+ * 主动重启 App 应用新版本。供"立即重启使用新版本"次级链接调用。
+ */
+export async function restartNow(): Promise<void> {
   await relaunch();
 }
 

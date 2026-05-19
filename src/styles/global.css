@@ -857,6 +857,20 @@ button {
   padding: 8px 0 16px;
 }
 
+.changelog-modal-installed-text {
+  margin: 8px 0 4px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.changelog-modal-installed-meta {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 .changelog-modal-btn {
   appearance: none;
   font-family: inherit;

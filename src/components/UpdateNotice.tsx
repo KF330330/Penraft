@@ -4,13 +4,14 @@ import {
   snooze,
   dismissVersion,
   applyUpdate,
+  restartNow,
   consumePendingChangelogForCurrentVersion,
   type PendingUpdate,
   type PendingChangelog,
 } from "../lib/updater";
 import ChangelogModal from "./ChangelogModal";
 
-type Phase = "idle" | "downloading" | "error";
+type Phase = "idle" | "downloading" | "installed" | "error";
 
 export default function UpdateNotice() {
   // 触发点 B：装完后首次启动时，pendingChangelog 命中即弹（优先级最高）
@@ -92,12 +93,34 @@ export default function UpdateNotice() {
     setPhase("downloading");
     setErrMsg(null);
     try {
-      await applyUpdate(pending, (downloaded, total) => {
-        setProgress({ downloaded, total });
-      });
+      await applyUpdate(
+        pending,
+        (downloaded, total) => {
+          setProgress({ downloaded, total });
+        },
+        () => {
+          // 下载安装完成：切到"更新已就绪"提示态，不自动重启
+          setPhase("installed");
+        },
+      );
     } catch (e) {
       setPhase("error");
       setErrMsg(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  // installed 态下用户点"好的"：仅关闭弹窗，App 继续运行。
+  // 不调 dismissVersion —— 因为新版 bundle 已替换到磁盘，下次启动自动应用；
+  // 而下次启动时 checkForUpdate 会因 appVersion === manifest.version 而 clearState。
+  const onClose = () => {
+    setPending(null);
+  };
+
+  const onRestartNow = async () => {
+    try {
+      await restartNow();
+    } catch {
+      /* silent */
     }
   };
 
@@ -112,6 +135,8 @@ export default function UpdateNotice() {
       onLater={onLater}
       onUpdate={onUpdate}
       onDismiss={onDismiss}
+      onClose={onClose}
+      onRestartNow={onRestartNow}
     />
   );
 }

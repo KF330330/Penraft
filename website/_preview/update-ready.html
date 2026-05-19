@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>Penraft · 更新已就绪 预览</title>
+<style>
+  :root {
+    --panel: #fbfaf8;
+    --panel-strong: #ffffff;
+    --line: rgba(36, 30, 21, 0.12);
+    --line-strong: rgba(36, 30, 21, 0.18);
+    --text: #24201a;
+    --muted: #7c746a;
+    --muted-2: #a49b90;
+    --accent: #111827;
+    --heading-accent: #b45309;
+    --backdrop: rgba(25, 21, 17, 0.36);
+    --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
+    --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    color: var(--text);
+    background:
+      radial-gradient(ellipse at top, rgba(180, 83, 9, 0.05), transparent 60%),
+      #f5f3ef;
+    min-height: 100vh;
+  }
+
+  .fake-app {
+    padding: 60px 80px;
+    color: var(--muted);
+  }
+  .fake-app h1 {
+    font-size: 28px;
+    color: var(--text);
+    margin: 0 0 12px;
+    font-weight: 500;
+  }
+  .fake-app p { line-height: 1.7; max-width: 580px; }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--backdrop);
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    z-index: 50;
+  }
+
+  .modal {
+    width: min(720px, 94vw);
+    max-height: 90vh;
+    overflow: auto;
+    border-radius: 20px;
+    background: var(--panel-strong);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--line);
+  }
+  .changelog-modal {
+    width: min(460px, 94vw);
+    display: flex;
+    flex-direction: column;
+    max-height: 80vh;
+    background: var(--panel-strong);
+    border-radius: 20px;
+    padding: 32px 32px 24px;
+  }
+
+  .changelog-modal-head {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .changelog-modal-eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-2);
+    font-weight: 500;
+  }
+  .changelog-modal-title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .changelog-modal-title {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.01em;
+  }
+  .changelog-modal-version {
+    font-family: "Times New Roman", "Iowan Old Style", "Songti SC", serif;
+    font-size: 44px;
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--heading-accent);
+  }
+
+  .changelog-modal-hairline {
+    border: none;
+    border-top: 1px solid var(--line);
+    margin: 22px 0 6px;
+  }
+
+  .changelog-modal-body {
+    padding: 0;
+    overflow: auto;
+    flex: 1;
+  }
+  .body-text {
+    margin: 8px 0 4px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  .body-meta {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .changelog-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 0 0;
+  }
+  .changelog-modal-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  .changelog-modal-btn {
+    appearance: none;
+    font-family: inherit;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--text);
+    padding: 9px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: opacity 0.15s ease, background 0.15s ease;
+  }
+  .changelog-modal-btn:hover { opacity: 0.85; }
+  .changelog-modal-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--panel-strong);
+    padding: 9px 20px;
+    font-weight: 500;
+  }
+  .changelog-modal-btn.primary:hover { opacity: 0.9; }
+  .changelog-modal-btn.subtle {
+    border: none;
+    padding: 6px 0;
+    color: var(--muted);
+    background: transparent;
+    font-size: 12px;
+  }
+  .changelog-modal-btn.subtle:hover { color: var(--text); }
+
+  .reopen-btn {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="fake-app">
+  <h1>Untitled · 一些笔记内容</h1>
+  <p>这块只是为了让你直观看到弹窗背后被 backdrop 压暗后是什么效果。点击「好的」后会消失，下方按钮可以重新唤起。</p>
+  <p>真实 App 里背后是 Penraft 编辑器，用户当前在编辑 markdown。我们要让弹窗"出现一次说清楚就走"，不打扰这个编辑状态。</p>
+</div>
+
+<div class="modal-backdrop" id="backdrop" role="presentation">
+  <div class="modal changelog-modal" role="alertdialog" aria-modal="true" aria-labelledby="t" onclick="event.stopPropagation()">
+    <div class="changelog-modal-head">
+      <span class="changelog-modal-eyebrow">更新已就绪</span>
+      <div class="changelog-modal-title-row">
+        <h3 id="t" class="changelog-modal-title">Penraft</h3>
+        <span class="changelog-modal-version">0.3.2</span>
+      </div>
+    </div>
+
+    <hr class="changelog-modal-hairline" />
+
+    <div class="changelog-modal-body">
+      <p class="body-text">新版已下载完成，<strong>下次启动时将自动应用</strong>，当前不会中断你的工作。</p>
+      <p class="body-meta">你可以继续使用现在这个版本。Cmd+Q 关闭后再打开 Penraft，即升级到 0.3.2。</p>
+    </div>
+
+    <div class="changelog-modal-footer">
+      <button class="changelog-modal-btn subtle" onclick="alert('真实行为：调用 @tauri-apps/plugin-process 的 relaunch()')">
+        立即重启使用新版本
+      </button>
+      <div class="changelog-modal-footer-right">
+        <button class="changelog-modal-btn primary" onclick="document.getElementById('backdrop').style.display='none';document.getElementById('reopen').style.display='block'">
+          好的
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button id="reopen" class="reopen-btn" style="display:none" onclick="document.getElementById('backdrop').style.display='grid';this.style.display='none'">
+  重新打开弹窗预览
+</button>
+
+</body>
+</html>
