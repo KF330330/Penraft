@@ -747,23 +747,63 @@ button {
   overflow: hidden;
 }
 
-/* ===== Changelog modal ===== */
+/* ===== Changelog modal — Minimal Refined ===== */
 .changelog-modal {
+  width: min(460px, 94vw);
   display: flex;
   flex-direction: column;
   max-height: 80vh;
-  background: var(--bg);
+  background: var(--panel-strong);
+  border-radius: 20px;
+  padding: 32px 32px 24px;
 }
 
-.changelog-modal-header {
-  padding: 18px 22px 6px;
-  font-size: 16px;
-  font-weight: 600;
+.changelog-modal-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.changelog-modal-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  font-weight: 500;
+}
+
+.changelog-modal-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.changelog-modal-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
   color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+.changelog-modal-version {
+  font-family: "Times New Roman", "Iowan Old Style", "Songti SC", serif;
+  font-size: 44px;
+  font-weight: 300;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--heading-accent);
+}
+
+.changelog-modal-hairline {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 22px 0 6px;
 }
 
 .changelog-modal-body {
-  padding: 0 22px;
+  padding: 0;
   overflow: auto;
   flex: 1;
 }
@@ -772,19 +812,19 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 10px;
-  padding: 14px 22px 18px;
-  border-top: 1px solid var(--line);
+  gap: 12px;
+  padding: 14px 0 0;
 }
 
 .changelog-modal-footer-right {
   display: flex;
+  align-items: center;
   gap: 10px;
   margin-left: auto;
 }
 
 .changelog-modal-progress {
-  padding: 4px 22px 14px;
+  padding: 4px 0 10px;
   color: var(--muted);
   font-size: 12px;
 }
@@ -805,7 +845,7 @@ button {
 }
 
 .changelog-modal-error {
-  padding: 0 22px 12px;
+  padding: 0 0 12px;
   color: #d97706;
   font-size: 12px;
   word-break: break-all;
@@ -819,40 +859,51 @@ button {
 
 .changelog-modal-btn {
   appearance: none;
-  border: 1px solid var(--line);
+  font-family: inherit;
+  border: 1px solid var(--line-strong);
   background: transparent;
   color: var(--text);
-  padding: 7px 14px;
-  border-radius: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
   font-size: 13px;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
   cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
 }
 
 .changelog-modal-btn:hover {
-  background: var(--line);
+  opacity: 0.85;
 }
 
 .changelog-modal-btn.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
-  font-weight: 600;
+  color: var(--panel-strong);
+  padding: 9px 20px;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .changelog-modal-btn.primary {
+  color: #1f1d1a;
 }
 
 .changelog-modal-btn.primary:hover {
-  background: var(--accent);
   opacity: 0.9;
 }
 
 .changelog-modal-btn.subtle {
-  border-color: transparent;
+  border: none;
+  padding: 6px 0;
   color: var(--muted);
   background: transparent;
+  font-size: 12px;
 }
 
 .changelog-modal-btn.subtle:hover {
-  background: var(--line);
   color: var(--text);
+  background: transparent;
+  opacity: 1;
 }
 
 /* Read-only Milkdown 视图样式（modal 里展示更新说明用） */
