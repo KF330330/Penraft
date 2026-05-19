@@ -646,8 +646,8 @@ A pen that just works.`,
   //   - 接口不存在（Safari/Firefox）→ 默认 ARM（2020 年起 Mac 全是 ARM），同时展示"Intel？"切换链接
   // 非 macOS 用户不动 href（保留默认 ARM dmg）
   const DOWNLOAD_URLS = {
-    arm: 'https://github.com/KF330330/Penraft/releases/latest/download/Penraft_0.3.0_aarch64.dmg',
-    x86: 'https://github.com/KF330330/Penraft/releases/latest/download/Penraft_0.3.0_x86_64.dmg',
+    arm: 'https://github.com/KF330330/Penraft/releases/latest/download/Penraft-mac-arm64.dmg',
+    x86: 'https://github.com/KF330330/Penraft/releases/latest/download/Penraft-mac-x86_64.dmg',
   };
 
   function isMac() {
