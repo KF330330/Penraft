@@ -30,7 +30,8 @@ function formatBytes(n: number): string {
 }
 
 export default function ChangelogModal(props: Props) {
-  const title =
+  const eyebrow = props.mode === "prompt" ? "更新可用" : "已完成更新";
+  const ariaTitle =
     props.mode === "prompt"
       ? `Penraft ${props.version} 可用`
       : `已更新到 Penraft ${props.version}`;
@@ -46,9 +47,19 @@ export default function ChangelogModal(props: Props) {
         aria-labelledby="changelog-modal-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <div id="changelog-modal-title" className="changelog-modal-header">
-          {title}
+        <div className="changelog-modal-head">
+          <span className="changelog-modal-eyebrow">{eyebrow}</span>
+          <div className="changelog-modal-title-row">
+            <h3 id="changelog-modal-title" className="changelog-modal-title">
+              Penraft
+            </h3>
+            <span className="changelog-modal-version" aria-label={ariaTitle}>
+              {props.version}
+            </span>
+          </div>
         </div>
+
+        <hr className="changelog-modal-hairline" />
 
         <div className="changelog-modal-body">
           {notes ? (
