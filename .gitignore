@@ -39,3 +39,6 @@ id_rsa.pub
 # Internal ops docs (kept locally only — see ~/Penraft-local-sops-backup/)
 docs/ANALYTICS_UPDATER_SOP.md
 docs/DEPLOY_SOP.md
+
+# Local-only Claude operational context (server IPs, paths, ops details)
+CLAUDE.local.md

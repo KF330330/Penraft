@@ -9,8 +9,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | 路径 | 是什么 | 部署目标 |
 |---|---|---|
 | `src/` + `src-tauri/` | **Penraft 桌面 App**（Tauri 2，主产品） | 用户机器（macOS/Windows/Linux），通过 GitHub Releases 分发 |
-| `website/` | 官网静态站（HTML/CSS/JS） | `penraft.com`（Server 2 `47.86.240.83:/opt/penraft-website`） |
-| `backend/` | 埋点 + dashboard 后端（Fastify + better-sqlite3，独立 Node 项目） | `api.penraft.com`（Server 2 docker 容器 `penraft-backend`） |
+| `website/` | 官网静态站（HTML/CSS/JS） | `penraft.com`（生产服务器详情见 `CLAUDE.local.md`） |
+| `backend/` | 埋点 + dashboard 后端（Fastify + better-sqlite3，独立 Node 项目） | `api.penraft.com`（docker 容器 `penraft-backend`） |
 | `docs/` | 架构 / 部署 / SOP 文档 | — |
 
 **这三块是耦合的**：App 和官网都把数据上报到 backend；backend 的接口契约同时绑定这两个客户端。改 backend 的字段或路径前先确认另两边怎么用。
@@ -77,10 +77,10 @@ backend 的三张表（`web_events` / `devices` / `device_pings`）schema 在 `b
 
 ## 生产基础设施
 
-服务器、DNS、SSL 证书、监控、备份的所有细节在仓库外的 `../deploy/1SERVER_INFO.md`（敏感信息，不入 Git）。Penraft 当前部署在 Server 2 (`47.86.240.83`)，DNS 走 Cloudflare 灰云（DNS only），证书走 Let's Encrypt（cert-name `penraft` 和 `api.penraft`）。改服务器相关的东西先读那份文档。
+服务器、DNS、SSL 证书、监控、备份等运维细节不入此公开文件。具体地址、凭据、外部文档路径见本地 `CLAUDE.local.md`（已 gitignore）。改服务器相关的东西前先读那份。
 
 ## 用户工作规则（来自项目根全局规则）
 
 - 改代码只动被要求的范围，**不要顺手清理**周边代码逻辑
 - 单文件 > 2000 行时拆 `_INDEX.md + _SUMMARY.md + 分块`
-- 修 bug / 部署 / 改服务器前，先翻 `~/Nutstore_Files/my_nutstore/520-program/cc-failure-cases/` 失败案例库
+- 修 bug / 部署 / 改服务器前，先翻失败案例库（位置见全局 `~/.claude/CLAUDE.md` 第 12 条）
