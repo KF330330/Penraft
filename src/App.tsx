@@ -9,6 +9,7 @@ import { SearchPanel } from "./components/SearchPanel";
 import { TabBar, type TabBarHandle } from "./components/TabBar";
 import { ThemePicker } from "./components/ThemePicker";
 import UpdateNotice from "./components/UpdateNotice";
+import UpdateDebugPanel from "./components/UpdateDebugPanel";
 import {
   createNote,
   deleteNote,
@@ -627,6 +628,7 @@ export default function App() {
 
       {toast ? <div className="toast">{toast}</div> : null}
       <UpdateNotice />
+      <UpdateDebugPanel />
     </>
   );
 }
