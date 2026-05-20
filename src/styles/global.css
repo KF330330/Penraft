@@ -1008,3 +1008,80 @@ button {
   z-index: 60;
   font-size: 13px;
 }
+
+/* ===== Update Progress Indicator (TabBar 内的下载进度小圆环) ===== */
+.tab-bar-progress-slot:empty { display: none; }
+
+.update-progress {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  cursor: default;
+  border-radius: 8px;
+  padding: 0;
+  color: var(--muted);
+}
+.update-progress:hover { background: var(--accent-soft); }
+
+.update-progress__ring {
+  width: 26px;
+  height: 26px;
+  transform: rotate(-90deg);
+}
+.update-progress__ring-bg {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 2;
+}
+.update-progress__ring-fg {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.35s ease, stroke 0.2s ease;
+}
+.update-progress[data-phase="downloading"] .update-progress__ring-fg { stroke: var(--text); }
+.update-progress[data-phase="done"] .update-progress__ring-fg { stroke: #22c55e; }
+.update-progress[data-phase="error"] .update-progress__ring-fg { stroke: #dc2626; }
+
+.update-progress__icon {
+  position: absolute;
+  pointer-events: none;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+.update-progress[data-phase="done"] .update-progress__icon { color: #22c55e; }
+.update-progress[data-phase="error"] .update-progress__icon { color: #dc2626; }
+
+.update-progress__tooltip {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  min-width: 200px;
+  padding: 10px 12px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  display: none;
+  pointer-events: none;
+  z-index: 85;
+  text-align: left;
+}
+.update-progress:hover .update-progress__tooltip { display: block; }
+.update-progress__tooltip-title {
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+.update-progress__tooltip-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.5;
+}

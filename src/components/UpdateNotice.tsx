@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   scheduleChecks,
   snooze,
@@ -10,8 +11,11 @@ import {
   type PendingChangelog,
 } from "../lib/updater";
 import ChangelogModal from "./ChangelogModal";
+import UpdateProgressIndicator from "./UpdateProgressIndicator";
 
-type Phase = "idle" | "downloading" | "installed" | "error";
+type Phase = "idle" | "downloading" | "done" | "installed" | "error";
+
+const DONE_FLASH_MS = 700;
 
 export default function UpdateNotice() {
   // 触发点 B：装完后首次启动时，pendingChangelog 命中即弹（优先级最高）
@@ -91,6 +95,7 @@ export default function UpdateNotice() {
 
   const onUpdate = async () => {
     setPhase("downloading");
+    setProgress({ downloaded: 0, total: null });
     setErrMsg(null);
     try {
       await applyUpdate(
@@ -99,8 +104,11 @@ export default function UpdateNotice() {
           setProgress({ downloaded, total });
         },
         () => {
-          // 下载安装完成：切到"更新已就绪"提示态，不自动重启
-          setPhase("installed");
+          // 下载安装完成：先短暂展示绿勾，然后再弹"更新已就绪"中央卡片
+          setPhase("done");
+          setTimeout(() => {
+            setPhase("installed");
+          }, DONE_FLASH_MS);
         },
       );
     } catch (e) {
@@ -109,7 +117,7 @@ export default function UpdateNotice() {
     }
   };
 
-  // installed 态下用户点"好的"：仅关闭弹窗，App 继续运行。
+  // installed 态下用户点"稍后"：仅关闭弹窗，App 继续运行。
   // 不调 dismissVersion —— 因为新版 bundle 已替换到磁盘，下次启动自动应用；
   // 而下次启动时 checkForUpdate 会因 appVersion === manifest.version 而 clearState。
   const onClose = () => {
@@ -124,13 +132,29 @@ export default function UpdateNotice() {
     }
   };
 
+  // downloading / done 阶段：不渲染中央 modal，把圆环 portal 到 TabBar 的 slot
+  if (phase === "downloading" || phase === "done") {
+    const slot = typeof document !== "undefined"
+      ? document.getElementById("update-progress-slot")
+      : null;
+    if (!slot) return null;
+    return createPortal(
+      <UpdateProgressIndicator
+        phase={phase}
+        downloaded={progress.downloaded}
+        total={progress.total}
+      />,
+      slot,
+    );
+  }
+
+  // idle / installed / error 阶段：渲染中央 ChangelogModal
   return (
     <ChangelogModal
       mode="prompt"
       version={pending.version}
       notes={pending.notes}
       phase={phase}
-      progress={progress}
       errMsg={errMsg}
       onLater={onLater}
       onUpdate={onUpdate}

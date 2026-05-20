@@ -274,6 +274,8 @@ export const TabBar = forwardRef<TabBarHandle, TabBarProps>(function TabBar({
         <FolderOpen size={16} />
       </button>
 
+      <div id="update-progress-slot" className="tab-bar-progress-slot" />
+
       <ThemePicker theme={theme} onChange={onThemeChange} />
 
       {menu ? (

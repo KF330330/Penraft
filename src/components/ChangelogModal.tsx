@@ -1,13 +1,12 @@
 import MarkdownReadOnly from "./MarkdownReadOnly";
 
-type Phase = "idle" | "downloading" | "installed" | "error";
+type Phase = "idle" | "installed" | "error";
 
 interface PromptProps {
   mode: "prompt";
   version: string;
   notes?: string;
   phase: Phase;
-  progress: { downloaded: number; total: number | null };
   errMsg: string | null;
   onLater: () => void;
   onUpdate: () => void;
@@ -24,12 +23,6 @@ interface PostUpdateProps {
 }
 
 type Props = PromptProps | PostUpdateProps;
-
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-}
 
 export default function ChangelogModal(props: Props) {
   const isInstalled = props.mode === "prompt" && props.phase === "installed";
@@ -74,11 +67,9 @@ export default function ChangelogModal(props: Props) {
         <div className="changelog-modal-body">
           {isInstalled ? (
             <>
-              <p className="changelog-modal-installed-text">
-                新版已下载完成，<strong>下次启动时将自动应用</strong>，当前不会中断你的工作。
-              </p>
+              <p className="changelog-modal-installed-text">新版已下载完成。</p>
               <p className="changelog-modal-installed-meta">
-                你可以继续使用现在这个版本。Cmd+Q 关闭后再打开 Penraft，即升级到 {props.version}。
+                重启即可使用，或下次启动时自动应用。
               </p>
             </>
           ) : notes ? (
@@ -88,45 +79,21 @@ export default function ChangelogModal(props: Props) {
           )}
         </div>
 
-        {props.mode === "prompt" && props.phase === "downloading" ? (
-          <div className="changelog-modal-progress">
-            {(() => {
-              const { downloaded, total } = props.progress;
-              const pct = total ? Math.min(100, Math.round((downloaded / total) * 100)) : null;
-              return (
-                <>
-                  <div>
-                    正在下载…{" "}
-                    {pct != null
-                      ? `${pct}%（${formatBytes(downloaded)} / ${formatBytes(total!)}）`
-                      : formatBytes(downloaded)}
-                  </div>
-                  <div className="changelog-modal-progress-bar">
-                    <span style={{ width: pct != null ? `${pct}%` : "40%" }} />
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        ) : null}
-
         {props.mode === "prompt" && props.phase === "error" && props.errMsg ? (
           <div className="changelog-modal-error">更新失败：{props.errMsg}</div>
         ) : null}
 
         <div className="changelog-modal-footer">
           {props.mode === "prompt" ? (
-            props.phase === "downloading" ? null : isInstalled ? (
-              <>
-                <button className="changelog-modal-btn subtle" onClick={props.onRestartNow}>
-                  立即重启使用新版本
+            isInstalled ? (
+              <div className="changelog-modal-footer-right">
+                <button className="changelog-modal-btn" onClick={props.onClose}>
+                  稍后
                 </button>
-                <div className="changelog-modal-footer-right">
-                  <button className="changelog-modal-btn primary" onClick={props.onClose}>
-                    好的
-                  </button>
-                </div>
-              </>
+                <button className="changelog-modal-btn primary" onClick={props.onRestartNow}>
+                  立即重启
+                </button>
+              </div>
             ) : (
               <>
                 <button className="changelog-modal-btn subtle" onClick={props.onDismiss}>
