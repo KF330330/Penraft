@@ -1004,26 +1004,29 @@ button {
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 8px;
-  text-align: center;
   overflow-x: auto;
   line-height: normal;
 }
 
 .penraft-mermaid .penraft-mermaid-svg {
-  display: inline-block;
+  display: block;
+  width: 100%;
   max-width: 100%;
+  margin: 0 auto;
   cursor: pointer;
 }
 
 .penraft-mermaid[data-expanded="true"] .penraft-mermaid-svg {
   cursor: default;
-  display: block;
   margin-top: 4px;
 }
 
 .penraft-mermaid svg {
+  display: block;
+  width: 100%;
   max-width: 100%;
   height: auto;
+  margin: 0 auto;
 }
 
 .penraft-mermaid--selected {

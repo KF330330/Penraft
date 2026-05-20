@@ -20,6 +20,7 @@ async function getMermaid(): Promise<MermaidModule> {
         startOnLoad: false,
         securityLevel: "strict",
         theme: detectTheme(),
+        flowchart: { useMaxWidth: true },
       });
       return mermaid;
     });
@@ -84,6 +85,7 @@ export function createMermaidNodeView(
         startOnLoad: false,
         securityLevel: "strict",
         theme: detectTheme(),
+        flowchart: { useMaxWidth: true },
       });
       const id = `penraft-mermaid-${++renderCounter}`;
       const { svg } = await mermaid.render(id, trimmed);
