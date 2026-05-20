@@ -994,6 +994,58 @@ button {
   text-decoration: underline;
 }
 
+/* ===== Mermaid 图渲染 ===== */
+.wysiwyg-column .ProseMirror .penraft-mermaid,
+.markdown-readonly .ProseMirror .penraft-mermaid {
+  display: block;
+  margin: 0 0 16px;
+  padding: 16px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-align: center;
+  overflow-x: auto;
+  line-height: normal;
+}
+
+.penraft-mermaid .penraft-mermaid-svg {
+  display: inline-block;
+  max-width: 100%;
+}
+
+.penraft-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.penraft-mermaid--selected {
+  outline: 2px solid var(--link);
+  outline-offset: -2px;
+}
+
+.penraft-mermaid-error-msg {
+  color: #c0392b;
+  font-size: 0.9em;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.wysiwyg-column .ProseMirror .penraft-mermaid pre.penraft-mermaid-error-source,
+.markdown-readonly .ProseMirror .penraft-mermaid pre.penraft-mermaid-error-source {
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-block-bg);
+  color: var(--text);
+  padding: 12px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.85em;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+}
+
 /* ===== Toast ===== */
 .toast {
   position: fixed;

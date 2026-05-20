@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx, editorViewCtx } from "@milkdown/core";
+import { Editor, rootCtx, defaultValueCtx, editorViewOptionsCtx, editorViewCtx, prosePluginsCtx } from "@milkdown/core";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { gfm } from "@milkdown/preset-gfm";
@@ -8,6 +8,7 @@ import {
   frontmatterToYamlFence,
   installAnchorClickHandler,
 } from "./markdown-utils";
+import { mermaidProseMirrorPlugin } from "./mermaid-plugin";
 
 interface Props {
   value: string;
@@ -23,6 +24,7 @@ function Inner({ value }: Props) {
           ...prev,
           editable: () => false,
         }));
+        ctx.update(prosePluginsCtx, (prev) => [...prev, mermaidProseMirrorPlugin]);
       })
       .use(commonmark)
       .use(gfm)
