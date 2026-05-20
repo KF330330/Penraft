@@ -260,12 +260,12 @@
       modalRoot.innerHTML = modalHtml({
         eyebrow: '更新已就绪',
         body: `
-          <p class="body-text">新版已下载完成，<strong>下次启动时将自动应用</strong>，当前不会中断你的工作。</p>
-          <p class="body-meta">你可以继续使用现在这个版本。Cmd+Q 关闭后再打开 Penraft，即升级到 0.3.2。</p>`,
+          <p class="body-text">新版已下载完成。</p>
+          <p class="body-meta">重启即可使用，或下次启动时自动应用。</p>`,
         footer: `
-          <button class="changelog-modal-btn subtle" onclick="restartNow()">立即重启使用新版本</button>
           <div class="changelog-modal-footer-right">
-            <button class="changelog-modal-btn primary" onclick="closeInstalled()">好的</button>
+            <button class="changelog-modal-btn" onclick="closeInstalled()">稍后</button>
+            <button class="changelog-modal-btn primary" onclick="restartNow()">立即重启</button>
           </div>`
       });
     } else if (phase === 'error') {
