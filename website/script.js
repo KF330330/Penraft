@@ -628,6 +628,18 @@ A pen that just works.`,
       const name = t.getAttribute('data-track');
       const meta = {};
       if (t.tagName === 'A' && t.href) meta.href = t.href;
+      if (name === 'download_click') {
+        if (t.dataset.position) meta.position = t.dataset.position;
+        if (t.href) {
+          const filename = t.href.split('/').pop() || '';
+          meta.filename = filename;
+          if (/mac/i.test(filename)) meta.platform = 'macos';
+          else if (/\.msi$|win/i.test(filename)) meta.platform = 'windows';
+          else if (/AppImage|linux/i.test(filename)) meta.platform = 'linux';
+          if (/arm64|aarch64/i.test(filename)) meta.arch = 'arm64';
+          else if (/x86_64|x64|amd64/i.test(filename)) meta.arch = 'x86_64';
+        }
+      }
       track('click', name, meta);
       flush(false);  // 走 fetch + keepalive，等 CORS preflight，可靠送达
     }, { capture: true });

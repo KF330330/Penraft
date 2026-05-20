@@ -12,10 +12,26 @@ use crate::vault::penraft_dir;
 const HEARTBEAT_INTERVAL_HOURS: i64 = 24;
 const TICK_INTERVAL_SECS: u64 = 6 * 60 * 60; // 每 6h 检查一次
 
+/// 后端地址三层兜底：编译期 env > 运行时 backend.json > 默认 production。
+/// 默认改成 production URL，避免发版时忘注入 PENRAFT_BACKEND_URL 导致用户机器
+/// 的埋点全打到自己 localhost 丢失。本地开发显式注入 env 或写 backend.json 覆盖。
 fn backend_url() -> String {
-    option_env!("PENRAFT_BACKEND_URL")
-        .unwrap_or("http://localhost:8787")
-        .to_string()
+    if let Some(url) = option_env!("PENRAFT_BACKEND_URL") {
+        if !url.is_empty() {
+            return url.to_string();
+        }
+    }
+    let cfg_path = penraft_dir().join("backend.json");
+    if let Ok(bytes) = fs::read(&cfg_path) {
+        if let Ok(v) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+            if let Some(url) = v.get("url").and_then(|x| x.as_str()) {
+                if !url.is_empty() {
+                    return url.to_string();
+                }
+            }
+        }
+    }
+    "https://api.penraft.com".to_string()
 }
 
 fn app_version() -> String {
@@ -122,13 +138,23 @@ async fn post_install(client: &reqwest::Client, device_id: &str) {
     let _ = client.post(url).json(&body).send().await;
 }
 
-async fn post_heartbeat(client: &reqwest::Client, device_id: &str) -> bool {
+enum HeartbeatResult {
+    Ok,
+    DeviceMissing,
+    NetworkError,
+}
+
+async fn post_heartbeat(client: &reqwest::Client, device_id: &str) -> HeartbeatResult {
     let body = json!({
         "device_id": device_id,
         "app_version": app_version(),
     });
     let url = format!("{}/api/app/heartbeat", backend_url());
-    matches!(client.post(url).json(&body).send().await, Ok(r) if r.status().is_success())
+    match client.post(url).json(&body).send().await {
+        Ok(r) if r.status().is_success() => HeartbeatResult::Ok,
+        Ok(r) if r.status().as_u16() == 409 => HeartbeatResult::DeviceMissing,
+        _ => HeartbeatResult::NetworkError,
+    }
 }
 
 /// 在 Tauri setup 钩子里调用。用 tauri 的 async_runtime spawn 任务；所有 IO 静默吞错；不影响 app 启动。
@@ -151,9 +177,18 @@ pub fn spawn() {
         // 启动时先尝试一次心跳（若距上次 >= 24h）
         loop {
             if should_heartbeat() {
-                let ok = post_heartbeat(&client, &device_id).await;
-                if ok {
-                    write_heartbeat(&Utc::now().to_rfc3339());
+                match post_heartbeat(&client, &device_id).await {
+                    HeartbeatResult::Ok => {
+                        write_heartbeat(&Utc::now().to_rfc3339());
+                    }
+                    HeartbeatResult::DeviceMissing => {
+                        // 后端没有这台设备的记录（DB 重置 / 历史 install 失败 / fallback 路径已移除），
+                        // 自愈：补一次 install，不写 heartbeat 时间戳，下次 tick 再重试 heartbeat。
+                        post_install(&client, &device_id).await;
+                    }
+                    HeartbeatResult::NetworkError => {
+                        // 静默，下次 tick 重试
+                    }
                 }
             }
             tokio::time::sleep(Duration::from_secs(TICK_INTERVAL_SECS)).await;
