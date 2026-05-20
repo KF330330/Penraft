@@ -35,6 +35,30 @@ export default async function dashboardStatsRoutes(fastify) {
        GROUP BY event_name ORDER BY n DESC LIMIT 10
     `).all(fromT, toT);
 
+    // download_click 聚合：总数 + 按位置 + 按平台/架构
+    const downloadsTotal = db.prepare(`
+      SELECT COUNT(*) AS n
+        FROM web_events
+       WHERE event_name='download_click' AND created_at BETWEEN ? AND ?
+    `).get(fromT, toT).n;
+
+    const downloadsByPosition = db.prepare(`
+      SELECT COALESCE(json_extract(meta_json, '$.position'), 'unknown') AS position,
+             COUNT(*) AS n
+        FROM web_events
+       WHERE event_name='download_click' AND created_at BETWEEN ? AND ?
+       GROUP BY position ORDER BY n DESC
+    `).all(fromT, toT);
+
+    const downloadsByPlatformArch = db.prepare(`
+      SELECT COALESCE(json_extract(meta_json, '$.platform'), 'unknown') AS platform,
+             COALESCE(json_extract(meta_json, '$.arch'),     'unknown') AS arch,
+             COUNT(*) AS n
+        FROM web_events
+       WHERE event_name='download_click' AND created_at BETWEEN ? AND ?
+       GROUP BY platform, arch ORDER BY n DESC
+    `).all(fromT, toT);
+
     const cutoff = now - UNINSTALL_THRESHOLD_MS;
     const totalDevices = db.prepare(`SELECT COUNT(*) AS n FROM devices`).get().n;
     const activeDevices = db.prepare(`SELECT COUNT(*) AS n FROM devices WHERE last_seen_at >= ?`).get(cutoff).n;
@@ -68,6 +92,11 @@ export default async function dashboardStatsRoutes(fastify) {
         views_series: viewsSeries,
         clicks_series: clicksSeries,
         clicks_by_name: clicksByName,
+        downloads: {
+          total: downloadsTotal,
+          by_position: downloadsByPosition,
+          by_platform_arch: downloadsByPlatformArch,
+        },
       },
       app: {
         total_devices: totalDevices,

@@ -49,6 +49,7 @@
       <div class="bignum"><div class="label">曝光总数</div><div class="value accent" id="web-total-views">—</div></div>
       <div class="bignum"><div class="label">点击总数</div><div class="value" id="web-total-clicks">—</div></div>
       <div class="bignum"><div class="label">点击率 (CTR)</div><div class="value muted" id="web-ctr">—</div></div>
+      <div class="bignum"><div class="label">下载点击</div><div class="value accent" id="web-downloads-total">—</div></div>
     </div>
     <div class="grid">
       <section class="card">
@@ -58,6 +59,14 @@
       <section class="card">
         <h2>② 点击 TOP10（按事件名）</h2>
         <canvas id="chart-web-clicks-by-name" class="chart-md"></canvas>
+      </section>
+      <section class="card">
+        <h2>③ 下载点击 · 按位置</h2>
+        <canvas id="chart-web-downloads-by-position" class="chart-md"></canvas>
+      </section>
+      <section class="card">
+        <h2>④ 下载点击 · 按平台 / 架构</h2>
+        <canvas id="chart-web-downloads-by-platform" class="chart-md"></canvas>
       </section>
     </div>
   </section>

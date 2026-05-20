@@ -158,6 +158,26 @@
       options: { ...baseOpts, indexAxis: 'y' },
     });
 
+    // ============ 下载点击 ============
+    const dl = d.web.downloads || { total: 0, by_position: [], by_platform_arch: [] };
+    document.getElementById('web-downloads-total').textContent = fmt(dl.total);
+    makeOrUpdate('chart-web-downloads-by-position', {
+      type: 'bar',
+      data: {
+        labels: dl.by_position.map(x => x.position),
+        datasets: [{ label: '点击次数', data: dl.by_position.map(x => x.n), backgroundColor: '#5cd97a', borderRadius: 4 }],
+      },
+      options: { ...baseOpts, indexAxis: 'y' },
+    });
+    makeOrUpdate('chart-web-downloads-by-platform', {
+      type: 'bar',
+      data: {
+        labels: dl.by_platform_arch.map(x => `${x.platform}/${x.arch}`),
+        datasets: [{ label: '点击次数', data: dl.by_platform_arch.map(x => x.n), backgroundColor: '#ffb547', borderRadius: 4 }],
+      },
+      options: { ...baseOpts, indexAxis: 'y' },
+    });
+
     // ============ App tab ============
     document.getElementById('app-active').textContent = fmt(d.app.active_devices);
     document.getElementById('app-uninstalled').textContent = fmt(d.app.uninstalled_devices);

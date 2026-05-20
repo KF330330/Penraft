@@ -6,14 +6,9 @@ const updateDevice = db.prepare(`
      SET last_seen_at = ?, app_version = ?, ping_count = ping_count + 1
    WHERE device_id = ?
 `);
-const insertDeviceFallback = db.prepare(`
-  INSERT INTO devices (device_id, platform, os_version, app_version, locale, installed_at, last_seen_at, ping_count)
-  VALUES (?, 'unknown', NULL, ?, NULL, ?, ?, 0)
-  ON CONFLICT(device_id) DO NOTHING
-`);
 const insertPing = db.prepare(`
   INSERT INTO device_pings (device_id, kind, app_version, created_at)
-  VALUES (?, ?, ?, ?)
+  VALUES (?, 'heartbeat', ?, ?)
 `);
 
 function sanitize(s, max) {
@@ -34,11 +29,12 @@ export default async function appHeartbeatRoutes(fastify) {
     const now = nowMs();
     const result = updateDevice.run(now, appVersion, deviceId);
     if (result.changes === 0) {
-      // 容错：缺 install 时自动补一条（platform=unknown），并记录 install ping
-      insertDeviceFallback.run(deviceId, appVersion, now, now);
-      insertPing.run(deviceId, 'install', appVersion, now);
+      // 未注册设备不再 fallback 建 unknown 脏数据；让 client 重新走 install。
+      request.log.warn({ deviceId }, 'heartbeat from unknown device, rejected');
+      reply.code(409).send({ error: 'device not installed' });
+      return;
     }
-    insertPing.run(deviceId, 'heartbeat', appVersion, now);
+    insertPing.run(deviceId, appVersion, now);
     reply.code(204).send();
   });
 }
