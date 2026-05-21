@@ -85,8 +85,16 @@
       gap: 8px;
     }
 
-    .tab-bar-progress-slot { display: flex; align-items: center; }
-    .tab-bar-progress-slot:empty { display: none; }
+    /* demo 里 slot 永远占位 30x30，保证飞行测量能拿到右上角的真实坐标。
+       产线 React 版本的 #update-progress-slot 不需要这条 —— 那边是先切到
+       flying 中间态时把进度环 mount 进 slot，再测量进度环本身的位置。 */
+    .tab-bar-progress-slot {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+    }
 
     /* ========== 主舞台 ========== */
     .stage {
@@ -528,10 +536,17 @@
       const modalRect = modal.getBoundingClientRect();
       const slotRect = slot.getBoundingClientRect();
 
-      // slot 当前可能是空的，宽度 0；用它的右边缘 + 内置 15px 半径作落点中心
-      // 但为了稳定，我们预先在 slot 里放一个尺寸占位
-      const targetX = slotRect.left + (slotRect.width || 30) / 2;
-      const targetY = slotRect.top + (slotRect.height || 30) / 2;
+      // slot 即使为空也保留 30x30（见 CSS）。
+      // 防御性兜底：万一 slot 出现 0 尺寸，用父容器右边缘往内推 24px 当落点。
+      let targetX, targetY;
+      if (slotRect.width > 0 && slotRect.height > 0) {
+        targetX = slotRect.left + slotRect.width / 2;
+        targetY = slotRect.top + slotRect.height / 2;
+      } else {
+        const parent = slot.parentElement.getBoundingClientRect();
+        targetX = parent.right - 24;
+        targetY = parent.top + parent.height / 2;
+      }
 
       const startX = modalRect.left + modalRect.width / 2;
       const startY = modalRect.top + modalRect.height / 2;
