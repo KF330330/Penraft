@@ -1,4 +1,4 @@
-import { Check, Download, X } from "lucide-react";
+import { Check, ArrowDown, X } from "lucide-react";
 
 export type UpdateProgressPhase = "downloading" | "done" | "error";
 
@@ -36,14 +36,14 @@ export default function UpdateProgressIndicator({
 
   let tooltipTitle = "";
   let tooltipMeta = "";
-  let centerIcon = <Download size={11} />;
+  let centerIcon = <ArrowDown size={11} />;
   if (phase === "downloading") {
     tooltipTitle = "正在下载更新…";
     tooltipMeta =
       total && total > 0
         ? `${formatBytes(downloaded)} / ${formatBytes(total)}（${Math.round(pct)}%）`
         : formatBytes(downloaded);
-    centerIcon = <Download size={11} />;
+    centerIcon = <ArrowDown size={11} />;
   } else if (phase === "done") {
     tooltipTitle = "下载完成";
     tooltipMeta = "即将提示重启";
