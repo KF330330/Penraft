@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Editor, rootCtx, defaultValueCtx, editorViewCtx, parserCtx } from "@milkdown/core";
+import { Editor, rootCtx, defaultValueCtx, editorViewCtx, parserCtx, prosePluginsCtx } from "@milkdown/core";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { gfm } from "@milkdown/preset-gfm";
@@ -13,6 +13,7 @@ import {
   installAnchorClickHandler,
   installScopedSelectAll,
 } from "./markdown-utils";
+import { mermaidProseMirrorPlugin } from "./mermaid-plugin";
 
 interface MilkdownEditorProps {
   value: string;
@@ -131,6 +132,7 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
       .config((ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(defaultValueCtx, toMilkdown(value));
+        ctx.update(prosePluginsCtx, (prev) => [...prev, mermaidProseMirrorPlugin]);
         ctx.get(listenerCtx).markdownUpdated((_c, markdown) => {
           if (suppressEmitRef.current) {
             suppressEmitRef.current = false;

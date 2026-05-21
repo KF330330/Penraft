@@ -994,6 +994,120 @@ button {
   text-decoration: underline;
 }
 
+/* ===== Mermaid 图渲染 ===== */
+.wysiwyg-column .ProseMirror .penraft-mermaid,
+.markdown-readonly .ProseMirror .penraft-mermaid {
+  position: relative;
+  display: block;
+  margin: 0 0 16px;
+  padding: 16px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow-x: auto;
+  line-height: normal;
+}
+
+.penraft-mermaid .penraft-mermaid-svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  cursor: pointer;
+}
+
+.penraft-mermaid[data-expanded="true"] .penraft-mermaid-svg {
+  cursor: default;
+  margin-top: 4px;
+}
+
+.penraft-mermaid svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.penraft-mermaid--selected {
+  outline: 2px solid var(--link);
+  outline-offset: -2px;
+}
+
+/* 右上角 mermaid 语言角标（仅展开态显示） */
+.penraft-mermaid .penraft-mermaid-lang {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 11px;
+  color: var(--muted, #999);
+  font-family: var(--mono);
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.02em;
+}
+
+/* 源码 pre（仅展开态显示，需要较高 specificity 覆盖 .ProseMirror pre 默认样式） */
+.wysiwyg-column .ProseMirror .penraft-mermaid pre.penraft-mermaid-source,
+.markdown-readonly .ProseMirror .penraft-mermaid pre.penraft-mermaid-source {
+  text-align: left;
+  background: var(--code-block-bg);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin: 0 0 12px;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.9em;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: none;
+  box-shadow: none;
+}
+
+.penraft-mermaid pre.penraft-mermaid-source code {
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+  outline: none;
+  border-radius: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 折叠态：隐藏源码与角标 */
+.penraft-mermaid[data-expanded="false"] .penraft-mermaid-source,
+.penraft-mermaid[data-expanded="false"] .penraft-mermaid-lang {
+  display: none;
+}
+
+.penraft-mermaid-error-msg {
+  color: #c0392b;
+  font-size: 0.9em;
+  margin-bottom: 8px;
+  text-align: left;
+}
+
+.wysiwyg-column .ProseMirror .penraft-mermaid pre.penraft-mermaid-error-source,
+.markdown-readonly .ProseMirror .penraft-mermaid pre.penraft-mermaid-error-source {
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--code-block-bg);
+  color: var(--text);
+  padding: 12px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.85em;
+  margin: 0;
+  border: none;
+  box-shadow: none;
+}
+
 /* ===== Toast ===== */
 .toast {
   position: fixed;
