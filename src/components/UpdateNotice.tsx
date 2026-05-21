@@ -16,6 +16,7 @@ import UpdateProgressIndicator from "./UpdateProgressIndicator";
 type Phase = "idle" | "downloading" | "done" | "installed" | "error";
 
 const DONE_FLASH_MS = 700;
+const MOCK_DOWNLOAD_MS = 2400;
 
 export default function UpdateNotice() {
   // 触发点 B：装完后首次启动时，pendingChangelog 命中即弹（优先级最高）
@@ -36,6 +37,9 @@ export default function UpdateNotice() {
   //   "flying"  —— is-flying class 已加，CSS transition 进行中
   const [flight, setFlight] = useState<null | "prep" | "flying">(null);
   const modalRef = useRef<HTMLDivElement>(null);
+
+  // dev-only：是否走 mock 下载路径（绕过真实 applyUpdate，只为验证 UI 动效）
+  const [mockMode, setMockMode] = useState(false);
 
   // 启动期：尝试取出 pendingChangelog（装完后首启动）
   useEffect(() => {
@@ -76,63 +80,6 @@ export default function UpdateNotice() {
     return () => window.removeEventListener("penraft:show-update-modal", handler);
   }, []);
 
-  // 触发点 B 优先：先看完旧的，再提示新的
-  if (postUpdate) {
-    return (
-      <ChangelogModal
-        mode="postUpdate"
-        version={postUpdate.version}
-        notes={postUpdate.notes}
-        onAck={() => setPostUpdate(null)}
-      />
-    );
-  }
-
-  if (!pending) return null;
-
-  const onLater = () => {
-    snooze();
-    setPending(null);
-  };
-
-  const onDismiss = () => {
-    dismissVersion(pending.version);
-    setPending(null);
-  };
-
-  const onUpdate = async () => {
-    // 立刻进入 downloading（让 slot 内的隐藏占位 mount，撑出尺寸），
-    // 并触发飞行动画 prep 阶段。下载在后台同步开始。
-    const prefersReducedMotion =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    setPhase("downloading");
-    setProgress({ downloaded: 0, total: null });
-    setErrMsg(null);
-    if (!prefersReducedMotion) {
-      setFlight("prep");
-    }
-    try {
-      await applyUpdate(
-        pending,
-        (downloaded, total) => {
-          setProgress({ downloaded, total });
-        },
-        () => {
-          // 下载安装完成：先短暂展示绿勾，然后再弹"更新已就绪"中央卡片
-          setPhase("done");
-          setTimeout(() => {
-            setPhase("installed");
-          }, DONE_FLASH_MS);
-        },
-      );
-    } catch (e) {
-      setPhase("error");
-      setErrMsg(e instanceof Error ? e.message : String(e));
-      setFlight(null);
-    }
-  };
-
   // phase 离开 downloading/done 时清掉残留的 flight 状态（防止下次更新被卡）
   useEffect(() => {
     if (phase !== "downloading" && phase !== "done" && flight !== null) {
@@ -172,6 +119,137 @@ export default function UpdateNotice() {
     });
     return () => cancelAnimationFrame(rafId);
   }, [flight]);
+
+  // dev-only：浮动按钮触发 mock 更新弹窗（Tauri dev 内可视化验证飞行动画）
+  // 生产构建 import.meta.env.DEV === false，整段为 null
+  const devTrigger = import.meta.env.DEV
+    ? createPortal(
+        <button
+          type="button"
+          onClick={() => {
+            // 构造一个 fake PendingUpdate；mockMode 让 onUpdate 跳过真实 applyUpdate
+            const mock = {
+              version: "0.99.0-dev",
+              notes:
+                "**调试预览**\n\n- 弹窗收向右上角下载按钮的飞行动画\n- 图标在圆环中的居中\n- pop-in 入场",
+              date: undefined,
+              update: {} as never,
+            } as unknown as PendingUpdate;
+            setMockMode(true);
+            setPending(mock);
+            setPhase("idle");
+            setProgress({ downloaded: 0, total: null });
+            setErrMsg(null);
+            setFlight(null);
+          }}
+          style={{
+            position: "fixed",
+            right: 12,
+            bottom: 12,
+            zIndex: 1000,
+            padding: "6px 10px",
+            fontSize: 11,
+            border: "1px dashed rgba(180,83,9,0.45)",
+            borderRadius: 8,
+            background: "rgba(255, 245, 235, 0.95)",
+            color: "#92400e",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          }}
+          title="dev-only：弹出 mock 更新弹窗，验证飞行动画"
+        >
+          🐛 测试更新动画
+        </button>,
+        document.body,
+      )
+    : null;
+
+  // mockMode 在 phase 回到 idle/installed 且 pending 已清掉时自动重置
+  useEffect(() => {
+    if (!pending && mockMode) setMockMode(false);
+  }, [pending, mockMode]);
+
+  // 触发点 B 优先：先看完旧的，再提示新的
+  if (postUpdate) {
+    return (
+      <>
+        {devTrigger}
+        <ChangelogModal
+          mode="postUpdate"
+          version={postUpdate.version}
+          notes={postUpdate.notes}
+          onAck={() => setPostUpdate(null)}
+        />
+      </>
+    );
+  }
+
+  if (!pending) return devTrigger;
+
+  const onLater = () => {
+    snooze();
+    setPending(null);
+  };
+
+  const onDismiss = () => {
+    dismissVersion(pending.version);
+    setPending(null);
+  };
+
+  const onUpdate = async () => {
+    // 立刻进入 downloading（让 slot 内的隐藏占位 mount，撑出尺寸），
+    // 并触发飞行动画 prep 阶段。下载在后台同步开始。
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    setPhase("downloading");
+    setProgress({ downloaded: 0, total: null });
+    setErrMsg(null);
+    if (!prefersReducedMotion) {
+      setFlight("prep");
+    }
+
+    // dev-only：mock 路径不调真实 updater，只跑 UI 动效
+    if (mockMode) {
+      const TOTAL = 12 * 1024 * 1024;
+      const t0 = performance.now();
+      const step = () => {
+        const elapsed = performance.now() - t0;
+        const t = Math.min(1, elapsed / MOCK_DOWNLOAD_MS);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setProgress({ downloaded: Math.round(TOTAL * eased), total: TOTAL });
+        if (t < 1) {
+          requestAnimationFrame(step);
+        } else {
+          setPhase("done");
+          setTimeout(() => setPhase("installed"), DONE_FLASH_MS);
+        }
+      };
+      requestAnimationFrame(step);
+      return;
+    }
+
+    try {
+      await applyUpdate(
+        pending,
+        (downloaded, total) => {
+          setProgress({ downloaded, total });
+        },
+        () => {
+          // 下载安装完成：先短暂展示绿勾，然后再弹"更新已就绪"中央卡片
+          setPhase("done");
+          setTimeout(() => {
+            setPhase("installed");
+          }, DONE_FLASH_MS);
+        },
+      );
+    } catch (e) {
+      setPhase("error");
+      setErrMsg(e instanceof Error ? e.message : String(e));
+      setFlight(null);
+    }
+  };
 
   const onFlightEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
     if (flight !== "flying") return;
@@ -215,6 +293,7 @@ export default function UpdateNotice() {
     if (flying) {
       return (
         <>
+          {devTrigger}
           <ChangelogModal
             mode="prompt"
             version={pending.version}
@@ -236,22 +315,30 @@ export default function UpdateNotice() {
         </>
       );
     }
-    return progressPortal;
+    return (
+      <>
+        {devTrigger}
+        {progressPortal}
+      </>
+    );
   }
 
   // idle / installed / error 阶段：渲染中央 ChangelogModal
   return (
-    <ChangelogModal
-      mode="prompt"
-      version={pending.version}
-      notes={pending.notes}
-      phase={phase}
-      errMsg={errMsg}
-      onLater={onLater}
-      onUpdate={onUpdate}
-      onDismiss={onDismiss}
-      onClose={onClose}
-      onRestartNow={onRestartNow}
-    />
+    <>
+      {devTrigger}
+      <ChangelogModal
+        mode="prompt"
+        version={pending.version}
+        notes={pending.notes}
+        phase={phase}
+        errMsg={errMsg}
+        onLater={onLater}
+        onUpdate={onUpdate}
+        onDismiss={onDismiss}
+        onClose={onClose}
+        onRestartNow={onRestartNow}
+      />
+    </>
   );
 }
