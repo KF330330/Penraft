@@ -756,6 +756,28 @@ button {
   background: var(--panel-strong);
   border-radius: 20px;
   padding: 32px 32px 24px;
+  transform-origin: center;
+  will-change: transform, opacity, border-radius;
+  transition:
+    transform 520ms cubic-bezier(0.65, 0.05, 0.35, 1),
+    opacity 380ms ease-out 200ms,
+    border-radius 420ms ease,
+    padding 420ms ease,
+    box-shadow 360ms ease;
+}
+
+/* 飞行落点：弹窗向右上角 slot 收缩 + 淡出（UpdateNotice 注入 --target-dx/dy） */
+.modal-backdrop.is-flying {
+  background: transparent;
+  pointer-events: none;
+  transition: background 220ms ease;
+}
+.modal-backdrop.is-flying .changelog-modal {
+  transform: translate(var(--target-dx, 0), var(--target-dy, 0)) scale(0.06);
+  opacity: 0;
+  border-radius: 50%;
+  padding: 16px;
+  box-shadow: 0 6px 20px rgba(28, 22, 16, 0.18);
 }
 
 .changelog-modal-head {
@@ -1163,6 +1185,7 @@ button {
 
 .update-progress__icon {
   position: absolute;
+  inset: 0;
   pointer-events: none;
   display: grid;
   place-items: center;
@@ -1170,6 +1193,29 @@ button {
 }
 .update-progress[data-phase="done"] .update-progress__icon { color: #22c55e; }
 .update-progress[data-phase="error"] .update-progress__icon { color: #dc2626; }
+
+/* 飞行准备期：进度环已 mount 在 slot 撑出尺寸，但视觉隐藏（modal 还在飞） */
+.update-progress.is-prep {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 飞行完成后进度环入场：轻微回弹的 pop-in */
+.update-progress.pop-in {
+  animation: update-progress-pop-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes update-progress-pop-in {
+  0%   { transform: scale(0.30); opacity: 0; }
+  55%  { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .changelog-modal { transition: none !important; }
+  .modal-backdrop { transition: none !important; }
+  .update-progress.pop-in { animation: none !important; }
+  .update-progress.is-prep { opacity: 1; }
+}
 
 .update-progress__tooltip {
   position: absolute;

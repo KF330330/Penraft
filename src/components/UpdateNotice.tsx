@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   scheduleChecks,
@@ -29,6 +29,13 @@ export default function UpdateNotice() {
     total: null,
   });
   const [errMsg, setErrMsg] = useState<string | null>(null);
+
+  // 飞行动画状态：
+  //   null      —— 无动画
+  //   "prep"    —— modal 已渲染、隐藏占位已挂入 slot；本帧测量 + 写 CSS 变量
+  //   "flying"  —— is-flying class 已加，CSS transition 进行中
+  const [flight, setFlight] = useState<null | "prep" | "flying">(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   // 启动期：尝试取出 pendingChangelog（装完后首启动）
   useEffect(() => {
@@ -94,9 +101,17 @@ export default function UpdateNotice() {
   };
 
   const onUpdate = async () => {
+    // 立刻进入 downloading（让 slot 内的隐藏占位 mount，撑出尺寸），
+    // 并触发飞行动画 prep 阶段。下载在后台同步开始。
+    const prefersReducedMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     setPhase("downloading");
     setProgress({ downloaded: 0, total: null });
     setErrMsg(null);
+    if (!prefersReducedMotion) {
+      setFlight("prep");
+    }
     try {
       await applyUpdate(
         pending,
@@ -114,7 +129,55 @@ export default function UpdateNotice() {
     } catch (e) {
       setPhase("error");
       setErrMsg(e instanceof Error ? e.message : String(e));
+      setFlight(null);
     }
+  };
+
+  // phase 离开 downloading/done 时清掉残留的 flight 状态（防止下次更新被卡）
+  useEffect(() => {
+    if (phase !== "downloading" && phase !== "done" && flight !== null) {
+      setFlight(null);
+    }
+  }, [phase, flight]);
+
+  // flight === "prep": modal 和 slot 占位都已挂上；测量两者位置写 CSS 变量，
+  // 再 RAF 一帧切到 "flying" 触发 transition。
+  useLayoutEffect(() => {
+    if (flight !== "prep") return;
+    const modalEl = modalRef.current;
+    const slotEl =
+      typeof document !== "undefined"
+        ? document.getElementById("update-progress-slot")
+        : null;
+    if (!modalEl || !slotEl) {
+      setFlight(null);
+      return;
+    }
+    const modalRect = modalEl.getBoundingClientRect();
+    const slotRect = slotEl.getBoundingClientRect();
+    if (slotRect.width === 0 || slotRect.height === 0) {
+      setFlight(null);
+      return;
+    }
+    const dx = Math.round(
+      slotRect.left + slotRect.width / 2 - (modalRect.left + modalRect.width / 2),
+    );
+    const dy = Math.round(
+      slotRect.top + slotRect.height / 2 - (modalRect.top + modalRect.height / 2),
+    );
+    modalEl.style.setProperty("--target-dx", `${dx}px`);
+    modalEl.style.setProperty("--target-dy", `${dy}px`);
+    const rafId = requestAnimationFrame(() => {
+      setFlight("flying");
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [flight]);
+
+  const onFlightEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
+    if (flight !== "flying") return;
+    if (e.target !== modalRef.current) return;
+    if (e.propertyName !== "transform") return;
+    setFlight(null);
   };
 
   // installed 态下用户点"稍后"：仅关闭弹窗，App 继续运行。
@@ -132,20 +195,48 @@ export default function UpdateNotice() {
     }
   };
 
-  // downloading / done 阶段：不渲染中央 modal，把圆环 portal 到 TabBar 的 slot
+  // downloading / done 阶段：把圆环 portal 到 TabBar 的 slot
+  // 飞行期间额外渲染 modal —— 让弹窗收缩飞向 slot，飞行结束后圆环 pop-in 出场
   if (phase === "downloading" || phase === "done") {
     const slot = typeof document !== "undefined"
       ? document.getElementById("update-progress-slot")
       : null;
     if (!slot) return null;
-    return createPortal(
+    const flying = flight !== null;
+    const progressPortal = createPortal(
       <UpdateProgressIndicator
         phase={phase}
         downloaded={progress.downloaded}
         total={progress.total}
+        className={flying ? "is-prep" : "pop-in"}
       />,
       slot,
     );
+    if (flying) {
+      return (
+        <>
+          <ChangelogModal
+            mode="prompt"
+            version={pending.version}
+            notes={pending.notes}
+            phase="idle"
+            errMsg={null}
+            onLater={onLater}
+            onUpdate={() => {
+              /* 飞行中不响应 */
+            }}
+            onDismiss={onDismiss}
+            onClose={onClose}
+            onRestartNow={onRestartNow}
+            backdropClassName={flight === "flying" ? "is-flying" : undefined}
+            modalRef={modalRef}
+            onModalTransitionEnd={onFlightEnd}
+          />
+          {progressPortal}
+        </>
+      );
+    }
+    return progressPortal;
   }
 
   // idle / installed / error 阶段：渲染中央 ChangelogModal

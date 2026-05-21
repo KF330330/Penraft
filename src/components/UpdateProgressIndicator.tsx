@@ -7,6 +7,7 @@ interface Props {
   downloaded: number;
   total: number | null;
   errMsg?: string | null;
+  className?: string;
 }
 
 function formatBytes(n: number): string {
@@ -23,6 +24,7 @@ export default function UpdateProgressIndicator({
   downloaded,
   total,
   errMsg,
+  className,
 }: Props) {
   const pct =
     phase === "done"
@@ -54,7 +56,7 @@ export default function UpdateProgressIndicator({
 
   return (
     <button
-      className="update-progress"
+      className={className ? `update-progress ${className}` : "update-progress"}
       data-phase={phase}
       aria-label={tooltipTitle}
       tabIndex={-1}

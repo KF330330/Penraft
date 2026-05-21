@@ -1,3 +1,4 @@
+import type { Ref, TransitionEventHandler } from "react";
 import MarkdownReadOnly from "./MarkdownReadOnly";
 
 type Phase = "idle" | "installed" | "error";
@@ -13,6 +14,9 @@ interface PromptProps {
   onDismiss: () => void;
   onClose: () => void;
   onRestartNow: () => void;
+  backdropClassName?: string;
+  modalRef?: Ref<HTMLDivElement>;
+  onModalTransitionEnd?: TransitionEventHandler<HTMLDivElement>;
 }
 
 interface PostUpdateProps {
@@ -41,14 +45,24 @@ export default function ChangelogModal(props: Props) {
 
   const notes = (props.notes ?? "").trim();
 
+  const backdropExtra =
+    props.mode === "prompt" && props.backdropClassName
+      ? ` ${props.backdropClassName}`
+      : "";
+  const modalRef = props.mode === "prompt" ? props.modalRef : undefined;
+  const onModalTransitionEnd =
+    props.mode === "prompt" ? props.onModalTransitionEnd : undefined;
+
   return (
-    <div className="modal-backdrop" role="presentation">
+    <div className={`modal-backdrop${backdropExtra}`} role="presentation">
       <div
+        ref={modalRef}
         className="modal changelog-modal"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="changelog-modal-title"
         onClick={(e) => e.stopPropagation()}
+        onTransitionEnd={onModalTransitionEnd}
       >
         <div className="changelog-modal-head">
           <span className="changelog-modal-eyebrow">{eyebrow}</span>
