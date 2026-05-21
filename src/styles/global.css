@@ -1194,6 +1194,8 @@ button {
 .update-progress[data-phase="done"] .update-progress__icon { color: #22c55e; }
 .update-progress[data-phase="error"] .update-progress__icon { color: #dc2626; }
 
+.update-progress svg { display: block; }
+
 /* 飞行准备期：进度环已 mount 在 slot 撑出尺寸，但视觉隐藏（modal 还在飞） */
 .update-progress.is-prep {
   opacity: 0;
