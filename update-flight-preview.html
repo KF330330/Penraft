@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8" />
+  <title>Penraft 更新弹窗 · 飞行动画预览</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!--
+    用途：在浏览器里体验"立即更新 → 弹窗飞向右上角下载按钮"的动效，
+    同时确认下载按钮里的图标已经居中。
+    样式 1:1 复刻 src/styles/global.css 中的 paper 主题变量 +
+    .changelog-modal* (750-921 行) + .update-progress* (1126-1201 行)。
+
+    唯一为 demo 而做的差异：
+    - .update-progress__icon 已加 inset:0（图标居中修复）
+    - 加了 .is-flying class 和飞行 transition
+    - 加了 .update-progress.pop-in 的入场 keyframe
+  -->
+  <style>
+    :root {
+      --bg: #f5f3ef;
+      --panel: #fbfaf8;
+      --panel-strong: #ffffff;
+      --line: rgba(36, 30, 21, 0.12);
+      --line-strong: rgba(36, 30, 21, 0.18);
+      --text: #24201a;
+      --muted: #7c746a;
+      --muted-2: #a49b90;
+      --accent: #111827;
+      --accent-soft: rgba(17, 24, 39, 0.08);
+      --top-bar-bg: #f1ede5;
+      --heading-accent: #b45309;
+      --backdrop: rgba(25, 21, 17, 0.36);
+      --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
+      --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ========== 模拟顶部 TabBar ========== */
+    .tab-bar {
+      height: 40px;
+      background: var(--top-bar-bg);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 60;
+    }
+
+    .tab-bar-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .tab-bar-tab {
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--muted);
+      border-radius: 8px 8px 0 0;
+      cursor: default;
+    }
+    .tab-bar-tab.active {
+      background: var(--bg);
+      color: var(--text);
+      box-shadow: 0 -1px 0 var(--line);
+    }
+
+    .tab-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-bar-progress-slot { display: flex; align-items: center; }
+    .tab-bar-progress-slot:empty { display: none; }
+
+    /* ========== 主舞台 ========== */
+    .stage {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(180, 83, 9, 0.04), transparent 60%),
+        var(--bg);
+    }
+
+    .stage-hint {
+      position: absolute;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      color: var(--muted-2);
+      letter-spacing: 0.04em;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 18px;
+      right: 18px;
+      display: flex;
+      gap: 8px;
+      z-index: 80;
+    }
+
+    .controls button {
+      appearance: none;
+      font-family: inherit;
+      font-size: 12px;
+      padding: 6px 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: var(--panel-strong);
+      color: var(--text);
+      cursor: pointer;
+    }
+    .controls button:hover { background: var(--accent-soft); }
+
+    /* ========== modal-backdrop / Minimal Refined 弹窗 ========== */
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: var(--backdrop);
+      display: grid;
+      place-items: center;
+      padding: 28px;
+      z-index: 50;
+      transition: background 220ms ease;
+    }
+    .modal-backdrop.is-flying {
+      background: transparent;
+      pointer-events: none;
+    }
+    .modal-backdrop.hidden { display: none; }
+
+    .changelog-modal {
+      width: min(460px, 94vw);
+      display: flex;
+      flex-direction: column;
+      max-height: 80vh;
+      background: var(--panel-strong);
+      border-radius: 20px;
+      padding: 32px 32px 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      transform-origin: center;
+      will-change: transform, opacity, border-radius;
+      transition:
+        transform 520ms cubic-bezier(0.65, 0.05, 0.35, 1),
+        opacity 380ms ease-out 200ms,
+        border-radius 420ms ease,
+        padding 420ms ease,
+        box-shadow 360ms ease;
+    }
+
+    .modal-backdrop.is-flying .changelog-modal {
+      transform: translate(var(--target-dx, 0), var(--target-dy, 0)) scale(0.06);
+      opacity: 0;
+      border-radius: 50%;
+      padding: 16px;
+      box-shadow: 0 6px 20px rgba(28, 22, 16, 0.18);
+    }
+
+    .changelog-modal-head {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .changelog-modal-eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted-2);
+      font-weight: 500;
+    }
+
+    .changelog-modal-title-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .changelog-modal-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+
+    .changelog-modal-version {
+      font-family: "Times New Roman", "Iowan Old Style", "Songti SC", serif;
+      font-size: 44px;
+      font-weight: 300;
+      line-height: 1;
+      letter-spacing: -0.02em;
+      color: var(--heading-accent);
+    }
+
+    .changelog-modal-hairline {
+      border: none;
+      border-top: 1px solid var(--line);
+      margin: 22px 0 6px;
+    }
+
+    .changelog-modal-body {
+      padding: 0;
+      overflow: auto;
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .changelog-modal-body h4 {
+      margin: 14px 0 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .changelog-modal-body ul {
+      margin: 0 0 6px;
+      padding-left: 1.4em;
+    }
+    .changelog-modal-body li + li { margin-top: 4px; }
+
+    .changelog-modal-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0 0;
+    }
+
+    .changelog-modal-footer-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    .changelog-modal-btn {
+      appearance: none;
+      font-family: inherit;
+      border: 1px solid var(--line-strong);
+      background: transparent;
+      color: var(--text);
+      padding: 9px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+      cursor: pointer;
+      transition: opacity 0.15s ease, background 0.15s ease;
+    }
+    .changelog-modal-btn:hover { opacity: 0.85; }
+
+    .changelog-modal-btn.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--panel-strong);
+      padding: 9px 20px;
+      font-weight: 500;
+    }
+    .changelog-modal-btn.primary:hover { opacity: 0.9; }
+
+    .changelog-modal-btn.subtle {
+      border: none;
+      padding: 6px 0;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+    }
+    .changelog-modal-btn.subtle:hover {
+      color: var(--text);
+      background: transparent;
+      opacity: 1;
+    }
+
+    /* ========== Update Progress Indicator（复刻 + 修复 inset:0） ========== */
+    .update-progress {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border: none;
+      background: transparent;
+      cursor: default;
+      border-radius: 8px;
+      padding: 0;
+      color: var(--muted);
+    }
+    .update-progress:hover { background: var(--accent-soft); }
+
+    .update-progress.pop-in {
+      animation: progress-pop-in 460ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes progress-pop-in {
+      0%   { transform: scale(0.30); opacity: 0; }
+      55%  { transform: scale(1.18); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+
+    .update-progress__ring {
+      width: 26px;
+      height: 26px;
+      transform: rotate(-90deg);
+    }
+    .update-progress__ring-bg {
+      fill: none;
+      stroke: var(--line-strong);
+      stroke-width: 2;
+    }
+    .update-progress__ring-fg {
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.35s ease, stroke 0.2s ease;
+    }
+    .update-progress[data-phase="downloading"] .update-progress__ring-fg { stroke: var(--text); }
+    .update-progress[data-phase="done"]        .update-progress__ring-fg { stroke: #22c55e; }
+
+    /* === 关键修复：inset:0 让图标容器撑满父，place-items 才真正居中 === */
+    .update-progress__icon {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+    }
+    .update-progress[data-phase="done"] .update-progress__icon { color: #22c55e; }
+
+    .update-progress__icon svg { display: block; }
+
+    /* ========== 加分对比：左边一个旧版"图标偏左上"按钮，方便用户对比 ========== */
+    .compare-row {
+      position: absolute;
+      top: 56px;
+      left: 16px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 11px;
+      color: var(--muted);
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 12px;
+      z-index: 40;
+    }
+    .compare-row .label { letter-spacing: 0.05em; }
+    .compare-row .pair {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    /* 旧版（坏的）：故意去掉 inset 复现 bug */
+    .update-progress.legacy .update-progress__icon {
+      position: absolute;
+      inset: auto;
+      top: 0;
+      left: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .changelog-modal,
+      .modal-backdrop { transition: none !important; }
+      .update-progress.pop-in { animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ========== 模拟 TabBar ========== -->
+  <div class="tab-bar">
+    <div class="tab-bar-tabs">
+      <div class="tab-bar-tab active">README.md</div>
+      <div class="tab-bar-tab">notes.md</div>
+      <div class="tab-bar-tab">scratch.md</div>
+    </div>
+    <div class="tab-bar-right">
+      <!-- 飞行落点就在这里 -->
+      <div id="update-progress-slot" class="tab-bar-progress-slot"></div>
+    </div>
+  </div>
+
+  <!-- ========== 主舞台 ========== -->
+  <main class="stage">
+
+    <!-- 旧 vs 新 图标居中对比 -->
+    <div class="compare-row" aria-hidden="true">
+      <span class="label">图标居中对比</span>
+      <div class="pair">
+        <span>旧</span>
+        <span class="update-progress legacy" data-phase="downloading">
+          <svg class="update-progress__ring" viewBox="0 0 26 26">
+            <circle class="update-progress__ring-bg" cx="13" cy="13" r="11"></circle>
+            <circle class="update-progress__ring-fg" cx="13" cy="13" r="11"
+                    stroke-dasharray="69.115" stroke-dashoffset="48"></circle>
+          </svg>
+          <span class="update-progress__icon"><!-- Download svg --><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+        </span>
+      </div>
+      <div class="pair">
+        <span>新</span>
+        <span class="update-progress" data-phase="downloading">
+          <svg class="update-progress__ring" viewBox="0 0 26 26">
+            <circle class="update-progress__ring-bg" cx="13" cy="13" r="11"></circle>
+            <circle class="update-progress__ring-fg" cx="13" cy="13" r="11"
+                    stroke-dasharray="69.115" stroke-dashoffset="48"></circle>
+          </svg>
+          <span class="update-progress__icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+        </span>
+      </div>
+    </div>
+
+    <!-- 主弹窗 -->
+    <div class="modal-backdrop" id="backdrop">
+      <div class="modal changelog-modal" id="modal"
+           role="alertdialog" aria-modal="true" aria-labelledby="changelog-modal-title">
+        <div class="changelog-modal-head">
+          <span class="changelog-modal-eyebrow">更新可用</span>
+          <div class="changelog-modal-title-row">
+            <h3 id="changelog-modal-title" class="changelog-modal-title">Penraft</h3>
+            <span class="changelog-modal-version">0.3.2</span>
+          </div>
+        </div>
+
+        <hr class="changelog-modal-hairline" />
+
+        <div class="changelog-modal-body">
+          <h4>新增</h4>
+          <ul>
+            <li>更新弹窗 Minimal Refined 风格</li>
+            <li>Rust strip 减小二进制体积</li>
+          </ul>
+          <h4>修复</h4>
+          <ul>
+            <li>切窗口时偶发的 tab 顺序错乱</li>
+          </ul>
+        </div>
+
+        <div class="changelog-modal-footer">
+          <button class="changelog-modal-btn subtle" type="button">跳过本次更新</button>
+          <div class="changelog-modal-footer-right">
+            <button class="changelog-modal-btn" type="button" id="btn-later">稍后</button>
+            <button class="changelog-modal-btn primary" type="button" id="btn-update">立即更新</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stage-hint">点击「立即更新」体验弹窗飞向右上角下载按钮的动效</div>
+
+    <div class="controls">
+      <button id="btn-reset" type="button">重置</button>
+    </div>
+  </main>
+
+  <script>
+    const ICON_DOWNLOAD = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+    const ICON_CHECK = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+
+    const RING_RADIUS = 11;
+    const RING_CIRC = 2 * Math.PI * RING_RADIUS; // ≈ 69.115
+
+    const $ = (id) => document.getElementById(id);
+    const backdrop = $('backdrop');
+    const modal = $('modal');
+    const slot = $('update-progress-slot');
+    const btnUpdate = $('btn-update');
+    const btnLater = $('btn-later');
+    const btnReset = $('btn-reset');
+
+    let progressEl = null;
+
+    function buildProgressButton() {
+      const wrapper = document.createElement('span');
+      wrapper.className = 'update-progress';
+      wrapper.setAttribute('data-phase', 'downloading');
+      wrapper.setAttribute('aria-label', '正在下载更新…');
+      wrapper.innerHTML = `
+        <svg class="update-progress__ring" viewBox="0 0 26 26" aria-hidden="true">
+          <circle class="update-progress__ring-bg" cx="13" cy="13" r="${RING_RADIUS}"></circle>
+          <circle class="update-progress__ring-fg" cx="13" cy="13" r="${RING_RADIUS}"
+                  stroke-dasharray="${RING_CIRC.toFixed(3)}"
+                  stroke-dashoffset="${RING_CIRC.toFixed(3)}"></circle>
+        </svg>
+        <span class="update-progress__icon" aria-hidden="true">${ICON_DOWNLOAD}</span>
+      `;
+      return wrapper;
+    }
+
+    function setProgress(el, pct) {
+      const fg = el.querySelector('.update-progress__ring-fg');
+      const dashOffset = RING_CIRC * (1 - pct / 100);
+      fg.setAttribute('stroke-dashoffset', dashOffset.toFixed(3));
+    }
+
+    function setDone(el) {
+      el.setAttribute('data-phase', 'done');
+      el.setAttribute('aria-label', '下载完成');
+      const iconWrap = el.querySelector('.update-progress__icon');
+      iconWrap.innerHTML = ICON_CHECK;
+      setProgress(el, 100);
+    }
+
+    function flyToSlot() {
+      // 测量起点（弹窗中心）和终点（slot 中心）
+      const modalRect = modal.getBoundingClientRect();
+      const slotRect = slot.getBoundingClientRect();
+
+      // slot 当前可能是空的，宽度 0；用它的右边缘 + 内置 15px 半径作落点中心
+      // 但为了稳定，我们预先在 slot 里放一个尺寸占位
+      const targetX = slotRect.left + (slotRect.width || 30) / 2;
+      const targetY = slotRect.top + (slotRect.height || 30) / 2;
+
+      const startX = modalRect.left + modalRect.width / 2;
+      const startY = modalRect.top + modalRect.height / 2;
+
+      const dx = Math.round(targetX - startX);
+      const dy = Math.round(targetY - startY);
+
+      modal.style.setProperty('--target-dx', dx + 'px');
+      modal.style.setProperty('--target-dy', dy + 'px');
+
+      // 触发 transition
+      requestAnimationFrame(() => {
+        backdrop.classList.add('is-flying');
+      });
+
+      // transitionend 后切到进度环
+      const onEnd = (e) => {
+        if (e.target !== modal) return;
+        if (e.propertyName !== 'transform') return;
+        modal.removeEventListener('transitionend', onEnd);
+        backdrop.classList.add('hidden');
+
+        // 显示进度环（带 pop-in）
+        progressEl = buildProgressButton();
+        progressEl.classList.add('pop-in');
+        slot.appendChild(progressEl);
+
+        // 跑假进度
+        runFakeDownload();
+      };
+      modal.addEventListener('transitionend', onEnd);
+    }
+
+    function runFakeDownload() {
+      if (!progressEl) return;
+      const DURATION = 2400;
+      const t0 = performance.now();
+      function tick(now) {
+        const t = Math.min(1, (now - t0) / DURATION);
+        // easeOutCubic
+        const eased = 1 - Math.pow(1 - t, 3);
+        setProgress(progressEl, eased * 100);
+        if (t < 1) {
+          requestAnimationFrame(tick);
+        } else {
+          setDone(progressEl);
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+
+    btnUpdate.addEventListener('click', flyToSlot);
+
+    btnLater.addEventListener('click', () => {
+      backdrop.classList.add('hidden');
+    });
+
+    btnReset.addEventListener('click', () => {
+      // 清掉进度环
+      if (progressEl) {
+        progressEl.remove();
+        progressEl = null;
+      }
+      // 重置 backdrop / modal
+      backdrop.classList.remove('hidden', 'is-flying');
+      modal.style.removeProperty('--target-dx');
+      modal.style.removeProperty('--target-dy');
+    });
+  </script>
+</body>
+</html>
