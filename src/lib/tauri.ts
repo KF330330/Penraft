@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { NoteDocument, NoteSummary, TabsState, WindowGeom } from "./types";
+import type { NoteDocument, NoteSummary, RenameResult, TabsState, WindowGeom } from "./types";
 
 export async function listNotes(): Promise<NoteSummary[]> {
   return invoke("list_notes");
@@ -21,7 +21,7 @@ export async function exportNote(targetPath: string, content: string): Promise<v
   return invoke("export_note", { targetPath, content });
 }
 
-export async function renameNote(oldPath: string, newStem: string): Promise<NoteSummary> {
+export async function renameNote(oldPath: string, newStem: string): Promise<RenameResult> {
   return invoke("rename_note", { oldPath, newStem });
 }
 

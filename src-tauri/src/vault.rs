@@ -1,4 +1,4 @@
-use crate::models::{NoteDocument, NoteSummary, TabsState};
+use crate::models::{NoteDocument, NoteSummary, RenameResult, TabsState};
 use chrono::{DateTime, Local, Utc};
 use sha2::{Digest, Sha256};
 use std::fs;
@@ -43,7 +43,7 @@ pub fn export_note(target_path: String, content: String) -> CommandResult<()> {
     atomic_write(&path_buf, content.as_bytes())
 }
 
-pub fn rename_note(old_path: String, new_stem: String) -> CommandResult<NoteSummary> {
+pub fn rename_note(old_path: String, new_stem: String) -> CommandResult<RenameResult> {
     let src = PathBuf::from(&old_path);
     if !src.exists() {
         return Err("原文件不存在".to_string());
@@ -51,7 +51,7 @@ pub fn rename_note(old_path: String, new_stem: String) -> CommandResult<NoteSumm
     if !is_markdown_path(&src) {
         return Err("只能重命名 .md 或 .markdown 文件".to_string());
     }
-    let safe = sanitize_stem(&new_stem)?;
+    let (safe, sanitized) = sanitize_stem(&new_stem)?;
     let parent = src
         .parent()
         .ok_or_else(|| "无效路径".to_string())?
@@ -63,12 +63,12 @@ pub fn rename_note(old_path: String, new_stem: String) -> CommandResult<NoteSumm
         .to_string();
     let candidate = parent.join(format!("{}.{}", safe, ext));
     let dst = if candidate == src {
-        return note_summary_for_path(&src);
+        return note_summary_for_path(&src).map(|summary| RenameResult { summary, sanitized });
     } else {
         unique_path(candidate)
     };
     fs::rename(&src, &dst).map_err(to_err)?;
-    note_summary_for_path(&dst)
+    note_summary_for_path(&dst).map(|summary| RenameResult { summary, sanitized })
 }
 
 pub fn delete_note(path: String) -> CommandResult<()> {
@@ -313,7 +313,7 @@ fn unique_path(path: PathBuf) -> PathBuf {
     parent.join(format!("{}-{}.{}", stem, Local::now().timestamp_millis(), ext))
 }
 
-fn sanitize_stem(input: &str) -> CommandResult<String> {
+fn sanitize_stem(input: &str) -> CommandResult<(String, bool)> {
     let trimmed = input.trim();
     if trimmed.is_empty() {
         return Err("名称不能为空".to_string());
@@ -328,15 +328,17 @@ fn sanitize_stem(input: &str) -> CommandResult<String> {
         return Err("名称不能以 . 开头".to_string());
     }
     let mut out = String::new();
+    let mut sanitized = false;
     for ch in trimmed.chars() {
         match ch {
             '/' | '\\' | '\0' | ':' | '*' | '?' | '"' | '<' | '>' | '|' => {
-                return Err("名称包含非法字符".to_string());
+                out.push('-');
+                sanitized = true;
             }
             _ => out.push(ch),
         }
     }
-    Ok(out)
+    Ok((out, sanitized))
 }
 
 fn extract_preview(raw: &str) -> String {

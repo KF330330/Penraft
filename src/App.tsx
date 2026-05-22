@@ -462,7 +462,7 @@ export default function App() {
   const handleRename = useCallback(async (path: string, newStem: string) => {
     try {
       await persistDoc(path);
-      const newSummary = await renameNote(path, newStem);
+      const { summary: newSummary, sanitized } = await renameNote(path, newStem);
       const newPath = newSummary.path;
       setDocs((current) =>
         current.map((d) =>
@@ -476,6 +476,9 @@ export default function App() {
       );
       if (activePathRef.current === path) {
         setActivePath(newPath);
+      }
+      if (sanitized) {
+        showToast(`非法字符已替换为 -，新名称：${newSummary.title}`);
       }
     } catch (err) {
       showToast(`重命名失败：${String(err)}`);

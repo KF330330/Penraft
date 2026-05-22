@@ -5,7 +5,7 @@ mod vault;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
-use models::{NoteDocument, NoteSummary, TabsState, WindowGeom};
+use models::{NoteDocument, NoteSummary, RenameResult, TabsState, WindowGeom};
 use tauri::{AppHandle, Emitter, Manager, WindowEvent};
 use vault::CommandResult;
 
@@ -68,7 +68,7 @@ fn export_note(target_path: String, content: String) -> CommandResult<()> {
 }
 
 #[tauri::command]
-fn rename_note(old_path: String, new_stem: String) -> CommandResult<NoteSummary> {
+fn rename_note(old_path: String, new_stem: String) -> CommandResult<RenameResult> {
     vault::rename_note(old_path, new_stem)
 }
 

@@ -16,6 +16,12 @@ pub struct NoteDocument {
     pub content: String,
 }
 
+#[derive(Debug, Clone, Serialize)]
+pub struct RenameResult {
+    pub summary: NoteSummary,
+    pub sanitized: bool,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TabsState {
     #[serde(default)]

@@ -12,6 +12,11 @@ export interface NoteDocument {
   content: string;
 }
 
+export interface RenameResult {
+  summary: NoteSummary;
+  sanitized: boolean;
+}
+
 export interface TabsState {
   paths: string[];
   active: string | null;
