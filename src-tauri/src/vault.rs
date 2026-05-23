@@ -1,3 +1,4 @@
+use crate::config::{self, AppConfig};
 use crate::models::{NoteDocument, NoteSummary, RenameResult, TabsState};
 use chrono::{DateTime, Local, Utc};
 use sha2::{Digest, Sha256};
@@ -218,7 +219,82 @@ fn ensure_vault_dirs() -> CommandResult<()> {
 }
 
 fn vault_root() -> PathBuf {
+    if let Some(custom) = config::read_app_config().vault_path {
+        let pb = PathBuf::from(custom);
+        if pb.is_absolute() {
+            return pb;
+        }
+    }
     default_vault_path().unwrap_or_else(|_| PathBuf::from("."))
+}
+
+pub fn get_vault_path() -> CommandResult<String> {
+    vault_root()
+        .to_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| "路径包含非 UTF-8 字符".to_string())
+}
+
+pub fn set_vault_path(new_path: String, move_files: bool) -> CommandResult<()> {
+    let new_pb = PathBuf::from(&new_path);
+    if !new_pb.is_absolute() {
+        return Err("必须是绝对路径".to_string());
+    }
+    let old_root = vault_root();
+    let canonical_new = new_pb
+        .canonicalize()
+        .or_else(|_| {
+            fs::create_dir_all(&new_pb).map_err(to_err)?;
+            new_pb.canonicalize().map_err(to_err)
+        })?;
+    let canonical_old = old_root.canonicalize().ok();
+    if Some(&canonical_new) == canonical_old.as_ref() {
+        return Ok(());
+    }
+
+    if move_files && old_root.exists() {
+        let old_notes = old_root.join("Notes");
+        let old_penraft = old_root.join(".penraft");
+        if old_notes.exists() {
+            move_dir_merge(&old_notes, &canonical_new.join("Notes"))?;
+        }
+        if old_penraft.exists() {
+            move_dir_merge(&old_penraft, &canonical_new.join(".penraft"))?;
+        }
+        let _ = fs::remove_dir(&old_root);
+    }
+
+    let path_str = canonical_new
+        .to_str()
+        .ok_or_else(|| "路径包含非 UTF-8 字符".to_string())?
+        .to_string();
+    config::write_app_config(&AppConfig {
+        vault_path: Some(path_str),
+    })?;
+    ensure_vault_dirs()
+}
+
+fn move_dir_merge(src: &Path, dst: &Path) -> CommandResult<()> {
+    fs::create_dir_all(dst).map_err(to_err)?;
+    for entry in fs::read_dir(src).map_err(to_err)? {
+        let entry = entry.map_err(to_err)?;
+        let from = entry.path();
+        let to = dst.join(entry.file_name());
+        let ft = entry.file_type().map_err(to_err)?;
+        if ft.is_dir() {
+            move_dir_merge(&from, &to)?;
+            let _ = fs::remove_dir(&from);
+        } else {
+            if to.exists() {
+                let _ = fs::remove_file(&to);
+            }
+            if fs::rename(&from, &to).is_err() {
+                fs::copy(&from, &to).map_err(to_err)?;
+                fs::remove_file(&from).map_err(to_err)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 fn notes_dir() -> PathBuf {

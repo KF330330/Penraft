@@ -1,3 +1,4 @@
+mod config;
 mod models;
 mod telemetry;
 mod vault;
@@ -70,6 +71,16 @@ fn export_note(target_path: String, content: String) -> CommandResult<()> {
 #[tauri::command]
 fn rename_note(old_path: String, new_stem: String) -> CommandResult<RenameResult> {
     vault::rename_note(old_path, new_stem)
+}
+
+#[tauri::command]
+fn get_vault_path() -> CommandResult<String> {
+    vault::get_vault_path()
+}
+
+#[tauri::command]
+fn set_vault_path(new_path: String, move_files: bool) -> CommandResult<()> {
+    vault::set_vault_path(new_path, move_files)
 }
 
 #[tauri::command]
@@ -242,6 +253,8 @@ pub fn run() {
             save_tabs,
             list_penraft_windows,
             take_pending_open_files,
+            get_vault_path,
+            set_vault_path,
         ])
         .build(tauri::generate_context!())
         .expect("error while running Penraft");

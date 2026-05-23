@@ -53,6 +53,14 @@ export async function takePendingOpenFiles(): Promise<string[]> {
   return invoke("take_pending_open_files");
 }
 
+export async function getVaultPath(): Promise<string> {
+  return invoke("get_vault_path");
+}
+
+export async function setVaultPath(newPath: string, moveFiles: boolean): Promise<void> {
+  return invoke("set_vault_path", { newPath, moveFiles });
+}
+
 export async function listPenraftWindows(selfLabel: string): Promise<WindowGeom[]> {
   return invoke("list_penraft_windows", { selfLabel });
 }

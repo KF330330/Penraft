@@ -1,8 +1,11 @@
-import { Settings, RefreshCw, Check } from "lucide-react";
+import { Settings, RefreshCw, Check, FolderOpen } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
+import { open as openDialog, ask, confirm } from "@tauri-apps/plugin-dialog";
+import { relaunch } from "@tauri-apps/plugin-process";
 import type { Theme } from "./MarkdownEditor";
 import { manualCheckForUpdate } from "../lib/updater";
+import { getVaultPath, setVaultPath } from "../lib/tauri";
 
 interface ThemePickerProps {
   theme: Theme;
@@ -23,6 +26,9 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
   const [version, setVersion] = useState<string>("");
   const [checkPhase, setCheckPhase] = useState<CheckPhase>("idle");
   const [checkErr, setCheckErr] = useState<string>("");
+  const [vaultPath, setVaultPathState] = useState<string>("");
+  const [vaultPhase, setVaultPhase] = useState<"idle" | "busy" | "error">("idle");
+  const [vaultErr, setVaultErr] = useState<string>("");
   const btnRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -30,6 +36,9 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
     let cancelled = false;
     getVersion()
       .then((v) => { if (!cancelled) setVersion(v); })
+      .catch(() => { /* silent */ });
+    getVaultPath()
+      .then((p) => { if (!cancelled) setVaultPathState(p); })
       .catch(() => { /* silent */ });
     return () => { cancelled = true; };
   }, []);
@@ -92,6 +101,35 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
     }
   };
 
+  const onChangeVaultClick = async () => {
+    if (vaultPhase === "busy") return;
+    setVaultErr("");
+    try {
+      const selected = await openDialog({
+        directory: true,
+        multiple: false,
+        title: "选择 Vault 位置",
+        defaultPath: vaultPath || undefined,
+      });
+      if (!selected || typeof selected !== "string") return;
+      const moveFiles = await ask(
+        `是否将现有笔记移动到 ${selected} ？`,
+        { title: "移动现有笔记", okLabel: "移动", cancelLabel: "不移动" },
+      );
+      const proceed = await confirm(
+        `切换 Vault 后 Penraft 将立即重启。\n新位置：${selected}\n${moveFiles ? "现有笔记将被移动过去。" : "现有笔记保持原地不动。"}`,
+        { title: "切换 Vault 并重启", okLabel: "重启", cancelLabel: "取消" },
+      );
+      if (!proceed) return;
+      setVaultPhase("busy");
+      await setVaultPath(selected, moveFiles);
+      await relaunch();
+    } catch (e) {
+      setVaultPhase("error");
+      setVaultErr(e instanceof Error ? e.message : String(e));
+    }
+  };
+
   const checkLabel = (() => {
     switch (checkPhase) {
       case "checking": return "检查中…";
@@ -132,6 +170,22 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
                 <span>{opt.label}</span>
               </button>
             ))}
+          </div>
+          <div className="theme-menu-divider" />
+          <div className="theme-menu-section">
+            <div className="theme-menu-section-label">存储路径</div>
+            <button
+              className="theme-menu-item"
+              onClick={onChangeVaultClick}
+              disabled={vaultPhase === "busy"}
+              title={vaultPhase === "error" ? vaultErr : vaultPath || undefined}
+            >
+              <FolderOpen size={14} className="theme-menu-icon" />
+              <span>{vaultPhase === "busy" ? "切换中…" : "更改位置…"}</span>
+            </button>
+            {vaultPath ? (
+              <div className="theme-menu-path" title={vaultPath}>{vaultPath}</div>
+            ) : null}
           </div>
           <div className="theme-menu-divider" />
           <div className="theme-menu-section">
