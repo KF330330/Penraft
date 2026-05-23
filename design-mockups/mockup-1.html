@@ -1,0 +1,664 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="paper">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Penraft · Settings — Linear minimal</title>
+<style>
+  :root,
+  [data-theme="paper"] {
+    --bg: #f5f3ef;
+    --panel: #fbfaf8;
+    --panel-strong: #ffffff;
+    --line: rgba(36, 30, 21, 0.12);
+    --line-strong: rgba(36, 30, 21, 0.18);
+    --text: #24201a;
+    --muted: #7c746a;
+    --muted-2: #a49b90;
+    --accent: #111827;
+    --accent-soft: rgba(17, 24, 39, 0.08);
+    --top-bar-bg: #f1ede5;
+    --heading-accent: #b45309;
+    --backdrop: rgba(25, 21, 17, 0.36);
+    --shadow: 0 18px 50px rgba(28, 22, 16, 0.12);
+    --radius: 16px;
+    --font: "PingFang SC", "Helvetica Neue", "Microsoft YaHei", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+    --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, "Liberation Mono", monospace;
+    /* Linear-style derived tokens (kept inside the theme so dark/light can override) */
+    --hover: rgba(36, 30, 21, 0.05);
+    --hover-strong: rgba(36, 30, 21, 0.08);
+    --rail: rgba(36, 30, 21, 0.7);
+  }
+
+  [data-theme="light"] {
+    --bg: #ffffff;
+    --panel: #fafafa;
+    --panel-strong: #ffffff;
+    --line: rgba(36, 30, 21, 0.10);
+    --line-strong: rgba(36, 30, 21, 0.16);
+    --text: #24292e;
+    --muted: #7c746a;
+    --muted-2: #a49b90;
+    --top-bar-bg: #f6f6f5;
+    --heading-accent: #24292e;
+    --backdrop: rgba(0, 0, 0, 0.32);
+    --accent: #111827;
+    --accent-soft: rgba(17, 24, 39, 0.08);
+    --shadow: 0 18px 50px rgba(28, 22, 16, 0.10);
+    --hover: rgba(36, 30, 21, 0.04);
+    --hover-strong: rgba(36, 30, 21, 0.07);
+    --rail: rgba(36, 30, 21, 0.75);
+  }
+
+  [data-theme="dark"] {
+    --bg: #1f1d1a;
+    --panel: #28251f;
+    --panel-strong: #3a342a;
+    --line: rgba(255, 255, 255, 0.08);
+    --line-strong: rgba(255, 255, 255, 0.14);
+    --text: #ffffff;
+    --muted: #9b938a;
+    --muted-2: #6a6258;
+    --accent: #d8a464;
+    --accent-soft: rgba(216, 164, 100, 0.12);
+    --top-bar-bg: #2c2a26;
+    --heading-accent: #d8a464;
+    --backdrop: rgba(0, 0, 0, 0.5);
+    --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    --hover: rgba(255, 255, 255, 0.05);
+    --hover-strong: rgba(255, 255, 255, 0.08);
+    --rail: rgba(255, 255, 255, 0.85);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- Fake app chrome (gives context, not a real titlebar) ---------- */
+  .app {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-topbar {
+    height: 44px;
+    background: var(--top-bar-bg);
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+
+  .traffic {
+    display: flex;
+    gap: 8px;
+    margin-right: 6px;
+  }
+  .traffic span {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--line-strong);
+    opacity: 0.55;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    font-size: 12.5px;
+    color: var(--muted);
+  }
+  .tab {
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: default;
+  }
+  .tab.active {
+    color: var(--text);
+    background: var(--hover);
+  }
+
+  .spacer { flex: 1; }
+
+  /* Theme-preview switcher (top-right, so reviewer can see all three) */
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2px;
+    background: var(--panel);
+  }
+  .theme-toggle button {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+  }
+  .theme-toggle button:hover { color: var(--text); }
+  .theme-toggle button[aria-pressed="true"] {
+    background: var(--hover-strong);
+    color: var(--text);
+  }
+
+  /* Gear button — the real "Settings" entry point */
+  .gear {
+    appearance: none;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+  }
+  .gear:hover { background: var(--hover); color: var(--text); }
+  .gear[aria-expanded="true"] {
+    background: var(--hover-strong);
+    color: var(--text);
+    border-color: var(--line);
+  }
+
+  /* ---------- Fake editor canvas ---------- */
+  .canvas {
+    flex: 1;
+    padding: 40px 56px 80px;
+    max-width: 720px;
+  }
+  .canvas h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+    color: var(--text);
+  }
+  .canvas p {
+    margin: 0 0 12px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .canvas .lead { color: var(--text); }
+
+  /* ---------- Dropdown menu — Linear-style ---------- */
+  .menu-anchor {
+    position: absolute;
+    top: 50px;
+    right: 14px;
+    z-index: 20;
+  }
+
+  .menu {
+    width: 288px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 9px 25px rgba(28, 22, 16, 0.06), 0 1px 2px rgba(28, 22, 16, 0.04);
+    padding: 6px 0;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(-4px) scale(0.985);
+    transform-origin: top right;
+    pointer-events: none;
+    transition: opacity 120ms ease, transform 120ms ease;
+  }
+  [data-theme="dark"] .menu {
+    box-shadow: 0 9px 25px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+  .menu.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: auto;
+  }
+
+  .menu-section { padding: 6px 0; }
+  .menu-section + .menu-section { border-top: 1px solid var(--line); }
+
+  .menu-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted-2);
+    letter-spacing: 0.02em;
+    padding: 8px 12px 4px;
+    user-select: none;
+  }
+
+  /* Generic row */
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    min-height: 30px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    border-radius: 0;
+    background: transparent;
+    border: 0;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    transition: background 90ms ease;
+  }
+  .row:hover { background: var(--hover); }
+  .row:active { background: var(--hover-strong); }
+  .row .row-label { flex: 1; min-width: 0; }
+  .row .row-meta {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .row .icon {
+    width: 14px;
+    height: 14px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .row:hover .icon { color: var(--text); }
+
+  /* Theme option row — swatch + label + check */
+  .opt {
+    padding-left: 14px;
+  }
+  .opt .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    border: 1px solid var(--line-strong);
+    flex-shrink: 0;
+  }
+  .opt[data-selected="true"] {
+    color: var(--text);
+  }
+  .opt[data-selected="true"] .row-label {
+    font-weight: 500;
+  }
+  .opt[data-selected="true"]::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 2px;
+    background: var(--rail);
+    border-radius: 0 1px 1px 0;
+  }
+  .opt .check {
+    width: 13px;
+    height: 13px;
+    color: var(--text);
+    opacity: 0;
+  }
+  .opt[data-selected="true"] .check { opacity: 1; }
+
+  /* Storage row */
+  .storage-row {
+    display: block;
+    padding: 6px 12px 8px;
+  }
+  .storage-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+  }
+  .storage-line .icon {
+    width: 14px;
+    height: 14px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .storage-line .storage-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .change-btn {
+    appearance: none;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 90ms ease, border-color 90ms ease;
+  }
+  .change-btn:hover {
+    background: var(--hover);
+    border-color: var(--line-strong);
+  }
+
+  .path {
+    margin-top: 4px;
+    padding: 6px 8px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px dashed var(--line);
+    border-radius: 4px;
+    word-break: break-all;
+    line-height: 1.5;
+    letter-spacing: 0;
+    cursor: default;
+  }
+  .path:hover { color: var(--text); border-color: var(--line-strong); }
+
+  /* Update row */
+  .update-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px 8px;
+  }
+  .update-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .update-info .primary {
+    font-size: 13px;
+    color: var(--text);
+  }
+  .update-info .secondary {
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+  .check-btn {
+    appearance: none;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 12px;
+    padding: 4px 9px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 90ms ease;
+  }
+  .check-btn:hover { background: var(--hover); }
+  .check-btn .icon { width: 12px; height: 12px; }
+
+  .check-btn.checking .icon { animation: spin 0.9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Footer hint */
+  .menu-foot {
+    padding: 8px 12px 4px;
+    font-size: 11px;
+    color: var(--muted-2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    border-top: 1px solid var(--line);
+    margin-top: 4px;
+  }
+  .menu-foot .icon {
+    width: 12px;
+    height: 12px;
+    color: var(--muted-2);
+  }
+  .menu-foot kbd {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 1px 5px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    color: var(--muted);
+    background: transparent;
+  }
+
+  /* Status pill for the toast-style note about dynamic states */
+  .note {
+    margin: 2px 12px 6px;
+    font-size: 11px;
+    color: var(--muted-2);
+    line-height: 1.5;
+  }
+
+  /* Backdrop (subtle, only catches clicks; barely visible) */
+  .backdrop {
+    position: fixed;
+    inset: 0;
+    background: transparent;
+    z-index: 10;
+    display: none;
+  }
+  .backdrop.show { display: block; }
+
+  /* Subtle focus ring (keyboarders only) */
+  :focus-visible {
+    outline: 2px solid var(--accent-soft);
+    outline-offset: 1px;
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Fake topbar to give "app inside" context -->
+    <header class="app-topbar">
+      <div class="traffic" aria-hidden="true"><span></span><span></span><span></span></div>
+      <div class="tabs">
+        <div class="tab active">README.md</div>
+        <div class="tab">notes/idea.md</div>
+        <div class="tab">research/2026-05.md</div>
+      </div>
+      <div class="spacer"></div>
+
+      <div class="theme-toggle" role="group" aria-label="预览主题">
+        <button type="button" data-set-theme="paper" aria-pressed="true">Paper</button>
+        <button type="button" data-set-theme="light" aria-pressed="false">Light</button>
+        <button type="button" data-set-theme="dark" aria-pressed="false">Dark</button>
+      </div>
+
+      <button class="gear" id="gearBtn" type="button" aria-expanded="false" aria-controls="settingsMenu" aria-label="设置">
+        <!-- lucide: settings -->
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+          <circle cx="12" cy="12" r="3"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Fake document content to set context -->
+    <main class="canvas">
+      <h1>Penraft 设置 — Linear 极简方向</h1>
+      <p class="lead">点击右上角的 ⚙ 打开设置菜单。整体走 Linear / Notion 风格：细线 icon、灰阶基调、左侧细 rail 表示选中、紧凑层级。</p>
+      <p>切换顶栏的 Paper / Light / Dark 可预览三种主题下的菜单效果。所有颜色都来自 CSS 变量，不会硬编码。</p>
+      <p>路径用等宽字体呈现，长路径会自然换行；版本号同样走 mono 字体——既有技术质感，也避免和正文混淆。</p>
+    </main>
+
+    <!-- Backdrop (click to close) -->
+    <div class="backdrop" id="backdrop"></div>
+
+    <!-- Menu -->
+    <div class="menu-anchor">
+      <div class="menu" id="settingsMenu" role="menu" aria-label="设置">
+
+        <!-- Theme -->
+        <div class="menu-section">
+          <div class="menu-label">主题</div>
+
+          <button type="button" class="row opt" data-selected="true" role="menuitemradio" aria-checked="true">
+            <span class="swatch" style="background:#f1ede5;"></span>
+            <span class="row-label">Paper</span>
+            <span class="row-meta">米色</span>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+
+          <button type="button" class="row opt" data-selected="false" role="menuitemradio" aria-checked="false">
+            <span class="swatch" style="background:#ffffff;"></span>
+            <span class="row-label">Light</span>
+            <span class="row-meta">白色</span>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+
+          <button type="button" class="row opt" data-selected="false" role="menuitemradio" aria-checked="false">
+            <span class="swatch" style="background:#2c2a26;"></span>
+            <span class="row-label">Dark</span>
+            <span class="row-meta">暗色</span>
+            <svg class="check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+
+        <!-- Storage -->
+        <div class="menu-section">
+          <div class="menu-label">存储路径</div>
+          <div class="storage-row">
+            <div class="storage-line">
+              <!-- lucide: folder -->
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>
+              </svg>
+              <span class="storage-label">PenraftVault</span>
+              <button class="change-btn" type="button">更改位置…</button>
+            </div>
+            <div class="path" title="/Users/rl/Documents/PenraftVault">/Users/rl/Documents/PenraftVault</div>
+          </div>
+        </div>
+
+        <!-- Update -->
+        <div class="menu-section">
+          <div class="menu-label">更新</div>
+          <div class="update-row">
+            <div class="update-info">
+              <span class="primary">检查更新</span>
+              <span class="secondary">v0.3.5</span>
+            </div>
+            <button class="check-btn" id="checkBtn" type="button" aria-label="检查更新">
+              <!-- lucide: refresh-cw -->
+              <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+                <path d="M21 3v5h-5"/>
+                <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+                <path d="M3 21v-5h5"/>
+              </svg>
+              <span id="checkBtnText">检查</span>
+            </button>
+          </div>
+          <div class="note">动态状态：检查中… / 已是最新版本 / 检查失败，点击重试</div>
+        </div>
+
+        <!-- Foot hint -->
+        <div class="menu-foot">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 16v-4"/>
+            <path d="M12 8h.01"/>
+          </svg>
+          <span class="spacer" style="flex:1;">设置在打开后立即生效</span>
+          <kbd>Esc</kbd>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Theme switcher (preview)
+  const themeButtons = document.querySelectorAll('[data-set-theme]');
+  themeButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.getAttribute('data-set-theme');
+      document.documentElement.setAttribute('data-theme', t);
+      themeButtons.forEach(b => b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'));
+    });
+  });
+
+  // Menu open/close
+  const gear = document.getElementById('gearBtn');
+  const menu = document.getElementById('settingsMenu');
+  const backdrop = document.getElementById('backdrop');
+
+  function setMenu(open) {
+    menu.classList.toggle('open', open);
+    backdrop.classList.toggle('show', open);
+    gear.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  // open by default so reviewer sees the menu without clicking
+  setMenu(true);
+
+  gear.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setMenu(!menu.classList.contains('open'));
+  });
+  backdrop.addEventListener('click', () => setMenu(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setMenu(false);
+  });
+
+  // Theme option selection (visual only — real app calls Tauri command)
+  const opts = document.querySelectorAll('.opt');
+  opts.forEach(opt => {
+    opt.addEventListener('click', () => {
+      opts.forEach(o => {
+        o.setAttribute('data-selected', 'false');
+        o.setAttribute('aria-checked', 'false');
+      });
+      opt.setAttribute('data-selected', 'true');
+      opt.setAttribute('aria-checked', 'true');
+    });
+  });
+
+  // Check-update micro-demo (idle → checking → up-to-date → idle)
+  const checkBtn = document.getElementById('checkBtn');
+  const checkBtnText = document.getElementById('checkBtnText');
+  let checking = false;
+  checkBtn.addEventListener('click', () => {
+    if (checking) return;
+    checking = true;
+    checkBtn.classList.add('checking');
+    checkBtnText.textContent = '检查中';
+    setTimeout(() => {
+      checkBtn.classList.remove('checking');
+      checkBtnText.textContent = '已是最新';
+      setTimeout(() => {
+        checkBtnText.textContent = '检查';
+        checking = false;
+      }, 1600);
+    }, 1200);
+  });
+</script>
+</body>
+</html>

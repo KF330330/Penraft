@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Penraft 设置菜单 · 6 个 UI 变体对比</title>
+<style>
+  :root {
+    --page-bg: #f5f3ef;
+    --page-text: #24201a;
+    --page-muted: #7c746a;
+    --page-line: rgba(36, 30, 21, 0.12);
+    --page-panel: #ffffff;
+    --label-bg: #24201a;
+    --label-text: #fbfaf8;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page-bg: #1f1d1a;
+      --page-text: #fbfaf8;
+      --page-muted: #9b938a;
+      --page-line: rgba(255, 255, 255, 0.08);
+      --page-panel: #28251f;
+      --label-bg: #fbfaf8;
+      --label-text: #1f1d1a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--page-bg);
+    color: var(--page-text);
+    font-family: "PingFang SC", "Helvetica Neue", Helvetica, Arial, ui-sans-serif, system-ui, sans-serif;
+    padding: 28px 32px 48px;
+    min-height: 100vh;
+  }
+  header { max-width: 1480px; margin: 0 auto 24px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .sub { color: var(--page-muted); font-size: 13px; line-height: 1.6; }
+  .grid {
+    max-width: 1480px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+  }
+  @media (max-width: 1180px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 760px)  { .grid { grid-template-columns: 1fr; } }
+  .cell {
+    display: flex; flex-direction: column;
+    background: var(--page-panel);
+    border: 1px solid var(--page-line);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .cell-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--page-line);
+  }
+  .num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    background: var(--label-bg); color: var(--label-text);
+    border-radius: 6px;
+    font-size: 12px; font-weight: 600;
+    margin-right: 10px;
+  }
+  .title { font-size: 14px; font-weight: 600; }
+  .tag { color: var(--page-muted); font-size: 11px; margin-left: 8px; font-weight: 400; }
+  .open {
+    text-decoration: none;
+    color: var(--page-muted);
+    font-size: 12px;
+    padding: 4px 8px;
+    border: 1px solid var(--page-line);
+    border-radius: 6px;
+    transition: color 120ms;
+  }
+  .open:hover { color: var(--page-text); }
+  iframe {
+    width: 100%;
+    height: 520px;
+    border: 0;
+    background: transparent;
+    display: block;
+  }
+  footer {
+    max-width: 1480px;
+    margin: 28px auto 0;
+    color: var(--page-muted);
+    font-size: 12px;
+    line-height: 1.7;
+  }
+  footer code {
+    background: var(--page-line);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Penraft 设置菜单 · 6 个 UI 变体</h1>
+  <p class="sub">每个 iframe 是一个独立 mockup，自包含三主题 toggle。挑一个号告诉我，或描述喜欢的混搭（如 "3 号的存储路径 + 1 号的主题选项"）。</p>
+</header>
+
+<div class="grid">
+  <div class="cell">
+    <div class="cell-head">
+      <div><span class="num">1</span><span class="title">Linear 极简</span><span class="tag">紧凑 / 灰阶 / 等宽</span></div>
+      <a class="open" href="mockup-1.html" target="_blank">大图 ↗</a>
+    </div>
+    <iframe src="mockup-1.html" loading="lazy"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head">
+      <div><span class="num">2</span><span class="title">Notion 柔和</span><span class="tag">圆角 / 主题卡片 / 路径胶囊</span></div>
+      <a class="open" href="mockup-2.html" target="_blank">大图 ↗</a>
+    </div>
+    <iframe src="mockup-2.html" loading="lazy"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head">
+      <div><span class="num">3</span><span class="title">macOS System Settings</span><span class="tag">行式 / segmented / 蓝按钮</span></div>
+      <a class="open" href="mockup-3.html" target="_blank">大图 ↗</a>
+    </div>
+    <iframe src="mockup-3.html" loading="lazy"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head">
+      <div><span class="num">4</span><span class="title">Bear 雅致纸感</span><span class="tag">衬线 / 装饰 / 暖色</span></div>
+      <a class="open" href="mockup-4.html" target="_blank">大图 ↗</a>
+    </div>
+    <iframe src="mockup-4.html" loading="lazy"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head">
+      <div><span class="num">5</span><span class="title">iOS Settings 行式</span><span class="tag">圆角 icon / chevron / 双层路径</span></div>
+      <a class="open" href="mockup-5.html" target="_blank">大图 ↗</a>
+    </div>
+    <iframe src="mockup-5.html" loading="lazy"></iframe>
+  </div>
+
+  <div class="cell">
+    <div class="cell-head">
+      <div><span class="num">6</span><span class="title">现代终端</span><span class="tag">等宽 / 命令行 / 终端框</span></div>
+      <a class="open" href="mockup-6.html" target="_blank">大图 ↗</a>
+    </div>
+    <iframe src="mockup-6.html" loading="lazy"></iframe>
+  </div>
+</div>
+
+<footer>
+  iframe 内的菜单默认已展开（mockup 不需要点齿轮才弹）。每个 mockup 顶部/底部有 paper · light · dark 三主题 toggle，可点切换看适配效果。<br>
+  本地打开此文件：<code>open /Users/rl/Nutstore_Files/my_nutstore/520-program/Penraft/.worktrees/wt-14/design-mockups/index.html</code>
+</footer>
+
+</body>
+</html>
