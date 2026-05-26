@@ -1,6 +1,6 @@
 import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 
-// 两件事都靠"在 paragraph / code_block 里拦截 Enter"实现：
+// 一个插件三件事，全部围绕"让代码框易进易出"：
 //
 // 入口（paragraph → code_block，Typora 风格）：
 //   在 paragraph 里输入 ``` （可带可选语言名），按 Enter 时把整段转成 code_block。
@@ -9,13 +9,19 @@ import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 //
 //   匹配规则：^```(?<language>[a-zA-Z0-9_+-]*)\s*$
 //
-// 出口（code_block → paragraph，也是 Typora 风格）：
+// 出口 A（code_block → paragraph，也是 Typora 风格）：
 //   光标停在 code_block 末尾、且末尾确实是空行（textContent 以 \n 结尾）时按 Enter，
 //   抹掉末尾 \n、在 code_block 后插一个空 paragraph、光标跳到新段落。
 //   如果整个 code_block 只有一个 \n（刚 ```+Enter 创建完立刻想退出的情形），
 //   直接把整个块替换成空 paragraph，不留下空 code_block。
 //
-// 仅在 selection.empty 时介入；其它情况一律透传给后续 handler。
+// 出口 B（鼠标点击代码框/任意末块的下方空白）：
+//   PM 默认在空白处点击会把光标吸到最近的合法位置，对 code_block 来说就是"末尾还在
+//   框内"——用户想跳出去就只能反复按 ↓。这里在 mousedown 捕获用户点在最后一块
+//   bounding-rect 下方的情况，按需追加一段空 paragraph 并把光标放过去。不永久性
+//   追加 trailing paragraph，避免污染序列化。
+//
+// Enter 相关分支仅在 selection.empty 时介入；其它情况一律透传给后续 handler。
 
 const key = new PluginKey("penraft-codeblock-enter");
 
@@ -84,6 +90,39 @@ export const codeBlockEnterPlugin = new Plugin({
       }
 
       return false;
+    },
+
+    handleDOMEvents: {
+      mousedown(view, event) {
+        // 只处理主键单击，避免右键/中键
+        if (event.button !== 0) return false;
+
+        const editorEl = view.dom;
+        const lastChild = editorEl.lastElementChild as HTMLElement | null;
+        if (!lastChild) return false;
+
+        const rect = lastChild.getBoundingClientRect();
+        if (event.clientY <= rect.bottom) return false; // 没点到最末块下方空白
+
+        const paragraphType = view.state.schema.nodes.paragraph;
+        if (!paragraphType) return false;
+
+        const docLast = view.state.doc.lastChild;
+        const endPos = view.state.doc.content.size;
+        const tr = view.state.tr;
+
+        if (docLast && docLast.type === paragraphType && docLast.content.size === 0) {
+          // 末块已经是空段落 —— 复用，把光标移过去
+          tr.setSelection(TextSelection.near(tr.doc.resolve(endPos), -1));
+        } else {
+          tr.insert(endPos, paragraphType.create());
+          tr.setSelection(TextSelection.create(tr.doc, endPos + 1));
+        }
+
+        view.dispatch(tr.scrollIntoView());
+        event.preventDefault();
+        return true;
+      },
     },
   },
 });
