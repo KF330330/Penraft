@@ -14,6 +14,7 @@ import {
   installScopedSelectAll,
 } from "./markdown-utils";
 import { mermaidProseMirrorPlugin } from "./mermaid-plugin";
+import { codeBlockEnterPlugin } from "./code-block-enter-plugin";
 
 interface MilkdownEditorProps {
   value: string;
@@ -132,7 +133,11 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
       .config((ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(defaultValueCtx, toMilkdown(value));
-        ctx.update(prosePluginsCtx, (prev) => [...prev, mermaidProseMirrorPlugin]);
+        ctx.update(prosePluginsCtx, (prev) => [
+          ...prev,
+          mermaidProseMirrorPlugin,
+          codeBlockEnterPlugin,
+        ]);
         ctx.get(listenerCtx).markdownUpdated((_c, markdown) => {
           if (suppressEmitRef.current) {
             suppressEmitRef.current = false;
