@@ -547,7 +547,8 @@ button {
 .wysiwyg-column .ProseMirror pre {
   margin: 0 0 16px;
   padding: 16px;
-  background: var(--code-block-bg);
+  /* 与内联 .ProseMirror code 共用 --code-bg，让多行代码框与内联代码视觉同源 */
+  background: var(--code-bg);
   color: var(--text);
   border-radius: 6px;
   overflow: auto;
@@ -565,8 +566,9 @@ button {
 
 /* YAML frontmatter（首段代码块）专属样式：v2 floating-card —— 浮起的卡片
    骨架，颜色用主题变量自适应（暖白 / 纯白 / 暗色三套主题分别浮起）。
-   仅命中文档首块；不影响正文里的普通代码块。 */
-.wysiwyg-column .ProseMirror > pre:first-child {
+   仅命中文档首块且 language=yaml；普通用户的代码框（language 默认为空，
+   toDOM 不写 data-language）天然走 .ProseMirror pre 的灰底样式。 */
+.wysiwyg-column .ProseMirror > pre[data-language="yaml"]:first-child {
   background: var(--panel-strong);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -575,11 +577,11 @@ button {
   overflow-x: hidden;
 }
 
-[data-theme="dark"] .wysiwyg-column .ProseMirror > pre:first-child {
+[data-theme="dark"] .wysiwyg-column .ProseMirror > pre[data-language="yaml"]:first-child {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-.wysiwyg-column .ProseMirror > pre:first-child code {
+.wysiwyg-column .ProseMirror > pre[data-language="yaml"]:first-child code {
   white-space: pre-wrap;
   word-break: break-word;
   display: block;
