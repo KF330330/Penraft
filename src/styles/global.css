@@ -1247,3 +1247,62 @@ button {
   margin: 0;
   line-height: 1.5;
 }
+
+/* 文档内查找浮条（FindBar）：渲染模式下 Cmd+F 触发，定位在编辑区右上角 */
+.find-bar {
+  position: fixed;
+  top: calc(var(--tab-bar-height) + 8px);
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  min-width: 320px;
+}
+.find-bar > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.find-bar-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 2px 0;
+}
+.find-bar-input::placeholder {
+  color: var(--muted-2);
+}
+.find-bar-counter {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 48px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* CSS Custom Highlight API：当前文档查找的高亮配色 */
+::highlight(penraft-find) {
+  background-color: rgba(255, 213, 79, 0.45);
+  color: inherit;
+}
+::highlight(penraft-find-current) {
+  background-color: rgba(255, 152, 0, 0.75);
+  color: inherit;
+}
+[data-theme="dark"] ::highlight(penraft-find) {
+  background-color: rgba(216, 164, 100, 0.35);
+}
+[data-theme="dark"] ::highlight(penraft-find-current) {
+  background-color: rgba(216, 164, 100, 0.7);
+}

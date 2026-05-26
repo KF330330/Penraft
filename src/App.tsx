@@ -3,7 +3,10 @@ import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { emitTo } from "@tauri-apps/api/event";
+import { openSearchPanel } from "@codemirror/search";
+import type { EditorView } from "@codemirror/view";
 import { EditorPane } from "./components/EditorPane";
+import { FindBar } from "./components/FindBar";
 import type { Theme } from "./components/MarkdownEditor";
 import { SearchPanel } from "./components/SearchPanel";
 import { TabBar, type TabBarHandle } from "./components/TabBar";
@@ -112,6 +115,8 @@ export default function App() {
   const [activePath, setActivePath] = useState<string | null>(null);
   const [mode, setMode] = useState<"render" | "source">("render");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findInitialQuery, setFindInitialQuery] = useState<string>("");
   const [toast, setToast] = useState("");
   const [bootstrapped, setBootstrapped] = useState(false);
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
@@ -128,6 +133,7 @@ export default function App() {
   const activePathRef = useRef<string | null>(null);
   const handleCreateRef = useRef<(() => Promise<void>) | null>(null);
   const tabBarRef = useRef<TabBarHandle | null>(null);
+  const cmViewRef = useRef<EditorView | null>(null);
 
   useEffect(() => { docsRef.current = docs; }, [docs]);
   useEffect(() => { activePathRef.current = activePath; }, [activePath]);
@@ -273,10 +279,35 @@ export default function App() {
         event.preventDefault();
         setZoom(ZOOM_DEFAULT);
       }
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "f" &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        // 拿当前文档里已有的选中文本作为初始 query（VS Code 行为）
+        const sel = window.getSelection()?.toString() ?? "";
+        const seed = sel && sel.length < 200 ? sel : "";
+        if (mode === "source") {
+          // 源码模式：直接调起 CodeMirror 自带的搜索面板
+          const view = cmViewRef.current;
+          if (view) {
+            openSearchPanel(view);
+          } else {
+            // CM view 还没就绪时回退到渲染模式 FindBar，避免快捷键无反馈
+            setFindInitialQuery(seed);
+            setFindOpen(true);
+          }
+        } else {
+          setFindInitialQuery(seed);
+          setFindOpen(true);
+        }
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [flushActive]);
+  }, [flushActive, mode]);
 
   // Trackpad pinch-to-zoom: macOS reports trackpad pinch as wheel events with ctrlKey=true.
   useEffect(() => {
@@ -618,7 +649,17 @@ export default function App() {
           mode={mode}
           theme={theme}
           onContentChange={handleContentChange}
+          onCodeMirrorReady={(view) => {
+            cmViewRef.current = view;
+          }}
         />
+        {findOpen && mode === "render" ? (
+          <FindBar
+            documentKey={activePath}
+            initialQuery={findInitialQuery}
+            onClose={() => setFindOpen(false)}
+          />
+        ) : null}
       </div>
 
       {searchOpen ? (
