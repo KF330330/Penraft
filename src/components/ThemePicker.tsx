@@ -1,4 +1,4 @@
-import { Settings, RefreshCw, Check, FolderOpen } from "lucide-react";
+import { Settings, RefreshCw, Folder, Palette, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog, ask, confirm } from "@tauri-apps/plugin-dialog";
@@ -7,18 +7,44 @@ import type { Theme } from "./MarkdownEditor";
 import { manualCheckForUpdate } from "../lib/updater";
 import { getVaultPath, setVaultPath } from "../lib/tauri";
 
+const THEME_OPTIONS: { value: Theme; label: string }[] = [
+  { value: "paper", label: "Paper · 米色" },
+  { value: "light", label: "Light · 白色" },
+  { value: "dark", label: "Dark · 暗色" },
+];
+
+function renderTieredPath(raw: string) {
+  if (!raw) return null;
+  // 把 /Users/<user>/... 或 /home/<user>/... 缩为 ~
+  const m = raw.match(/^\/(?:Users|home)\/[^/]+(\/.*)?$/);
+  const rest = m && m[1] ? m[1].replace(/^\//, "") : raw.replace(/^\//, "");
+  const segs = rest.split("/").filter(Boolean);
+  if (segs.length === 0) {
+    return <span className="path-home">~</span>;
+  }
+  const tail = segs[segs.length - 1];
+  const mid = segs.slice(0, -1);
+  return (
+    <>
+      <span className="path-home">~</span>
+      {mid.map((seg, i) => (
+        <span key={`mid-${i}`}>
+          <span className="path-sep">/</span>
+          <span className="path-mid">{seg}</span>
+        </span>
+      ))}
+      <span className="path-sep">/</span>
+      <span className="path-tail">{tail}</span>
+    </>
+  );
+}
+
 interface ThemePickerProps {
   theme: Theme;
   onChange: (theme: Theme) => void;
 }
 
 type CheckPhase = "idle" | "checking" | "latest" | "error";
-
-const OPTIONS: { value: Theme; label: string; swatch: string }[] = [
-  { value: "paper", label: "Paper · 米色", swatch: "#f1ede5" },
-  { value: "light", label: "Light · 白色", swatch: "#ffffff" },
-  { value: "dark", label: "Dark · 暗色", swatch: "#2c2a26" },
-];
 
 export function ThemePicker({ theme, onChange }: ThemePickerProps) {
   const [open, setOpen] = useState(false);
@@ -139,6 +165,8 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
     }
   })();
 
+  const updateRowClass = `row${checkPhase === "checking" ? " checking" : ""}${checkPhase === "latest" ? " up-to-date" : ""}`;
+
   return (
     <>
       <button
@@ -155,60 +183,80 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
           className="theme-menu"
           style={{ top: menuPos.top, right: menuPos.right }}
         >
-          <div className="theme-menu-section">
-            <div className="theme-menu-section-label">主题</div>
-            {OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                className={`theme-menu-item${opt.value === theme ? " active" : ""}`}
-                onClick={() => {
-                  onChange(opt.value);
-                  setOpen(false);
-                }}
-              >
-                <span className="theme-swatch" style={{ background: opt.swatch }} />
-                <span>{opt.label}</span>
-              </button>
-            ))}
+          {/* ----- Section 1: 外观 ----- */}
+          <div className="group-label">外观</div>
+          <div className="group">
+            <div className="row no-hover">
+              <div className="row-icon theme">
+                <Palette size={14} />
+              </div>
+              <div className="row-label">主题</div>
+              <div className="swatch-list" role="radiogroup" aria-label="主题颜色">
+                {THEME_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className={`swatch ${opt.value}${opt.value === theme ? " active" : ""}`}
+                    title={opt.label}
+                    aria-label={opt.label}
+                    aria-checked={opt.value === theme}
+                    role="radio"
+                    onClick={() => {
+                      onChange(opt.value);
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-          <div className="theme-menu-divider" />
-          <div className="theme-menu-section">
-            <div className="theme-menu-section-label">存储路径</div>
+
+          {/* ----- Section 2: 存储 ----- */}
+          <div className="group-label">存储</div>
+          <div className="group">
             <button
-              className="theme-menu-item"
+              type="button"
+              className="row row-path"
               onClick={onChangeVaultClick}
               disabled={vaultPhase === "busy"}
               title={vaultPhase === "error" ? vaultErr : vaultPath || undefined}
             >
-              <FolderOpen size={14} className="theme-menu-icon" />
-              <span>{vaultPhase === "busy" ? "切换中…" : "更改位置…"}</span>
+              <div className="row-path-top">
+                <div className="row-icon vault">
+                  <Folder size={14} />
+                </div>
+                <div className="row-label">
+                  {vaultPhase === "busy" ? "切换中…" : "Vault 位置"}
+                </div>
+                <div className="row-tail">
+                  <ChevronRight size={14} className="chevron" />
+                </div>
+              </div>
+              <div className="row-path-bottom">
+                <span className="path-value" title={vaultPath}>
+                  {renderTieredPath(vaultPath)}
+                </span>
+              </div>
             </button>
-            {vaultPath ? (
-              <div className="theme-menu-path" title={vaultPath}>{vaultPath}</div>
-            ) : null}
           </div>
-          <div className="theme-menu-divider" />
-          <div className="theme-menu-section">
-            <div className="theme-menu-section-label">更新</div>
+
+          {/* ----- Section 3: 关于 ----- */}
+          <div className="group-label">关于</div>
+          <div className="group">
             <button
-              className="theme-menu-item"
+              type="button"
+              className={updateRowClass}
               onClick={onCheckClick}
               disabled={checkPhase === "checking"}
               title={checkPhase === "error" ? checkErr : undefined}
             >
-              {checkPhase === "latest" ? (
-                <Check size={14} className="theme-menu-icon" />
-              ) : (
-                <RefreshCw
-                  size={14}
-                  className={`theme-menu-icon${checkPhase === "checking" ? " spinning" : ""}`}
-                />
-              )}
-              <span>{checkLabel}</span>
+              <div className="row-icon update">
+                <RefreshCw size={14} className="update-icon" />
+              </div>
+              <div className="row-label">{checkLabel}</div>
+              <div className="row-tail">
+                {version ? <span className="row-version">v{version}</span> : null}
+              </div>
             </button>
-            {version ? (
-              <div className="theme-menu-version">v{version}</div>
-            ) : null}
           </div>
         </div>
       ) : null}
