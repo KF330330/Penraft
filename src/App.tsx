@@ -3,7 +3,6 @@ import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { emitTo } from "@tauri-apps/api/event";
-import { openSearchPanel } from "@codemirror/search";
 import type { EditorView } from "@codemirror/view";
 import { EditorPane } from "./components/EditorPane";
 import { FindBar } from "./components/FindBar";
@@ -289,25 +288,13 @@ export default function App() {
         // 拿当前文档里已有的选中文本作为初始 query（VS Code 行为）
         const sel = window.getSelection()?.toString() ?? "";
         const seed = sel && sel.length < 200 ? sel : "";
-        if (mode === "source") {
-          // 源码模式：直接调起 CodeMirror 自带的搜索面板
-          const view = cmViewRef.current;
-          if (view) {
-            openSearchPanel(view);
-          } else {
-            // CM view 还没就绪时回退到渲染模式 FindBar，避免快捷键无反馈
-            setFindInitialQuery(seed);
-            setFindOpen(true);
-          }
-        } else {
-          setFindInitialQuery(seed);
-          setFindOpen(true);
-        }
+        setFindInitialQuery(seed);
+        setFindOpen(true);
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [flushActive, mode]);
+  }, [flushActive]);
 
   // Trackpad pinch-to-zoom: macOS reports trackpad pinch as wheel events with ctrlKey=true.
   useEffect(() => {
@@ -653,8 +640,10 @@ export default function App() {
             cmViewRef.current = view;
           }}
         />
-        {findOpen && mode === "render" ? (
+        {findOpen ? (
           <FindBar
+            mode={mode}
+            cmView={cmViewRef.current}
             documentKey={activePath}
             initialQuery={findInitialQuery}
             onClose={() => setFindOpen(false)}

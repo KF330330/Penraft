@@ -1,12 +1,19 @@
+import { SearchCursor } from "@codemirror/search";
+import { EditorSelection } from "@codemirror/state";
+import { Decoration, EditorView } from "@codemirror/view";
 import { ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { findCurrentMark, findMatchMark, setFindHighlights } from "../lib/find-state";
 
-// 文档内查找浮条（仅渲染模式使用；源码模式由 App 直接调用 CodeMirror 的 openSearchPanel）。
-// 高亮走 CSS Custom Highlight API（Chromium 105+/WebKit 17.2+ 均支持），避免改动 ProseMirror 文档结构。
+// 文档内查找浮条，渲染模式和源码模式共用同一套 UI。
+// - 渲染模式：用 CSS Custom Highlight API 给 ProseMirror DOM 上色。
+// - 源码模式：通过 setFindHighlights effect 给 CodeMirror 下发 Decoration，
+//   同时 dispatch selection + scrollIntoView 让当前命中可见。
 
 interface FindBarProps {
+  mode: "render" | "source";
+  cmView: EditorView | null;
   onClose: () => void;
-  // 文档 key（path）；切 tab 或换文档时重建高亮
   documentKey: string | null;
   initialQuery?: string;
 }
@@ -22,17 +29,22 @@ function hasCustomHighlight(): boolean {
   );
 }
 
-function clearHighlights() {
+function clearDomHighlights() {
   if (!hasCustomHighlight()) return;
   CSS.highlights.delete(HIGHLIGHT_ALL);
   CSS.highlights.delete(HIGHLIGHT_CURRENT);
+}
+
+function clearCmHighlights(view: EditorView | null) {
+  if (!view) return;
+  view.dispatch({ effects: setFindHighlights.of(Decoration.none) });
 }
 
 function findEditorRoot(): HTMLElement | null {
   return document.querySelector<HTMLElement>(".wysiwyg-column .ProseMirror");
 }
 
-function collectMatches(root: HTMLElement, query: string): Range[] {
+function collectRenderMatches(root: HTMLElement, query: string): Range[] {
   if (!query) return [];
   const needle = query.toLowerCase();
   const ranges: Range[] = [];
@@ -52,7 +64,7 @@ function collectMatches(root: HTMLElement, query: string): Range[] {
           range.setEnd(current, idx + query.length);
           ranges.push(range);
         } catch {
-          // Range 构造失败时跳过该位置
+          // 极少出现的 Range 创建失败，跳过
         }
         from = idx + Math.max(1, needle.length);
       }
@@ -62,9 +74,26 @@ function collectMatches(root: HTMLElement, query: string): Range[] {
   return ranges;
 }
 
-export function FindBar({ onClose, documentKey, initialQuery }: FindBarProps) {
+function collectCmMatches(view: EditorView, query: string): Array<{ from: number; to: number }> {
+  if (!query) return [];
+  const matches: Array<{ from: number; to: number }> = [];
+  const cursor = new SearchCursor(
+    view.state.doc,
+    query,
+    0,
+    view.state.doc.length,
+    (s) => s.toLowerCase(),
+  );
+  while (!cursor.next().done) {
+    matches.push({ from: cursor.value.from, to: cursor.value.to });
+  }
+  return matches;
+}
+
+export function FindBar({ mode, cmView, onClose, documentKey, initialQuery }: FindBarProps) {
   const [query, setQuery] = useState(initialQuery ?? "");
-  const [matches, setMatches] = useState<Range[]>([]);
+  const [domMatches, setDomMatches] = useState<Range[]>([]);
+  const [cmMatches, setCmMatches] = useState<Array<{ from: number; to: number }>>([]);
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
@@ -73,41 +102,62 @@ export function FindBar({ onClose, documentKey, initialQuery }: FindBarProps) {
     inputRef.current?.select();
   }, []);
 
+  // 关闭时清两套高亮（互不干扰）
   useEffect(() => {
-    return () => clearHighlights();
-  }, []);
+    return () => {
+      clearDomHighlights();
+      clearCmHighlights(cmView);
+    };
+  }, [cmView]);
 
+  // 切模式时清掉另一侧的高亮，避免残留
   useEffect(() => {
-    if (!hasCustomHighlight()) {
-      setMatches([]);
-      return;
-    }
+    if (mode === "render") clearCmHighlights(cmView);
+    else clearDomHighlights();
+  }, [mode, cmView]);
+
+  // 查询/文档变化时重新算匹配
+  useEffect(() => {
     if (!query) {
-      clearHighlights();
-      setMatches([]);
+      setDomMatches([]);
+      setCmMatches([]);
       setIndex(0);
+      clearDomHighlights();
+      clearCmHighlights(cmView);
       return;
     }
-    const root = findEditorRoot();
-    if (!root) {
-      clearHighlights();
-      setMatches([]);
+    if (mode === "render") {
+      const root = findEditorRoot();
+      if (!root) {
+        setDomMatches([]);
+        setIndex(0);
+        return;
+      }
+      setDomMatches(collectRenderMatches(root, query));
+      setCmMatches([]);
       setIndex(0);
-      return;
+    } else {
+      if (!cmView) {
+        setCmMatches([]);
+        setIndex(0);
+        return;
+      }
+      setCmMatches(collectCmMatches(cmView, query));
+      setDomMatches([]);
+      setIndex(0);
     }
-    const ranges = collectMatches(root, query);
-    setMatches(ranges);
-    setIndex(0);
-  }, [query, documentKey]);
+  }, [query, documentKey, mode, cmView]);
 
+  // 渲染模式：把 DOM Range 推给 CSS Custom Highlight API
   useEffect(() => {
+    if (mode !== "render") return;
     if (!hasCustomHighlight()) return;
-    if (matches.length === 0) {
-      clearHighlights();
+    if (domMatches.length === 0) {
+      clearDomHighlights();
       return;
     }
-    CSS.highlights.set(HIGHLIGHT_ALL, new Highlight(...matches));
-    const current = matches[Math.min(index, matches.length - 1)];
+    CSS.highlights.set(HIGHLIGHT_ALL, new Highlight(...domMatches));
+    const current = domMatches[Math.min(index, domMatches.length - 1)];
     if (current) {
       CSS.highlights.set(HIGHLIGHT_CURRENT, new Highlight(current));
       const container =
@@ -116,10 +166,33 @@ export function FindBar({ onClose, documentKey, initialQuery }: FindBarProps) {
           : current.startContainer.parentElement;
       container?.scrollIntoView({ behavior: "smooth", block: "center" });
     }
-  }, [matches, index]);
+  }, [mode, domMatches, index]);
 
-  const total = matches.length;
-  const supported = hasCustomHighlight();
+  // 源码模式：把匹配作为 Decoration 下发，并把当前命中选中 + 滚到中部
+  useEffect(() => {
+    if (mode !== "source" || !cmView) return;
+    if (cmMatches.length === 0) {
+      cmView.dispatch({ effects: setFindHighlights.of(Decoration.none) });
+      return;
+    }
+    const currentIdx = Math.min(index, cmMatches.length - 1);
+    const decos = cmMatches.map((m, i) =>
+      i === currentIdx ? findCurrentMark.range(m.from, m.to) : findMatchMark.range(m.from, m.to),
+    );
+    const set = Decoration.set(decos, true);
+    const current = cmMatches[currentIdx];
+    cmView.dispatch({
+      effects: [
+        setFindHighlights.of(set),
+        EditorView.scrollIntoView(EditorSelection.range(current.from, current.to), {
+          y: "center",
+        }),
+      ],
+      selection: EditorSelection.single(current.from, current.to),
+    });
+  }, [mode, cmMatches, index, cmView]);
+
+  const total = mode === "render" ? domMatches.length : cmMatches.length;
 
   const goNext = () => {
     if (total === 0) return;
@@ -129,6 +202,8 @@ export function FindBar({ onClose, documentKey, initialQuery }: FindBarProps) {
     if (total === 0) return;
     setIndex((i) => (i - 1 + total) % total);
   };
+
+  const supported = mode === "source" ? cmView !== null : hasCustomHighlight();
 
   return (
     <div className="find-bar" onMouseDown={(e) => e.stopPropagation()}>
@@ -152,7 +227,7 @@ export function FindBar({ onClose, documentKey, initialQuery }: FindBarProps) {
       />
       <span className="find-bar-counter">
         {!supported
-          ? "浏览器不支持"
+          ? "暂不可用"
           : total === 0
             ? query
               ? "0 / 0"

@@ -46,6 +46,11 @@ export function slugify(text: string): string {
 // ⌘A 限定到 frontmatter 框：光标在 code_block 内首次按 ⌘A，只选中该块内容；
 // 已经处于「整块选中」时不拦截，让 ProseMirror 默认 selectAll 展到全文（VS Code /
 // Typora 行为）。光标不在 code_block 时也不拦截。返回 cleanup。
+//
+// 注意：必须用 stopImmediatePropagation 而不是 stopPropagation —— ProseMirror 的
+// keydown 监听器和我们的 handler 挂在同一个 view.dom 上，stopPropagation 只会阻
+// 断到其他元素的传播，不会阻断同元素上的其他监听器。如果只用 stopPropagation，
+// PM 的 baseKeymap 里的 selectAll 命令仍然会在我们 dispatch 之后把选区扩到全文。
 import { TextSelection } from "@milkdown/prose/state";
 import type { EditorView } from "@milkdown/prose/view";
 
@@ -69,7 +74,7 @@ export function installScopedSelectAll(view: EditorView): () => void {
     if (sel.from === blockStart && sel.to === blockEnd) return;
 
     e.preventDefault();
-    e.stopPropagation();
+    e.stopImmediatePropagation();
     view.dispatch(
       state.tr.setSelection(TextSelection.create(state.doc, blockStart, blockEnd)),
     );

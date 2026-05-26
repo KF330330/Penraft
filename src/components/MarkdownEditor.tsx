@@ -2,9 +2,9 @@ import { useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
-import { search } from "@codemirror/search";
 import type { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
+import { findHighlightField } from "../lib/find-state";
 
 export type Theme = "paper" | "light" | "dark";
 
@@ -48,8 +48,8 @@ export function MarkdownEditor({ value, onChange, theme, onReady }: MarkdownEdit
     () => [
       markdown(),
       syntaxHighlighting(buildHighlight(theme)),
-      // 显式加载 search 状态字段，让 openSearchPanel 在 searchKeymap 关闭时仍可用
-      search({ top: true }),
+      // FindBar 通过 setFindHighlights effect 往这个字段塞装饰，统一两种模式的查找 UI
+      findHighlightField,
     ],
     [theme],
   );
@@ -66,6 +66,8 @@ export function MarkdownEditor({ value, onChange, theme, onReady }: MarkdownEdit
         highlightActiveLine: false,
         // 关掉自带 ⌘F 绑定，统一由 App 层的 FindBar 调度
         searchKeymap: false,
+        // 一并关掉 CM 自带的"按下后高亮选中相同串"装饰，避免和 FindBar 高亮抢色
+        highlightSelectionMatches: false,
       }}
       onChange={(next) => onChange(next)}
       onCreateEditor={(view) => onReady?.(view)}

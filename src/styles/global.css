@@ -1306,3 +1306,19 @@ button {
 [data-theme="dark"] ::highlight(penraft-find-current) {
   background-color: rgba(216, 164, 100, 0.7);
 }
+
+/* CodeMirror（源码模式）查找高亮：与渲染模式共用同款配色，UI 因此一致 */
+.cm-find-match {
+  background-color: rgba(255, 213, 79, 0.45);
+  border-radius: 2px;
+}
+.cm-find-match-current {
+  background-color: rgba(255, 152, 0, 0.75);
+  border-radius: 2px;
+}
+[data-theme="dark"] .cm-find-match {
+  background-color: rgba(216, 164, 100, 0.35);
+}
+[data-theme="dark"] .cm-find-match-current {
+  background-color: rgba(216, 164, 100, 0.7);
+}
