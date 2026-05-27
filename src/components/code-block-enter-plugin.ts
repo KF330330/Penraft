@@ -9,11 +9,7 @@ import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 //
 //   匹配规则：^```(?<language>[a-zA-Z0-9_+-]*)\s*$
 //
-// 出口 A（code_block → paragraph，也是 Typora 风格）：
-//   光标停在 code_block 末尾、且末尾确实是空行（textContent 以 \n 结尾）时按 Enter，
-//   抹掉末尾 \n、在 code_block 后插一个空 paragraph、光标跳到新段落。
-//   如果整个 code_block 只有一个 \n（刚 ```+Enter 创建完立刻想退出的情形），
-//   直接把整个块替换成空 paragraph，不留下空 code_block。
+//   注意：Enter 在 code_block 内永远只换行，不出框。出框只靠下面两条路径。
 //
 // 出口 B（鼠标点击代码框/任意末块的下方空白）：
 //   PM 默认在空白处点击会把光标吸到最近的合法位置，对 code_block 来说就是"末尾还在
@@ -21,7 +17,13 @@ import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 //   bounding-rect 下方的情况，按需追加一段空 paragraph 并把光标放过去。不永久性
 //   追加 trailing paragraph，避免污染序列化。
 //
-// Enter 相关分支仅在 selection.empty 时介入；其它情况一律透传给后续 handler。
+// 出口 C（↓ 在文档末块内容末尾兜底）：
+//   PM 默认 ↓ 在"最末块就是 code_block / heading / list、且后面没有任何节点"时
+//   会让光标卡在末块末尾不动。这里拦截这一边界条件：cursor 停在 doc.lastChild 的
+//   末尾、且该块不是 paragraph 时，追加一个空 paragraph 并把光标跳过去。
+//   其它 ↓ 行为（中间 ↓ 换行、末块下方已有别的块时 ↓ 跳过去）一律不掺和。
+//
+// 入口的 Enter 分支与出口 C 的 ↓ 分支都只在 selection.empty 时介入。
 
 const key = new PluginKey("penraft-codeblock-enter");
 
@@ -31,7 +33,7 @@ export const codeBlockEnterPlugin = new Plugin({
   key,
   props: {
     handleKeyDown(view, event) {
-      if (event.key !== "Enter") return false;
+      // 修饰键一律不接：Shift/Cmd/Ctrl/Alt + Enter 或 + ArrowDown 留给系统
       if (event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) return false;
       const { state } = view;
       if (!state.selection.empty) return false;
@@ -39,7 +41,7 @@ export const codeBlockEnterPlugin = new Plugin({
       const parent = $from.parent;
 
       // ===== 入口：paragraph 里输入 ``` + Enter → code_block =====
-      if (parent.type.name === "paragraph") {
+      if (event.key === "Enter" && parent.type.name === "paragraph") {
         const match = FENCE_RE.exec(parent.textContent);
         if (!match) return false;
         const codeBlockType = state.schema.nodes.code_block;
@@ -57,35 +59,21 @@ export const codeBlockEnterPlugin = new Plugin({
         return true;
       }
 
-      // ===== 出口：code_block 末尾空行再按 Enter → 跳出到下方新段落 =====
-      if (parent.type.name === "code_block") {
-        // 必须在 code_block 末尾
+      // ===== 出口 C：↓ 在文档末块内容末尾时按需追加 paragraph 跳出去 =====
+      if (event.key === "ArrowDown") {
+        if (state.doc.lastChild !== parent) return false;
         if ($from.pos !== $from.end()) return false;
-        const text = parent.textContent;
-        if (!text.endsWith("\n")) return false;
+        if (parent.type.name === "paragraph") return false;
 
         const paragraphType = state.schema.nodes.paragraph;
         if (!paragraphType) return false;
 
-        const tr = state.tr;
-        if (text === "\n") {
-          // 整个 code_block 只有一个空换行 —— 整块替换成空 paragraph
-          const blockStart = $from.before();
-          const blockEnd = $from.after();
-          tr.replaceRangeWith(blockStart, blockEnd, paragraphType.create());
-          tr.setSelection(TextSelection.create(tr.doc, blockStart + 1));
-        } else {
-          // 抹掉末尾 \n，在 code_block 之后塞一个空 paragraph
-          const blockEnd = $from.end();
-          const afterPos = $from.after();
-          tr.delete(blockEnd - 1, blockEnd);
-          // 删除 1 字符后 afterPos 整体往前位移 1
-          const newAfterPos = afterPos - 1;
-          tr.insert(newAfterPos, paragraphType.create());
-          // paragraph 内部第一个有效光标位 = newAfterPos + 1
-          tr.setSelection(TextSelection.create(tr.doc, newAfterPos + 1));
-        }
+        const endPos = state.doc.content.size;
+        const tr = state.tr
+          .insert(endPos, paragraphType.create())
+          .setSelection(TextSelection.create(state.tr.doc, endPos + 1));
         view.dispatch(tr.scrollIntoView());
+        event.preventDefault();
         return true;
       }
 
