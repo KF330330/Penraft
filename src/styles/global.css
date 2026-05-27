@@ -643,7 +643,8 @@ button {
 .wysiwyg-column .ProseMirror pre {
   margin: 0 0 16px;
   padding: 16px;
-  background: var(--code-block-bg);
+  /* 与内联 .ProseMirror code 共用 --code-bg，让多行代码框与内联代码视觉同源 */
+  background: var(--code-bg);
   color: var(--text);
   border-radius: 6px;
   overflow: auto;
@@ -661,8 +662,9 @@ button {
 
 /* YAML frontmatter（首段代码块）专属样式：v2 floating-card —— 浮起的卡片
    骨架，颜色用主题变量自适应（暖白 / 纯白 / 暗色三套主题分别浮起）。
-   仅命中文档首块；不影响正文里的普通代码块。 */
-.wysiwyg-column .ProseMirror > pre:first-child {
+   仅命中文档首块且 language=yaml；普通用户的代码框（language 默认为空，
+   toDOM 不写 data-language）天然走 .ProseMirror pre 的灰底样式。 */
+.wysiwyg-column .ProseMirror > pre[data-language="yaml"]:first-child {
   background: var(--panel-strong);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -671,11 +673,11 @@ button {
   overflow-x: hidden;
 }
 
-[data-theme="dark"] .wysiwyg-column .ProseMirror > pre:first-child {
+[data-theme="dark"] .wysiwyg-column .ProseMirror > pre[data-language="yaml"]:first-child {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
-.wysiwyg-column .ProseMirror > pre:first-child code {
+.wysiwyg-column .ProseMirror > pre[data-language="yaml"]:first-child code {
   white-space: pre-wrap;
   word-break: break-word;
   display: block;
@@ -1342,4 +1344,79 @@ button {
   color: var(--muted);
   margin: 0;
   line-height: 1.5;
+}
+
+/* 文档内查找浮条（FindBar）：渲染模式下 Cmd+F 触发，定位在编辑区右上角 */
+.find-bar {
+  position: fixed;
+  top: calc(var(--tab-bar-height) + 8px);
+  right: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--panel-strong);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  min-width: 320px;
+}
+.find-bar > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.find-bar-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  padding: 2px 0;
+}
+.find-bar-input::placeholder {
+  color: var(--muted-2);
+}
+.find-bar-counter {
+  font-size: 12px;
+  color: var(--muted);
+  min-width: 48px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* CSS Custom Highlight API：当前文档查找的高亮配色 */
+::highlight(penraft-find) {
+  background-color: rgba(255, 213, 79, 0.45);
+  color: inherit;
+}
+::highlight(penraft-find-current) {
+  background-color: rgba(255, 152, 0, 0.75);
+  color: inherit;
+}
+[data-theme="dark"] ::highlight(penraft-find) {
+  background-color: rgba(216, 164, 100, 0.35);
+}
+[data-theme="dark"] ::highlight(penraft-find-current) {
+  background-color: rgba(216, 164, 100, 0.7);
+}
+
+/* CodeMirror（源码模式）查找高亮：与渲染模式共用同款配色，UI 因此一致 */
+.cm-find-match {
+  background-color: rgba(255, 213, 79, 0.45);
+  border-radius: 2px;
+}
+.cm-find-match-current {
+  background-color: rgba(255, 152, 0, 0.75);
+  border-radius: 2px;
+}
+[data-theme="dark"] .cm-find-match {
+  background-color: rgba(216, 164, 100, 0.35);
+}
+[data-theme="dark"] .cm-find-match-current {
+  background-color: rgba(216, 164, 100, 0.7);
 }

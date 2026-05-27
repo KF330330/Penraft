@@ -1,3 +1,4 @@
+import type { EditorView } from "@codemirror/view";
 import type { NoteDocument } from "../lib/types";
 import { MarkdownEditor, type Theme } from "./MarkdownEditor";
 import { MilkdownEditor } from "./MilkdownEditor";
@@ -8,6 +9,8 @@ interface EditorPaneProps {
   mode: "render" | "source";
   theme: Theme;
   onContentChange: (value: string) => void;
+  // CodeMirror EditorView 就绪时回调，给上层 Cmd+F 直接调 openSearchPanel 用
+  onCodeMirrorReady?: (view: EditorView) => void;
 }
 
 export function EditorPane({
@@ -16,6 +19,7 @@ export function EditorPane({
   mode,
   theme,
   onContentChange,
+  onCodeMirrorReady,
 }: EditorPaneProps) {
   if (!document) {
     return (
@@ -39,7 +43,12 @@ export function EditorPane({
           </div>
         ) : (
           <div className="source-column">
-            <MarkdownEditor value={content} onChange={onContentChange} theme={theme} />
+            <MarkdownEditor
+              value={content}
+              onChange={onContentChange}
+              theme={theme}
+              onReady={onCodeMirrorReady}
+            />
           </div>
         )}
       </div>

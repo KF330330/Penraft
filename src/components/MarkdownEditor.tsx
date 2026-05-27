@@ -2,7 +2,9 @@ import { useMemo } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
+import type { EditorView } from "@codemirror/view";
 import { tags as t } from "@lezer/highlight";
+import { findHighlightField } from "../lib/find-state";
 
 export type Theme = "paper" | "light" | "dark";
 
@@ -37,11 +39,18 @@ interface MarkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
   theme: Theme;
+  // 把 CodeMirror EditorView 交还给上层，方便外部触发 openSearchPanel
+  onReady?: (view: EditorView) => void;
 }
 
-export function MarkdownEditor({ value, onChange, theme }: MarkdownEditorProps) {
+export function MarkdownEditor({ value, onChange, theme, onReady }: MarkdownEditorProps) {
   const extensions = useMemo(
-    () => [markdown(), syntaxHighlighting(buildHighlight(theme))],
+    () => [
+      markdown(),
+      syntaxHighlighting(buildHighlight(theme)),
+      // FindBar 通过 setFindHighlights effect 往这个字段塞装饰，统一两种模式的查找 UI
+      findHighlightField,
+    ],
     [theme],
   );
 
@@ -55,9 +64,13 @@ export function MarkdownEditor({ value, onChange, theme }: MarkdownEditorProps) 
         lineNumbers: true,
         foldGutter: false,
         highlightActiveLine: false,
-        searchKeymap: true,
+        // 关掉自带 ⌘F 绑定，统一由 App 层的 FindBar 调度
+        searchKeymap: false,
+        // 一并关掉 CM 自带的"按下后高亮选中相同串"装饰，避免和 FindBar 高亮抢色
+        highlightSelectionMatches: false,
       }}
       onChange={(next) => onChange(next)}
+      onCreateEditor={(view) => onReady?.(view)}
     />
   );
 }

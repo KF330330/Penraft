@@ -3,7 +3,9 @@ import { save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
 import { emitTo } from "@tauri-apps/api/event";
+import type { EditorView } from "@codemirror/view";
 import { EditorPane } from "./components/EditorPane";
+import { FindBar } from "./components/FindBar";
 import type { Theme } from "./components/MarkdownEditor";
 import { SearchPanel } from "./components/SearchPanel";
 import { TabBar, type TabBarHandle } from "./components/TabBar";
@@ -112,6 +114,8 @@ export default function App() {
   const [activePath, setActivePath] = useState<string | null>(null);
   const [mode, setMode] = useState<"render" | "source">("render");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [findOpen, setFindOpen] = useState(false);
+  const [findInitialQuery, setFindInitialQuery] = useState<string>("");
   const [toast, setToast] = useState("");
   const [bootstrapped, setBootstrapped] = useState(false);
   const [zoom, setZoom] = useState(ZOOM_DEFAULT);
@@ -128,6 +132,7 @@ export default function App() {
   const activePathRef = useRef<string | null>(null);
   const handleCreateRef = useRef<(() => Promise<void>) | null>(null);
   const tabBarRef = useRef<TabBarHandle | null>(null);
+  const cmViewRef = useRef<EditorView | null>(null);
 
   useEffect(() => { docsRef.current = docs; }, [docs]);
   useEffect(() => { activePathRef.current = activePath; }, [activePath]);
@@ -272,6 +277,19 @@ export default function App() {
       if ((event.metaKey || event.ctrlKey) && event.key === "0") {
         event.preventDefault();
         setZoom(ZOOM_DEFAULT);
+      }
+      if (
+        (event.metaKey || event.ctrlKey) &&
+        event.key.toLowerCase() === "f" &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        // 拿当前文档里已有的选中文本作为初始 query（VS Code 行为）
+        const sel = window.getSelection()?.toString() ?? "";
+        const seed = sel && sel.length < 200 ? sel : "";
+        setFindInitialQuery(seed);
+        setFindOpen(true);
       }
     };
     window.addEventListener("keydown", handler);
@@ -621,7 +639,19 @@ export default function App() {
           mode={mode}
           theme={theme}
           onContentChange={handleContentChange}
+          onCodeMirrorReady={(view) => {
+            cmViewRef.current = view;
+          }}
         />
+        {findOpen ? (
+          <FindBar
+            mode={mode}
+            cmView={cmViewRef.current}
+            documentKey={activePath}
+            initialQuery={findInitialQuery}
+            onClose={() => setFindOpen(false)}
+          />
+        ) : null}
       </div>
 
       {searchOpen ? (

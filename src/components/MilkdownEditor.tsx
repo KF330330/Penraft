@@ -6,6 +6,8 @@ import { gfm } from "@milkdown/preset-gfm";
 import { history } from "@milkdown/plugin-history";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { Slice } from "@milkdown/prose/model";
+import { TextSelection } from "@milkdown/prose/state";
+import { keymap as createKeymap } from "@milkdown/prose/keymap";
 import {
   cleanMarkdown,
   frontmatterToYamlFence,
@@ -14,6 +16,37 @@ import {
   installScopedSelectAll,
 } from "./markdown-utils";
 import { mermaidProseMirrorPlugin } from "./mermaid-plugin";
+import { codeBlockEnterPlugin } from "./code-block-enter-plugin";
+
+// ↓ 兜底出框：光标停在文档末块（非 paragraph）的视觉末行时按 ↓，追加一段空 paragraph 让用户跳出去。
+// 用一个独立的 PM keymap 插件而不是走 Milkdown KeymapManager —— 前者直接放进 prosePluginsCtx
+// 最前面，someProp("handleKeyDown") 第一个就命中我们；后者注册时机依赖 keymapCtx 已被 keymap 插件
+// 注入，config 回调阶段拿到的可能是 createSlice 时的默认占位实例，注册无效。
+const arrowDownExitKeymap = createKeymap({
+  ArrowDown: (state, dispatch) => {
+    if (!state.selection.empty) return false;
+    const { $from } = state.selection;
+    // 只在顶层块内介入（list_item 嵌套等场景让出）
+    if ($from.depth !== 1) return false;
+    // 必须是文档最末块；用位置数字判定，不依赖节点引用相等
+    if ($from.after(1) !== state.doc.content.size) return false;
+    // paragraph 不掺和，让 PM 默认 ↓ 自然处理
+    if ($from.parent.type.name === "paragraph") return false;
+    // 视觉末行判定：光标到末块末尾之间没有再隔 \n（多行 code_block 非末行时让出）
+    const text = $from.parent.textContent;
+    if (text.slice($from.parentOffset).includes("\n")) return false;
+    const paragraphType = state.schema.nodes.paragraph;
+    if (!paragraphType) return false;
+    if (dispatch) {
+      const endPos = state.doc.content.size;
+      const tr = state.tr.insert(endPos, paragraphType.create());
+      // 必须用 tr.doc（新 doc）而不是 state.tr.doc（getter，会返回旧 doc 的全新 tr）
+      tr.setSelection(TextSelection.create(tr.doc, endPos + 1));
+      dispatch(tr.scrollIntoView());
+    }
+    return true;
+  },
+});
 
 interface MilkdownEditorProps {
   value: string;
@@ -132,7 +165,13 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
       .config((ctx) => {
         ctx.set(rootCtx, root);
         ctx.set(defaultValueCtx, toMilkdown(value));
-        ctx.update(prosePluginsCtx, (prev) => [...prev, mermaidProseMirrorPlugin]);
+        ctx.update(prosePluginsCtx, (prev) => [
+          // 放最前面，someProp("handleKeyDown") 第一个就命中
+          arrowDownExitKeymap,
+          ...prev,
+          mermaidProseMirrorPlugin,
+          codeBlockEnterPlugin,
+        ]);
         ctx.get(listenerCtx).markdownUpdated((_c, markdown) => {
           if (suppressEmitRef.current) {
             suppressEmitRef.current = false;
