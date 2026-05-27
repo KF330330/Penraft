@@ -39,9 +39,9 @@ const arrowDownExitKeymap = createKeymap({
     if (!paragraphType) return false;
     if (dispatch) {
       const endPos = state.doc.content.size;
-      const tr = state.tr
-        .insert(endPos, paragraphType.create())
-        .setSelection(TextSelection.create(state.tr.doc, endPos + 1));
+      const tr = state.tr.insert(endPos, paragraphType.create());
+      // 必须用 tr.doc（新 doc）而不是 state.tr.doc（getter，会返回旧 doc 的全新 tr）
+      tr.setSelection(TextSelection.create(tr.doc, endPos + 1));
       dispatch(tr.scrollIntoView());
     }
     return true;
