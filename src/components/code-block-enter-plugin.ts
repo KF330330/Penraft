@@ -1,6 +1,6 @@
 import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 
-// 一个插件三件事，全部围绕"让代码框易进易出"：
+// 这个插件管两件事：
 //
 // 入口（paragraph → code_block，Typora 风格）：
 //   在 paragraph 里输入 ``` （可带可选语言名），按 Enter 时把整段转成 code_block。
@@ -9,21 +9,15 @@ import { Plugin, PluginKey, TextSelection } from "@milkdown/prose/state";
 //
 //   匹配规则：^```(?<language>[a-zA-Z0-9_+-]*)\s*$
 //
-//   注意：Enter 在 code_block 内永远只换行，不出框。出框只靠下面两条路径。
+//   注意：Enter 在 code_block 内永远只换行，不出框。
 //
-// 出口 B（鼠标点击代码框/任意末块的下方空白）：
+// 出口（鼠标点击代码框/任意末块的下方空白）：
 //   PM 默认在空白处点击会把光标吸到最近的合法位置，对 code_block 来说就是"末尾还在
-//   框内"——用户想跳出去就只能反复按 ↓。这里在 mousedown 捕获用户点在最后一块
-//   bounding-rect 下方的情况，按需追加一段空 paragraph 并把光标放过去。不永久性
-//   追加 trailing paragraph，避免污染序列化。
+//   框内"。这里在 mousedown 捕获用户点在最后一块 bounding-rect 下方的情况，按需追
+//   加一段空 paragraph 并把光标放过去。不永久性追加 trailing paragraph，避免污染序列化。
 //
-// 出口 C（↓ 在文档末块内容末尾兜底）：
-//   PM 默认 ↓ 在"最末块就是 code_block / heading / list、且后面没有任何节点"时
-//   会让光标卡在末块末尾不动。这里拦截这一边界条件：cursor 停在 doc.lastChild 的
-//   末尾、且该块不是 paragraph 时，追加一个空 paragraph 并把光标跳过去。
-//   其它 ↓ 行为（中间 ↓ 换行、末块下方已有别的块时 ↓ 跳过去）一律不掺和。
-//
-// 入口的 Enter 分支与出口 C 的 ↓ 分支都只在 selection.empty 时介入。
+// 另一条出口（↓ 在文档末块末尾兜底）登记在 MilkdownEditor 里通过 Milkdown KeymapManager
+// 注册，不在这个文件内。
 
 const key = new PluginKey("penraft-codeblock-enter");
 
@@ -56,24 +50,6 @@ export const codeBlockEnterPlugin = new Plugin({
         );
         tr.setSelection(TextSelection.create(tr.doc, blockStart + 1));
         view.dispatch(tr.scrollIntoView());
-        return true;
-      }
-
-      // ===== 出口 C：↓ 在文档末块内容末尾时按需追加 paragraph 跳出去 =====
-      if (event.key === "ArrowDown") {
-        if (state.doc.lastChild !== parent) return false;
-        if ($from.pos !== $from.end()) return false;
-        if (parent.type.name === "paragraph") return false;
-
-        const paragraphType = state.schema.nodes.paragraph;
-        if (!paragraphType) return false;
-
-        const endPos = state.doc.content.size;
-        const tr = state.tr
-          .insert(endPos, paragraphType.create())
-          .setSelection(TextSelection.create(state.tr.doc, endPos + 1));
-        view.dispatch(tr.scrollIntoView());
-        event.preventDefault();
         return true;
       }
 

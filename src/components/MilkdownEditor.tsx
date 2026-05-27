@@ -1,11 +1,12 @@
 import { useEffect, useRef } from "react";
-import { Editor, rootCtx, defaultValueCtx, editorViewCtx, parserCtx, prosePluginsCtx } from "@milkdown/core";
+import { Editor, rootCtx, defaultValueCtx, editorViewCtx, parserCtx, prosePluginsCtx, keymapCtx } from "@milkdown/core";
 import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { gfm } from "@milkdown/preset-gfm";
 import { history } from "@milkdown/plugin-history";
 import { listener, listenerCtx } from "@milkdown/plugin-listener";
 import { Slice } from "@milkdown/prose/model";
+import { TextSelection } from "@milkdown/prose/state";
 import {
   cleanMarkdown,
   frontmatterToYamlFence,
@@ -138,6 +139,30 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
           mermaidProseMirrorPlugin,
           codeBlockEnterPlugin,
         ]);
+        // ↓ 兜底：光标停在文档末块（非 paragraph）末尾时按 ↓，追加一段空 paragraph 让用户跳出去。
+        // priority 100 > 默认 50，确保我们在 chainCommands 里最先被尝试；返回 false 时自动放行给浏览器原生 ↓。
+        ctx.get(keymapCtx).add({
+          key: "ArrowDown",
+          priority: 100,
+          onRun: () => (state, dispatch) => {
+            if (!state.selection.empty) return false;
+            const { $from } = state.selection;
+            if ($from.depth !== 1) return false;
+            if ($from.pos !== $from.end()) return false;
+            if ($from.after(1) !== state.doc.content.size) return false;
+            if ($from.parent.type.name === "paragraph") return false;
+            const paragraphType = state.schema.nodes.paragraph;
+            if (!paragraphType) return false;
+            if (dispatch) {
+              const endPos = state.doc.content.size;
+              const tr = state.tr
+                .insert(endPos, paragraphType.create())
+                .setSelection(TextSelection.create(state.tr.doc, endPos + 1));
+              dispatch(tr.scrollIntoView());
+            }
+            return true;
+          },
+        });
         ctx.get(listenerCtx).markdownUpdated((_c, markdown) => {
           if (suppressEmitRef.current) {
             suppressEmitRef.current = false;
