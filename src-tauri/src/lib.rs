@@ -192,6 +192,8 @@ fn dispatch_open_files(app: &AppHandle, paths: Vec<String>) {
         }
     }
     if let Some(window) = app.get_webview_window(MAIN_WINDOW) {
+        let _ = window.unminimize();
+        let _ = window.show();
         let _ = window.set_focus();
         for p in &paths {
             let _ = window.emit(OPEN_FILE_EVENT, p);

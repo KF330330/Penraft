@@ -552,9 +552,15 @@ export default function App() {
 
   // 后端派发 "用 Penraft 打开"（macOS RunEvent::Opened / Win+Linux single-instance）
   useTauriListen<string>(EVENTS.OPEN_FILE, (event) => {
-    if (typeof event.payload === "string" && event.payload.length > 0) {
-      void openPath(event.payload);
-    }
+    if (typeof event.payload !== "string" || event.payload.length === 0) return;
+    void (async () => {
+      await openPath(event.payload);
+      try {
+        await getCurrentWindow().setFocus();
+      } catch {
+        // ignore
+      }
+    })();
   }, bootstrapped);
 
   // 跨窗口拖拽合并
@@ -591,6 +597,13 @@ export default function App() {
         if (cancelled) return;
         for (const p of pending) {
           await openPath(p);
+        }
+        if (pending.length > 0) {
+          try {
+            await getCurrentWindow().setFocus();
+          } catch {
+            // ignore
+          }
         }
       } catch {
         // ignore — drain failure shouldn't block runtime listening
