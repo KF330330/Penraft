@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import CodeMirror from "@uiw/react-codemirror";
 import { markdown } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
@@ -41,9 +41,42 @@ interface MarkdownEditorProps {
   theme: Theme;
   // 把 CodeMirror EditorView 交还给上层，方便外部触发 openSearchPanel
   onReady?: (view: EditorView) => void;
+  // per-tab 滚动位置存取（App 层持有 Map），切 tab 后恢复阅读位置用。
+  // 真正的滚动元素是 CM 的 view.scrollDOM（.cm-scroller），不是 .source-column。
+  path?: string;
+  onSaveScroll?: (path: string, mode: "render" | "source", top: number) => void;
+  onReadScroll?: (path: string, mode: "render" | "source") => number | undefined;
 }
 
-export function MarkdownEditor({ value, onChange, theme, onReady }: MarkdownEditorProps) {
+export function MarkdownEditor({
+  value,
+  onChange,
+  theme,
+  onReady,
+  path,
+  onSaveScroll,
+  onReadScroll,
+}: MarkdownEditorProps) {
+  const viewRef = useRef<EditorView | null>(null);
+  const pathRef = useRef(path);
+  pathRef.current = path;
+  const onSaveScrollRef = useRef(onSaveScroll);
+  onSaveScrollRef.current = onSaveScroll;
+  const onReadScrollRef = useRef(onReadScroll);
+  onReadScrollRef.current = onReadScroll;
+
+  // 切 tab（path 变化）后恢复滚动位置。只依赖 path——typing 也会改 value，
+  // 不能在每次输入后都写 scrollTop。CM 子组件的受控 value effect 先于本 effect
+  // 执行，rAF 再推一帧确保布局完成。没有记录的 tab 归位到顶部。
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || path === undefined) return;
+    const saved = onReadScrollRef.current?.(path, "source") ?? 0;
+    requestAnimationFrame(() => {
+      view.scrollDOM.scrollTop = saved;
+    });
+  }, [path]);
+
   const extensions = useMemo(
     () => [
       markdown(),
@@ -70,7 +103,21 @@ export function MarkdownEditor({ value, onChange, theme, onReady }: MarkdownEdit
         highlightSelectionMatches: false,
       }}
       onChange={(next) => onChange(next)}
-      onCreateEditor={(view) => onReady?.(view)}
+      onCreateEditor={(view) => {
+        viewRef.current = view;
+        // 持续记录滚动位置（按当前 path 写入 App 层 Map），切 tab 时无需抢救。
+        // CM 销毁时 scrollDOM 一并移除，无需手动解绑。
+        view.scrollDOM.addEventListener(
+          "scroll",
+          () => {
+            if (pathRef.current !== undefined) {
+              onSaveScrollRef.current?.(pathRef.current, "source", view.scrollDOM.scrollTop);
+            }
+          },
+          { passive: true },
+        );
+        onReady?.(view);
+      }}
     />
   );
 }

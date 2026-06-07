@@ -51,6 +51,11 @@ const arrowDownExitKeymap = createKeymap({
 interface MilkdownEditorProps {
   value: string;
   onChange: (value: string) => void;
+  // per-tab 滚动位置存取（App 层持有 Map）。切 tab 时 value 整体替换会触发
+  // PM 默认 scrollIntoView 跳到文档开头，靠这两个回调恢复阅读位置。
+  path?: string;
+  onSaveScroll?: (path: string, mode: "render" | "source", top: number) => void;
+  onReadScroll?: (path: string, mode: "render" | "source") => number | undefined;
 }
 
 // 仅含一个 NBSP 的行作为「视觉空段」占位符。CommonMark 不把 NBSP 视为空白，
@@ -146,12 +151,20 @@ const toMilkdown = (md: string) =>
 const fromMilkdown = (md: string) =>
   yamlFenceToFrontmatter(cleanMarkdown(collapsePlaceholders(md)));
 
-function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
+function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: MilkdownEditorProps) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const initialCleaned = cleanMarkdown(value);
   const lastInternalRef = useRef<string>(initialCleaned);
   const suppressEmitRef = useRef(true);
+  // 滚动位置存取走 ref，避免把回调加进现有 effect 依赖
+  const pathRef = useRef(path);
+  pathRef.current = path;
+  const onSaveScrollRef = useRef(onSaveScroll);
+  onSaveScrollRef.current = onSaveScroll;
+  const onReadScrollRef = useRef(onReadScroll);
+  onReadScrollRef.current = onReadScroll;
+  const scrollElRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (initialCleaned !== value) {
@@ -198,12 +211,25 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
       const parser = ctx.get(parserCtx);
       const doc = parser(toMilkdown(value));
       if (!doc) return;
+      // 在 dispatch 前读保存的滚动位置——dispatch 触发的 scrollIntoView 会产生
+      // scroll 事件把近顶部值写回 Map，必须先取走
+      const saved = pathRef.current !== undefined
+        ? onReadScrollRef.current?.(pathRef.current, "render")
+        : undefined;
       suppressEmitRef.current = true;
       const state = view.state;
       view.dispatch(
         state.tr.replace(0, state.doc.content.size, new Slice(doc.content, 0, 0)),
       );
       lastInternalRef.current = value;
+      // 切 tab 回来恢复阅读位置：PM 默认 scrollIntoView 在本帧把视口拉到文档
+      // 开头（但不是顶部），rAF 推到下一帧覆盖它。没有记录的 tab 归位到顶部。
+      // 恢复写入触发的 scroll 事件会把正确值回写 Map。
+      const el = scrollElRef.current;
+      if (el) {
+        const target = saved ?? 0;
+        requestAnimationFrame(() => { el.scrollTop = target; });
+      }
     });
   }, [value, get]);
 
@@ -221,6 +247,18 @@ function MilkdownInner({ value, onChange }: MilkdownEditorProps) {
         const view = ctx.get(editorViewCtx);
         cleanups.push(installAnchorClickHandler(view.dom as HTMLElement));
         cleanups.push(installScopedSelectAll(view));
+        // 持续记录滚动位置（按当前 path 写入 App 层 Map），切 tab 时无需抢救
+        const scrollEl = (view.dom as HTMLElement).closest(".wysiwyg-column") as HTMLElement | null;
+        if (scrollEl) {
+          scrollElRef.current = scrollEl;
+          const onScroll = () => {
+            if (pathRef.current !== undefined) {
+              onSaveScrollRef.current?.(pathRef.current, "render", scrollEl.scrollTop);
+            }
+          };
+          scrollEl.addEventListener("scroll", onScroll, { passive: true });
+          cleanups.push(() => scrollEl.removeEventListener("scroll", onScroll));
+        }
       });
     };
     install();

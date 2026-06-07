@@ -133,6 +133,8 @@ export default function App() {
   const handleCreateRef = useRef<(() => Promise<void>) | null>(null);
   const tabBarRef = useRef<TabBarHandle | null>(null);
   const cmViewRef = useRef<EditorView | null>(null);
+  // 内存级 per-tab 滚动位置（render/source 各存一份），不持久化；关 tab 时清理
+  const scrollPosRef = useRef(new Map<string, { render?: number; source?: number }>());
 
   useEffect(() => { docsRef.current = docs; }, [docs]);
   useEffect(() => { activePathRef.current = activePath; }, [activePath]);
@@ -146,6 +148,16 @@ export default function App() {
     () => docs.find((d) => d.document.summary.path === activePath) ?? null,
     [docs, activePath],
   );
+
+  const saveScroll = useCallback((path: string, mode: "render" | "source", top: number) => {
+    const entry = scrollPosRef.current.get(path) ?? {};
+    entry[mode] = top;
+    scrollPosRef.current.set(path, entry);
+  }, []);
+
+  const readScroll = useCallback((path: string, mode: "render" | "source") => {
+    return scrollPosRef.current.get(path)?.[mode];
+  }, []);
 
   const updateDoc = useCallback((path: string, updater: (doc: OpenDoc) => OpenDoc) => {
     setDocs((current) => current.map((d) => (d.document.summary.path === path ? updater(d) : d)));
@@ -355,6 +367,7 @@ export default function App() {
     if (idx === -1) return;
     const remaining = current.filter((_, i) => i !== idx);
     setDocs(remaining);
+    scrollPosRef.current.delete(path);
     if (activePathRef.current === path) {
       const fallback = remaining[idx] ?? remaining[idx - 1] ?? remaining[0];
       setActivePath(fallback ? fallback.document.summary.path : null);
@@ -655,6 +668,8 @@ export default function App() {
           onCodeMirrorReady={(view) => {
             cmViewRef.current = view;
           }}
+          onSaveScroll={saveScroll}
+          onReadScroll={readScroll}
         />
         {findOpen ? (
           <FindBar

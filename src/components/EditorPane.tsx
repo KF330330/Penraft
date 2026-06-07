@@ -11,6 +11,9 @@ interface EditorPaneProps {
   onContentChange: (value: string) => void;
   // CodeMirror EditorView 就绪时回调，给上层 Cmd+F 直接调 openSearchPanel 用
   onCodeMirrorReady?: (view: EditorView) => void;
+  // per-tab 滚动位置存取（App 层持有 Map），切 tab 后恢复阅读位置用
+  onSaveScroll?: (path: string, mode: "render" | "source", top: number) => void;
+  onReadScroll?: (path: string, mode: "render" | "source") => number | undefined;
 }
 
 export function EditorPane({
@@ -20,6 +23,8 @@ export function EditorPane({
   theme,
   onContentChange,
   onCodeMirrorReady,
+  onSaveScroll,
+  onReadScroll,
 }: EditorPaneProps) {
   if (!document) {
     return (
@@ -39,7 +44,13 @@ export function EditorPane({
       <div className="editor-body">
         {mode === "render" ? (
           <div className="wysiwyg-column">
-            <MilkdownEditor value={content} onChange={onContentChange} />
+            <MilkdownEditor
+              value={content}
+              onChange={onContentChange}
+              path={document.summary.path}
+              onSaveScroll={onSaveScroll}
+              onReadScroll={onReadScroll}
+            />
           </div>
         ) : (
           <div className="source-column">
@@ -48,6 +59,9 @@ export function EditorPane({
               onChange={onContentChange}
               theme={theme}
               onReady={onCodeMirrorReady}
+              path={document.summary.path}
+              onSaveScroll={onSaveScroll}
+              onReadScroll={onReadScroll}
             />
           </div>
         )}
