@@ -220,6 +220,9 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
         : undefined;
       suppressEmitRef.current = true;
       const state = view.state;
+      // 整体替换前记录焦点状态 + 是否新建空文档：用于替换后修复 WKWebView caret。
+      const hadFocus = view.hasFocus();
+      const isEmptyDoc = doc.content.size <= 2; // 新建空笔记 ≈ 单个空 paragraph
       view.dispatch(
         state.tr.replace(0, state.doc.content.size, new Slice(doc.content, 0, 0)),
       );
@@ -228,10 +231,18 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
       // 开头（但不是顶部），rAF 推到下一帧覆盖它。没有记录的 tab 归位到顶部。
       // 恢复写入触发的 scroll 事件会把正确值回写 Map。
       const el = scrollElRef.current;
-      if (el) {
-        const target = saved ?? 0;
-        requestAnimationFrame(() => { el.scrollTop = target; });
-      }
+      const target = el ? (saved ?? 0) : undefined;
+      requestAnimationFrame(() => {
+        // caret 修复：macOS WKWebView 在内容被整体替换后不重算原生光标的绘制矩形，
+        // 会把 caret 画到视口左上角 (0,0)；re-assert focus 逼 WebView 重算 caret rect。
+        // 仅在「原本就在编辑」(hadFocus) 或「新建空笔记」(isEmptyDoc) 时聚焦——
+        // 普通点 tab 切到已有笔记时编辑器没焦点，不抢焦点，保持现状行为。
+        if (hadFocus || isEmptyDoc) {
+          view.focus(); // 同时让新建空笔记的光标停在文首，可立刻打字
+        }
+        // focus() 可能触发 scrollIntoView，必须在它之后再写 scrollTop 覆盖。
+        if (el && target !== undefined) el.scrollTop = target;
+      });
     });
   }, [value, get]);
 
