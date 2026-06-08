@@ -1228,6 +1228,67 @@ button {
   box-shadow: none;
 }
 
+/* ===== 图片：点击展开可编辑源码（仿 mermaid） ===== */
+.penraft-image {
+  position: relative;
+  display: inline-block;
+}
+
+.penraft-image img {
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.penraft-image[data-expanded="true"] img {
+  cursor: default;
+}
+
+/* 折叠态隐藏源码框 */
+.penraft-image[data-expanded="false"] .penraft-image-source {
+  display: none;
+}
+
+.penraft-image[data-expanded="true"] .penraft-image-source {
+  display: block;
+}
+
+/* 源码框（需较高 specificity 覆盖 .ProseMirror pre 默认样式） */
+.wysiwyg-column .ProseMirror .penraft-image pre.penraft-image-source,
+.markdown-readonly .ProseMirror .penraft-image pre.penraft-image-source {
+  text-align: left;
+  background: var(--code-block-bg);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 6px 0 0;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.9em;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border: none;
+  box-shadow: none;
+}
+
+.penraft-image pre.penraft-image-source code {
+  background: transparent;
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  display: block;
+  outline: none;
+  border-radius: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.penraft-image--selected img {
+  outline: 2px solid var(--link);
+  outline-offset: -2px;
+}
+
 /* ===== Toast ===== */
 .toast {
   position: fixed;

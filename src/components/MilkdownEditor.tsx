@@ -16,6 +16,7 @@ import {
   installScopedSelectAll,
 } from "./markdown-utils";
 import { mermaidProseMirrorPlugin } from "./mermaid-plugin";
+import { imageProseMirrorPlugin } from "./image-plugin";
 import { codeBlockEnterPlugin } from "./code-block-enter-plugin";
 
 // ↓ 兜底出框：光标停在文档末块（非 paragraph）的视觉末行时按 ↓，追加一段空 paragraph 让用户跳出去。
@@ -183,6 +184,7 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
           arrowDownExitKeymap,
           ...prev,
           mermaidProseMirrorPlugin,
+          imageProseMirrorPlugin,
           codeBlockEnterPlugin,
         ]);
         ctx.get(listenerCtx).markdownUpdated((_c, markdown) => {
