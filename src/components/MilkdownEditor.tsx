@@ -246,6 +246,66 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
     });
   }, [value, get]);
 
+  // 切 tab（path 变化）后，若落到的是结构性空文档（典型：新建空笔记；连续新建时
+  // 上一篇也为空 → 上面的整体替换 effect 因 value 没变而不触发，光标永远建立不起来），
+  // 主动把光标落到文首并聚焦。修复 macOS WKWebView 偶发「新建后点不进、打不了字」。
+  // 仅对空文档抢焦点；切到有内容的已有笔记保持「不抢焦点」的现状。
+  useEffect(() => {
+    let cancelled = false;
+    let raf1 = 0;
+    let raf2 = 0;
+
+    const focusEmpty = () => {
+      const editor = get();
+      if (!editor) return;
+      editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        if (view.state.doc.content.size > 2) return; // 非空文档不抢焦点
+        view.dispatch(
+          view.state.tr
+            .setSelection(TextSelection.create(view.state.doc, 1))
+            .scrollIntoView(),
+        );
+        view.focus();
+      });
+    };
+
+    const reassert = () => {
+      const editor = get();
+      if (!editor) return;
+      editor.action((ctx) => {
+        const view = ctx.get(editorViewCtx);
+        // WKWebView 首帧偶发不生效，下一帧补一次；仍是空文档且没焦点才补。
+        if (!view.hasFocus() && view.state.doc.content.size <= 2) view.focus();
+      });
+    };
+
+    // 编辑器可能尚未挂载（首次启动 get() 返回 null）：rAF 重试直到就绪，
+    // 与下方 install effect 的重试模式一致，避免 [path, get] 依赖不再变化导致永不补焦点。
+    const run = () => {
+      if (cancelled) return;
+      if (!get()) {
+        raf1 = requestAnimationFrame(run);
+        return;
+      }
+      raf1 = requestAnimationFrame(() => {
+        if (cancelled) return;
+        focusEmpty();
+        raf2 = requestAnimationFrame(() => {
+          if (cancelled) return;
+          reassert();
+        });
+      });
+    };
+    run();
+
+    return () => {
+      cancelled = true;
+      if (raf1) cancelAnimationFrame(raf1);
+      if (raf2) cancelAnimationFrame(raf2);
+    };
+  }, [path, get]);
+
   useEffect(() => {
     const cleanups: Array<() => void> = [];
     let cancelled = false;
