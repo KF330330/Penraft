@@ -1,11 +1,11 @@
-import { Settings, RefreshCw, Folder, Palette, ChevronRight } from "lucide-react";
+import { Settings, RefreshCw, Folder, Palette, ChevronRight, ScrollText } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import { open as openDialog, ask, confirm } from "@tauri-apps/plugin-dialog";
 import { relaunch } from "@tauri-apps/plugin-process";
 import type { Theme } from "./MarkdownEditor";
 import { manualCheckForUpdate } from "../lib/updater";
-import { getVaultPath, setVaultPath } from "../lib/tauri";
+import { debugLogPath, getVaultPath, revealInFinder, setVaultPath } from "../lib/tauri";
 
 const THEME_OPTIONS: { value: Theme; label: string }[] = [
   { value: "paper", label: "Paper · 米色" },
@@ -156,6 +156,15 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
     }
   };
 
+  const onRevealLogClick = async () => {
+    try {
+      const p = await debugLogPath();
+      await revealInFinder(p);
+    } catch {
+      /* 日志可能还没写出来；忽略 */
+    }
+  };
+
   const checkLabel = (() => {
     switch (checkPhase) {
       case "checking": return "检查中…";
@@ -235,6 +244,20 @@ export function ThemePicker({ theme, onChange }: ThemePickerProps) {
                 <span className="path-value" title={vaultPath}>
                   {renderTieredPath(vaultPath)}
                 </span>
+              </div>
+            </button>
+            <button
+              type="button"
+              className="row"
+              onClick={onRevealLogClick}
+              title="排查「新建后光标点不进」等偶发问题：在 Finder 中显示调试日志文件"
+            >
+              <div className="row-icon">
+                <ScrollText size={14} />
+              </div>
+              <div className="row-label">在 Finder 中显示调试日志</div>
+              <div className="row-tail">
+                <ChevronRight size={14} className="chevron" />
               </div>
             </button>
           </div>

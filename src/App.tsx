@@ -27,6 +27,7 @@ import {
 import type { NoteDocument, TabsState, WindowGeom } from "./lib/types";
 import { EVENTS, type MergeTabPayload } from "./lib/events";
 import { useTauriListen } from "./lib/use-tauri-listen";
+import { diag, setDiagWindow } from "./lib/diaglog";
 
 const MAIN_WINDOW_LABEL = "main";
 
@@ -109,6 +110,9 @@ function getInitialPathFromUrl(): string | null {
 const WINDOW_LABEL = getWindowLabel();
 const INITIAL_PATH = getInitialPathFromUrl();
 
+// 让诊断日志每一行都带上本窗口标识（main / torn-*）。
+setDiagWindow(WINDOW_LABEL);
+
 export default function App() {
   const [docs, setDocs] = useState<OpenDoc[]>([]);
   const [activePath, setActivePath] = useState<string | null>(null);
@@ -138,6 +142,15 @@ export default function App() {
 
   useEffect(() => { docsRef.current = docs; }, [docs]);
   useEffect(() => { activePathRef.current = activePath; }, [activePath]);
+
+  // 诊断：记录活动 tab 的切换（from→to）。与上方 activePathRef 同步 effect 各持一份
+  // prev，互不干扰；用于和 MilkdownEditor 的 focus-effect 配对，判断「切了 tab 但聚焦没跟上」。
+  const prevDiagPathRef = useRef<string | null>(null);
+  useEffect(() => {
+    diag("switch", { from: prevDiagPathRef.current, to: activePath, mode });
+    prevDiagPathRef.current = activePath;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePath]);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
@@ -344,12 +357,23 @@ export default function App() {
     try {
       await flushActive();
       const doc = await createNote();
+      const prevActivePath = activePathRef.current;
+      const prevContentLen = docsRef.current.find(
+        (d) => d.document.summary.path === prevActivePath,
+      )?.content.length;
+      diag("create", {
+        newPath: doc.summary.path,
+        prevActivePath,
+        prevContentLen,
+        mode,
+        docsCount: docsRef.current.length,
+      });
       setDocs((current) => [...current, makeOpenDoc(doc)]);
       setActivePath(doc.summary.path);
     } catch (err) {
       showToast(`新建失败：${String(err)}`);
     }
-  }, [flushActive, showToast]);
+  }, [flushActive, showToast, mode]);
 
   useEffect(() => {
     handleCreateRef.current = handleCreate;

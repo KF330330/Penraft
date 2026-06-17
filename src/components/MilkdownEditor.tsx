@@ -18,6 +18,7 @@ import {
 import { mermaidProseMirrorPlugin } from "./mermaid-plugin";
 import { imageProseMirrorPlugin } from "./image-plugin";
 import { codeBlockEnterPlugin } from "./code-block-enter-plugin";
+import { diag } from "../lib/diaglog";
 
 // ↓ 兜底出框：光标停在文档末块（非 paragraph）的视觉末行时按 ↓，追加一段空 paragraph 让用户跳出去。
 // 用一个独立的 PM keymap 插件而不是走 Milkdown KeymapManager —— 前者直接放进 prosePluginsCtx
@@ -205,14 +206,29 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
   );
 
   useEffect(() => {
-    if (value === lastInternalRef.current) return;
+    if (value === lastInternalRef.current) {
+      // 诊断：value 没变 → 本 effect 早退、不替换也不聚焦（连续空笔记盲区的根源之一）。
+      diag("value-effect", {
+        path,
+        valueLen: value.length,
+        lastInternalLen: lastInternalRef.current.length,
+        earlyReturn: true,
+      });
+      return;
+    }
     const editor = get();
-    if (!editor) return;
+    if (!editor) {
+      diag("value-effect", { path, valueLen: value.length, editorReady: false });
+      return;
+    }
     editor.action((ctx) => {
       const view = ctx.get(editorViewCtx);
       const parser = ctx.get(parserCtx);
       const doc = parser(toMilkdown(value));
-      if (!doc) return;
+      if (!doc) {
+        diag("value-effect", { path, valueLen: value.length, parseFailed: true });
+        return;
+      }
       // 在 dispatch 前读保存的滚动位置——dispatch 触发的 scrollIntoView 会产生
       // scroll 事件把近顶部值写回 Map，必须先取走
       const saved = pathRef.current !== undefined
@@ -227,6 +243,14 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
         state.tr.replace(0, state.doc.content.size, new Slice(doc.content, 0, 0)),
       );
       lastInternalRef.current = value;
+      diag("value-effect", {
+        path,
+        valueLen: value.length,
+        earlyReturn: false,
+        hadFocus,
+        isEmptyDoc,
+        docSizeAfter: view.state.doc.content.size,
+      });
       // 切 tab 回来恢复阅读位置：PM 默认 scrollIntoView 在本帧把视口拉到文档
       // 开头（但不是顶部），rAF 推到下一帧覆盖它。没有记录的 tab 归位到顶部。
       // 恢复写入触发的 scroll 事件会把正确值回写 Map。
@@ -237,9 +261,16 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
         // 会把 caret 画到视口左上角 (0,0)；re-assert focus 逼 WebView 重算 caret rect。
         // 仅在「原本就在编辑」(hadFocus) 或「新建空笔记」(isEmptyDoc) 时聚焦——
         // 普通点 tab 切到已有笔记时编辑器没焦点，不抢焦点，保持现状行为。
-        if (hadFocus || isEmptyDoc) {
+        const calledFocus = hadFocus || isEmptyDoc;
+        if (calledFocus) {
           view.focus(); // 同时让新建空笔记的光标停在文首，可立刻打字
         }
+        diag("value-effect:raf", {
+          path,
+          calledFocus,
+          hadFocusAfter: view.hasFocus(),
+          docHasFocus: document.hasFocus(),
+        });
         // focus() 可能触发 scrollIntoView，必须在它之后再写 scrollTop 覆盖。
         if (el && target !== undefined) el.scrollTop = target;
       });
@@ -254,19 +285,39 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
     let cancelled = false;
     let raf1 = 0;
     let raf2 = 0;
+    let retries = 0;
+    let t350 = 0;
+    let t1500 = 0;
+    // ~2s 上限：编辑器持续挂载时 get() 立刻就绪（retries=0），冷启动也只需几帧；
+    // 这个上限只是防止编辑器永不挂载时 rAF 空转，实际从不触达。
+    const MAX_RETRIES = 120;
 
     const focusEmpty = () => {
       const editor = get();
       if (!editor) return;
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
-        if (view.state.doc.content.size > 2) return; // 非空文档不抢焦点
+        const docSize = view.state.doc.content.size;
+        if (docSize > 2) {
+          diag("focus-effect:attempt", { path, docSize, skipped: true }); // 非空文档不抢焦点
+          return;
+        }
+        const hadFocusBefore = view.hasFocus();
         view.dispatch(
           view.state.tr
             .setSelection(TextSelection.create(view.state.doc, 1))
             .scrollIntoView(),
         );
         view.focus();
+        diag("focus-effect:attempt", {
+          path,
+          docSize,
+          hadFocusBefore,
+          setSelection: true,
+          calledFocus: true,
+          hadFocusAfter: view.hasFocus(),
+          docHasFocus: document.hasFocus(),
+        });
       });
     };
 
@@ -276,8 +327,69 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
       editor.action((ctx) => {
         const view = ctx.get(editorViewCtx);
         // WKWebView 首帧偶发不生效，下一帧补一次；仍是空文档且没焦点才补。
-        if (!view.hasFocus() && view.state.doc.content.size <= 2) view.focus();
+        const need = !view.hasFocus() && view.state.doc.content.size <= 2;
+        if (need) view.focus();
+        diag("focus-effect:reassert", {
+          path,
+          reasserted: need,
+          hadFocusAfter: view.hasFocus(),
+          docHasFocus: document.hasFocus(),
+        });
       });
+    };
+
+    // 定时自检：切到笔记后拍焦点状态快照。这是「光标死了用户无操作」场景下唯一
+    // 能把静默失败变成一条记录的机制。回调内重新 get()（切 render↔source 会 remount，
+    // 闭包里的旧 view 可能已销毁），整体 try/catch，纯观察、不调 focus()。
+    const healthCheck = (phase: "t350" | "t1500") => {
+      try {
+        const editor = get();
+        if (!editor) {
+          diag("health-check", { path, phase, editorReady: false });
+          return;
+        }
+        editor.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const docSize = view.state.doc.content.size;
+          const viewHasFocus = view.hasFocus();
+          const documentHasFocus = document.hasFocus();
+          const ae = document.activeElement as HTMLElement | null;
+          const activeElInsideEditor = !!ae && view.dom.contains(ae);
+          const sel = view.state.selection;
+          const selType = sel instanceof TextSelection
+            ? "text"
+            : "node" in sel
+            ? "node"
+            : sel.constructor?.name ?? "other";
+          // verdict 门控：只有窗口是 key、文档为空、却没焦点/焦点不在编辑器内，才判失败。
+          // 否则降级为窗口非 key / 被 chrome 抢焦点，避免误报。
+          const verdict = !documentHasFocus
+            ? "WINDOW_NOT_KEY"
+            : docSize <= 2 && (!viewHasFocus || !activeElInsideEditor)
+            ? "FOCUS_LOST"
+            : !activeElInsideEditor
+            ? "OK_BLURRED_BY_CHROME"
+            : "OK";
+          diag("health-check", {
+            path,
+            phase,
+            docSize,
+            viewHasFocus,
+            documentHasFocus,
+            activeElTag: ae?.tagName ?? null,
+            activeElId: ae?.id ?? null,
+            activeElClass: (ae?.className ?? "").slice(0, 80),
+            activeElInsideEditor,
+            domConnected: view.dom.isConnected,
+            contentEditable: view.dom.getAttribute("contenteditable"),
+            selEmpty: sel.empty,
+            selType,
+            verdict,
+          });
+        });
+      } catch (e) {
+        diag("health-check:error", { path, phase, err: String(e) });
+      }
     };
 
     // 编辑器可能尚未挂载（首次启动 get() 返回 null）：rAF 重试直到就绪，
@@ -285,9 +397,14 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
     const run = () => {
       if (cancelled) return;
       if (!get()) {
+        if (++retries > MAX_RETRIES) {
+          diag("focus-effect:giveup", { path, retries });
+          return;
+        }
         raf1 = requestAnimationFrame(run);
         return;
       }
+      diag("focus-effect:run", { path, editorReady: true, retries });
       raf1 = requestAnimationFrame(() => {
         if (cancelled) return;
         focusEmpty();
@@ -296,6 +413,8 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
           reassert();
         });
       });
+      t350 = window.setTimeout(() => healthCheck("t350"), 350);
+      t1500 = window.setTimeout(() => healthCheck("t1500"), 1500);
     };
     run();
 
@@ -303,6 +422,8 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
       cancelled = true;
       if (raf1) cancelAnimationFrame(raf1);
       if (raf2) cancelAnimationFrame(raf2);
+      if (t350) clearTimeout(t350);
+      if (t1500) clearTimeout(t1500);
     };
   }, [path, get]);
 

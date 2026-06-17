@@ -64,3 +64,16 @@ export async function setVaultPath(newPath: string, moveFiles: boolean): Promise
 export async function listPenraftWindows(selfLabel: string): Promise<WindowGeom[]> {
   return invoke("list_penraft_windows", { selfLabel });
 }
+
+// 诊断日志：尽力而为追加一行，任何失败都吞掉，绝不影响调用方。
+export async function debugLog(line: string): Promise<void> {
+  try {
+    await invoke("debug_log", { line });
+  } catch {
+    /* best-effort */
+  }
+}
+
+export async function debugLogPath(): Promise<string> {
+  return invoke("debug_log_path");
+}

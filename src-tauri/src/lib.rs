@@ -1,4 +1,5 @@
 mod config;
+mod diaglog;
 mod models;
 mod telemetry;
 mod vault;
@@ -257,6 +258,8 @@ pub fn run() {
             take_pending_open_files,
             get_vault_path,
             set_vault_path,
+            diaglog::debug_log,
+            diaglog::debug_log_path,
         ])
         .build(tauri::generate_context!())
         .expect("error while running Penraft");
