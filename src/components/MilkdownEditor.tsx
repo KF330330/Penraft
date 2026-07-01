@@ -292,6 +292,83 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
     // 这个上限只是防止编辑器永不挂载时 rAF 空转，实际从不触达。
     const MAX_RETRIES = 120;
 
+    // ── focus 保持守卫状态 ──────────────────────────────────────────────
+    // 现象（日志实证 20260701_192041）：新建空笔记聚焦成功、350ms 仍 OK，但 ~1.5s 后
+    // macOS WKWebView 自发把「程序化聚焦」丢掉（activeElement 掉回 <body>，窗口仍 key，
+    // 编辑器 DOM 仍连着，无任何 React 重渲染）。用户没手势让焦点 stick → caret 消失。
+    // 对策：focusout（快路径）+ 定时兜底（WebKit 对程序性 blur 不保证派发 focus 事件），
+    // 命中「空文档 + 窗口 key + 焦点掉到 body/null + 最近无用户手势」就补焦点，有界防抖。
+    const GUARD_WINDOW_MS = 5000; // 只兜激活后前 5s（实测丢焦点在 ~1.5s）
+    const MAX_REASSERTS = 5; // 硬上限，防 focusout→focus→focusout 无限抖动
+    const POINTER_GRACE_MS = 600; // 最近有用户手势 → 视为用户主动 blur，不抢（600ms « 1500ms）
+    let reasserts = 0;
+    let recovering = false;
+    let recoverRaf = 0;
+    let guardDeadline = 0;
+    let lastUserInputTs = 0;
+    const guardCleanups: Array<() => void> = [];
+    const fallbackTimers: number[] = [];
+
+    // focusout 快路径与定时兜底共用的恢复入口。
+    const recover = (reason: string) => {
+      if (cancelled || recovering) return;
+      if (Date.now() > guardDeadline) return; // 时间盒
+      if (reasserts >= MAX_REASSERTS) {
+        diag("focus-guard:capped", { path, reason, reasserts });
+        return;
+      }
+      recovering = true; // 合并同帧多次 focusout，避免堆叠 rAF
+      recoverRaf = requestAnimationFrame(() => {
+        recoverRaf = 0;
+        recovering = false;
+        if (cancelled) return;
+        const editor = get();
+        if (!editor) return;
+        editor.action((ctx) => {
+          const view = ctx.get(editorViewCtx);
+          const docSize = view.state.doc.content.size; // 实时读，打字后自动失效
+          const documentHasFocus = document.hasFocus();
+          const ae = document.activeElement as HTMLElement | null;
+          const aeInside = !!ae && view.dom.contains(ae);
+          // 正向判定焦点掉到「无处」——不用 !contains（那会误伤点搜索框/tab）
+          const droppedToNothing =
+            ae == null || ae === document.body || ae === document.documentElement;
+          const msSinceInput = Date.now() - lastUserInputTs;
+          const shouldRecover =
+            docSize <= 2 && // 只对新建空笔记
+            documentHasFocus && // 窗口仍 key，排除切窗口
+            droppedToNothing && // 焦点掉到 body/null
+            !aeInside && // 焦点没已经回到编辑器内
+            msSinceInput >= POINTER_GRACE_MS; // 最近无用户手势 = WKWebView 自发丢
+          if (!shouldRecover) {
+            diag("focus-guard:skip", {
+              path,
+              reason,
+              docSize,
+              documentHasFocus,
+              aeTag: ae?.tagName ?? null,
+              aeInside,
+              droppedToNothing,
+              msSinceInput,
+            });
+            return;
+          }
+          reasserts++;
+          view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, 1)));
+          view.focus();
+          diag("focus-guard:reassert", {
+            path,
+            reason,
+            reasserts,
+            docSize,
+            hadFocusAfter: view.hasFocus(),
+            docHasFocus: document.hasFocus(),
+            aeAfterTag: (document.activeElement as HTMLElement | null)?.tagName ?? null,
+          });
+        });
+      });
+    };
+
     const focusEmpty = () => {
       const editor = get();
       if (!editor) return;
@@ -415,6 +492,30 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
       });
       t350 = window.setTimeout(() => healthCheck("t350"), 350);
       t1500 = window.setTimeout(() => healthCheck("t1500"), 1500);
+
+      // 安装 focus 保持守卫（仅一次；view 生命周期内不重建，监听器 install-once/摘于 cleanup）。
+      get()?.action((ctx) => {
+        const dom = ctx.get(editorViewCtx).dom as HTMLElement;
+        guardDeadline = Date.now() + GUARD_WINDOW_MS;
+        const onFocusOut = () => recover("focusout"); // 快路径
+        // capture 到 document：早于焦点落地，用来区分「用户主动 blur」vs「WebView 自发丢」
+        const onUserInput = () => {
+          lastUserInputTs = Date.now();
+        };
+        dom.addEventListener("focusout", onFocusOut);
+        document.addEventListener("pointerdown", onUserInput, true);
+        document.addEventListener("keydown", onUserInput, true);
+        guardCleanups.push(() => {
+          dom.removeEventListener("focusout", onFocusOut);
+          document.removeEventListener("pointerdown", onUserInput, true);
+          document.removeEventListener("keydown", onUserInput, true);
+        });
+        diag("focus-guard:install", { path, guardWindowMs: GUARD_WINDOW_MS });
+      });
+      // 定时兜底：WebKit 可能不为程序性 blur 派发 focusout，多个检查点主动补。
+      [800, 1600, 2600, 4000].forEach((ms) => {
+        fallbackTimers.push(window.setTimeout(() => recover(`t${ms}`), ms));
+      });
     };
     run();
 
@@ -424,6 +525,9 @@ function MilkdownInner({ value, onChange, path, onSaveScroll, onReadScroll }: Mi
       if (raf2) cancelAnimationFrame(raf2);
       if (t350) clearTimeout(t350);
       if (t1500) clearTimeout(t1500);
+      if (recoverRaf) cancelAnimationFrame(recoverRaf); // 防 unmount mid-rAF 泄漏
+      fallbackTimers.forEach(clearTimeout); // 清定时兜底
+      guardCleanups.forEach((fn) => fn()); // 摘 focusout / 手势监听
     };
   }, [path, get]);
 
