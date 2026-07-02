@@ -15,6 +15,7 @@ import {
   createNote,
   deleteNote,
   exportNote,
+  findWindowWithPath,
   listPenraftWindows,
   loadTabs,
   readNote,
@@ -22,6 +23,7 @@ import {
   revealInFinder,
   saveNote,
   saveTabs,
+  setWindowPaths,
   takePendingOpenFiles,
 } from "./lib/tauri";
 import type { NoteDocument, TabsState, WindowGeom } from "./lib/types";
@@ -270,6 +272,17 @@ export default function App() {
       if (tabsSaveTimer.current) window.clearTimeout(tabsSaveTimer.current);
     };
   }, [docs, activePath, bootstrapped, showToast]);
+
+  // 把本窗口打开的文件集合同步到 Rust 注册表：供 openPath 判断"该文件是否已在别的窗口打开"。
+  // 只在打开的路径集合变化时上报（openPathsKey 变化），避免每次敲键都调用。
+  const openPathsKey = useMemo(
+    () => docs.map((d) => d.document.summary.path).join("\n"),
+    [docs],
+  );
+  useEffect(() => {
+    if (!bootstrapped) return;
+    setWindowPaths(WINDOW_LABEL, docsRef.current.map((d) => d.document.summary.path)).catch(() => {});
+  }, [openPathsKey, bootstrapped]);
 
   // Auto-save on active doc content change (debounced)
   useEffect(() => {
@@ -588,7 +601,7 @@ export default function App() {
   //   （仅当 insertAt 也提供时生效）。默认 false，保持"打开已存在 tab 时不重排"语义。
   const openPath = useCallback(async (
     path: string,
-    opts?: { insertAt?: number; moveIfExists?: boolean },
+    opts?: { insertAt?: number; moveIfExists?: boolean; skipCrossWindow?: boolean },
   ) => {
     const insertAt = opts?.insertAt;
     const moveIfExists = opts?.moveIfExists ?? false;
@@ -608,6 +621,20 @@ export default function App() {
       }
       setActivePath(path);
       return;
+    }
+    // 该文件若已在别的窗口打开 → 聚焦那个窗口而非在本窗口开副本，
+    // 防同文件多窗口各自自动保存互相覆盖（丢失更新）。
+    // 跨窗口拖拽合并（MERGE_TAB）是显式移动，跳过此检查，否则 tab 会被弹回源窗口。
+    if (!opts?.skipCrossWindow) {
+      try {
+        const other = await findWindowWithPath(path, WINDOW_LABEL);
+        if (other) {
+          await emitTo(other, EVENTS.OPEN_FILE, path);
+          return;
+        }
+      } catch {
+        // 查询失败就退回到在本窗口打开
+      }
     }
     try {
       const doc = await readNote(path);
@@ -657,7 +684,8 @@ export default function App() {
       } catch {
         // fallback: 追加到末尾
       }
-      await openPath(payload.path, { insertAt: insertIndex, moveIfExists: true });
+      // 合并是显式移动：跳过"聚焦已有窗口"重定向，否则 tab 会被弹回源窗口。
+      await openPath(payload.path, { insertAt: insertIndex, moveIfExists: true, skipCrossWindow: true });
       try {
         await getCurrentWindow().setFocus();
       } catch {

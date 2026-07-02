@@ -4,6 +4,7 @@ mod models;
 mod telemetry;
 mod vault;
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
@@ -17,6 +18,11 @@ const TORN_PREFIX: &str = "torn-";
 
 #[derive(Default)]
 struct PendingOpenFiles(Mutex<Vec<String>>);
+
+/// 每个窗口当前打开的文件路径集合（label → paths）。用于"打开已在其他窗口打开的文件时，
+/// 聚焦那个窗口而非在本窗口开副本"，避免同文件多窗口各自自动保存互相覆盖（丢失更新）。
+#[derive(Default)]
+struct OpenPaths(Mutex<HashMap<String, Vec<String>>>);
 
 /// 维护最近一次 focus 的窗口顺序。末尾 = 最近 focus = z-order 顶。
 #[derive(Default)]
@@ -148,6 +154,33 @@ fn list_penraft_windows(app: AppHandle, self_label: String) -> Vec<WindowGeom> {
     out
 }
 
+/// 前端在打开的文件集合变化时上报本窗口的当前路径列表。
+#[tauri::command]
+fn set_window_paths(state: tauri::State<'_, OpenPaths>, label: String, paths: Vec<String>) {
+    if let Ok(mut map) = state.0.lock() {
+        map.insert(label, paths);
+    }
+}
+
+/// 查询"除本窗口外，是否有别的（仍存在的）窗口已打开该文件"，返回那个窗口的 label。
+/// 顺带清理已关闭窗口的陈旧条目，防注册表无界增长。
+#[tauri::command]
+fn find_window_with_path(app: AppHandle, path: String, self_label: String) -> Option<String> {
+    let state = app.state::<OpenPaths>();
+    let mut map = state.0.lock().ok()?;
+    // 清掉窗口已不存在的陈旧条目（撕出窗口用系统红叉关闭时不会主动反注册）。
+    map.retain(|label, _| app.get_webview_window(label).is_some());
+    for (label, paths) in map.iter() {
+        if label == &self_label || !is_mergeable_label(label) {
+            continue;
+        }
+        if paths.iter().any(|p| p == &path) {
+            return Some(label.clone());
+        }
+    }
+    None
+}
+
 #[tauri::command]
 fn take_pending_open_files(state: tauri::State<'_, PendingOpenFiles>) -> Vec<String> {
     let mut queue = state.0.lock().unwrap();
@@ -241,6 +274,7 @@ pub fn run() {
         })
         .manage(PendingOpenFiles(Mutex::new(initial_paths)))
         .manage(FocusOrder::default())
+        .manage(OpenPaths::default())
         .invoke_handler(tauri::generate_handler![
             list_notes,
             create_note,
@@ -255,6 +289,8 @@ pub fn run() {
             load_tabs,
             save_tabs,
             list_penraft_windows,
+            set_window_paths,
+            find_window_with_path,
             take_pending_open_files,
             get_vault_path,
             set_vault_path,

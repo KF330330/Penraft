@@ -65,6 +65,16 @@ export async function listPenraftWindows(selfLabel: string): Promise<WindowGeom[
   return invoke("list_penraft_windows", { selfLabel });
 }
 
+// 上报本窗口当前打开的文件路径集合到 Rust 注册表。
+export async function setWindowPaths(label: string, paths: string[]): Promise<void> {
+  return invoke("set_window_paths", { label, paths });
+}
+
+// 查询是否有别的窗口已打开该文件，返回那个窗口 label（无则 null）。
+export async function findWindowWithPath(path: string, selfLabel: string): Promise<string | null> {
+  return invoke("find_window_with_path", { path, selfLabel });
+}
+
 // 诊断日志：尽力而为追加一行，任何失败都吞掉，绝不影响调用方。
 export async function debugLog(line: string): Promise<void> {
   try {
