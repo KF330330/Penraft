@@ -84,6 +84,11 @@ export const codeBlockEnterPlugin = new Plugin({
         }
 
         view.dispatch(tr.scrollIntoView());
+        // WebKit/WKWebView 上，mousedown 的 preventDefault 会连带阻止 contenteditable
+        // 原生获得焦点，return true 又让 PM 跳过自身的点击聚焦 —— 必须显式补聚焦，
+        // 否则新建空笔记（下方大片空白全命中此分支）点了只设选区、无光标、打不了字。
+        // 与 image-nodeview / mermaid-nodeview 里 preventDefault 配套调 view.focus() 一致。
+        view.focus();
         event.preventDefault();
         return true;
       },
