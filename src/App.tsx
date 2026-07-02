@@ -320,8 +320,25 @@ export default function App() {
         event.preventDefault();
         setZoom(ZOOM_DEFAULT);
       }
+      // ⌃⌘F：macOS 惯例的全屏切换。系统层不处理该组合键时由这里兜底；
+      // 需先于下面的 ⌘F 查找分支判断（查找分支同时排除了 ⌘+⌃ 组合）。
+      if (
+        event.metaKey &&
+        event.ctrlKey &&
+        event.key.toLowerCase() === "f" &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        const w = getCurrentWindow();
+        w.isFullscreen()
+          .then((v) => w.setFullscreen(!v))
+          .catch(() => {});
+        return;
+      }
       if (
         (event.metaKey || event.ctrlKey) &&
+        !(event.metaKey && event.ctrlKey) &&
         event.key.toLowerCase() === "f" &&
         !event.shiftKey &&
         !event.altKey
