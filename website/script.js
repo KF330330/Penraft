@@ -52,7 +52,7 @@
       'highlight.p3.title': '不用调，能用',
       'highlight.p3.desc': '没什么可设置的。装上就能写，不必学。',
 
-      'footer.tag': 'v0.1.0 · 一个安静的笔记工具',
+      'footer.tag': 'v0.4.3 · 一个安静的笔记工具',
       'footer.github': 'GitHub',
       'footer.releases': '下载',
       'footer.features': '功能',
@@ -176,7 +176,7 @@
       'highlight.p3.title': 'Nothing to configure',
       'highlight.p3.desc': "There's nothing to set. Install it, write.",
 
-      'footer.tag': 'v0.1.0 · A quiet little notes app',
+      'footer.tag': 'v0.4.3 · A quiet little notes app',
       'footer.github': 'GitHub',
       'footer.releases': 'Download',
       'footer.features': 'Features',
