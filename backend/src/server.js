@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
 import { migrate } from './db/migrate.js';
+import { startRetentionJob } from './db/retention.js';
 import sessionCookiePlugin from './plugins/sessionCookie.js';
 import webEventRoutes from './routes/webEvent.js';
 import appInstallRoutes from './routes/appInstall.js';
@@ -20,7 +21,9 @@ async function build() {
 
   const fastify = Fastify({
     logger: { level: config.nodeEnv === 'production' ? 'info' : 'debug' },
-    trustProxy: true,
+    // 只信任 Nginx 这一跳：req.ip 取 Nginx 追加的真实客户端 IP，客户端自带的伪造
+    // X-Forwarded-For 被忽略。设 true 会信任整条链，攻击者可伪造 XFF 绕过限流/污染 ip_hash。
+    trustProxy: 1,
     bodyLimit: 64 * 1024,
   });
 
@@ -62,6 +65,9 @@ async function build() {
   await fastify.register(appInstallRoutes);
   await fastify.register(appHeartbeatRoutes);
   await fastify.register(dashboardStatsRoutes);
+
+  // 埋点表定期清理：防 web_events / device_pings 只增不删撑爆磁盘。
+  startRetentionJob(fastify.log);
 
   return fastify;
 }

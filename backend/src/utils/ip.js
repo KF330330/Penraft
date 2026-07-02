@@ -15,7 +15,7 @@ export function hashIp(rawIp) {
 }
 
 export function clientIp(req) {
-  const fwd = req.headers['x-forwarded-for'];
-  if (typeof fwd === 'string' && fwd.length > 0) return fwd.split(',')[0].trim();
+  // 直接用 Fastify 经 trustProxy:1 解析出的可信 req.ip（Nginx 追加的真实客户端）。
+  // 不再手动取 X-Forwarded-For 最左值——那是客户端可伪造的，会污染 ip_hash。
   return req.ip;
 }

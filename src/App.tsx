@@ -176,10 +176,12 @@ export default function App() {
     setDocs((current) => current.map((d) => (d.document.summary.path === path ? updater(d) : d)));
   }, []);
 
-  const persistDoc = useCallback(async (path: string) => {
+  // 返回是否"数据已安全落盘"：无改动/文档不存在视为成功，仅在 saveNote 抛错时返回 false。
+  // 调用方可据此决定是否继续会丢数据的后续动作（如撕出/合并移动 tab）。
+  const persistDoc = useCallback(async (path: string): Promise<boolean> => {
     const target = docsRef.current.find((d) => d.document.summary.path === path);
-    if (!target) return;
-    if (target.content === target.lastSavedContent) return;
+    if (!target) return true;
+    if (target.content === target.lastSavedContent) return true;
     const contentSnapshot = target.content;
     updateDoc(path, (d) => ({ ...d, savingStatus: "saving" }));
     try {
@@ -194,9 +196,11 @@ export default function App() {
             }
           : { ...d, document: next },
       );
+      return true;
     } catch (err) {
       updateDoc(path, (d) => ({ ...d, savingStatus: "error" }));
       showToast(`保存失败：${String(err)}`);
+      return false;
     }
   }, [showToast, updateDoc]);
 
@@ -321,6 +325,43 @@ export default function App() {
     return () => window.removeEventListener("keydown", handler);
   }, [flushActive]);
 
+  // 关窗/退出前 flush 未保存编辑：拦下默认关闭 → 保存所有 dirty doc → 再销毁窗口。
+  // 覆盖 Cmd+W 与红灯关窗；防 500ms 自动保存防抖窗口内的编辑随 webview 销毁而丢失。
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    let closing = false;
+    const appWindow = getCurrentWindow();
+    (async () => {
+      try {
+        unlisten = await appWindow.onCloseRequested(async (event) => {
+          if (closing) return;
+          event.preventDefault();
+          closing = true;
+          if (saveTimer.current) {
+            window.clearTimeout(saveTimer.current);
+            saveTimer.current = null;
+          }
+          try {
+            const dirty = docsRef.current.filter((d) => d.content !== d.lastSavedContent);
+            await Promise.all(dirty.map((d) => persistDoc(d.document.summary.path)));
+          } catch {
+            // 保存失败也放行关闭，避免用户卡在无法退出的窗口
+          }
+          try {
+            await appWindow.destroy();
+          } catch {
+            // ignore
+          }
+        });
+      } catch {
+        // onCloseRequested 挂载失败不阻塞运行
+      }
+    })();
+    return () => {
+      if (unlisten) unlisten();
+    };
+  }, [persistDoc]);
+
   // Trackpad pinch-to-zoom: macOS reports trackpad pinch as wheel events with ctrlKey=true.
   useEffect(() => {
     const handler = (event: WheelEvent) => {
@@ -441,10 +482,11 @@ export default function App() {
   }, [showToast]);
 
   const handleTearOut = useCallback(async (path: string, screenX: number, screenY: number) => {
-    try {
-      await persistDoc(path);
-    } catch {
-      // ignore save errors; still proceed
+    // 保存失败则中止：不移动 tab，避免目标窗口从磁盘读到旧内容而静默丢失未保存编辑。
+    const saved = await persistDoc(path);
+    if (!saved) {
+      showToast("保存失败，已取消移动该标签页");
+      return;
     }
 
     // 1) 检测光标是否落在某个其他窗口的 tab bar 区

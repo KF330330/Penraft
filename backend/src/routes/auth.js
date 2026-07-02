@@ -1,6 +1,11 @@
 import { config } from '../config.js';
 
 export default async function authRoutes(fastify) {
+  // 与 SESSION_SECRET 同款硬校验：缺失或过弱即拒启动，杜绝弱口令静默上线。
+  if (!config.dashboardPass || config.dashboardPass.length < 12) {
+    throw new Error('DASHBOARD_PASS missing or too short (need >= 12 chars). Set a strong password in .env');
+  }
+
   fastify.post('/api/login', async (request, reply) => {
     const body = request.body || {};
     const username = typeof body.username === 'string' ? body.username : '';

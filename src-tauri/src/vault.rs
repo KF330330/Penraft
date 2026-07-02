@@ -35,12 +35,19 @@ pub fn save_note(path: String, content: String) -> CommandResult<NoteDocument> {
     if !is_markdown_path(&path_buf) {
         return Err("只能保存 .md 或 .markdown 文件".to_string());
     }
+    // 自动保存只应写 Vault 内笔记：限定在 Notes 目录内，防渲染层被注入后经此命令越界写任意文件。
+    ensure_within_notes_dir(&path_buf)?;
     atomic_write(&path_buf, content.as_bytes())?;
     read_note_internal(&path_buf)
 }
 
 pub fn export_note(target_path: String, content: String) -> CommandResult<()> {
     let path_buf = PathBuf::from(target_path);
+    // 「另存为」目标由原生保存对话框返回，用户本就可存到 Vault 外任意位置，故不限目录；
+    // 但强制 .md/.markdown 扩展名（对齐 save_note），避免经此命令写出可执行/配置类文件。
+    if !is_markdown_path(&path_buf) {
+        return Err("只能导出 .md 或 .markdown 文件".to_string());
+    }
     atomic_write(&path_buf, content.as_bytes())
 }
 
@@ -319,13 +326,19 @@ fn default_vault_path() -> CommandResult<PathBuf> {
     Err("无法找到用户主目录".to_string())
 }
 
-fn atomic_write(path: &Path, bytes: &[u8]) -> CommandResult<()> {
+pub fn atomic_write(path: &Path, bytes: &[u8]) -> CommandResult<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent).map_err(to_err)?;
         let mut tmp = NamedTempFile::new_in(parent).map_err(to_err)?;
         tmp.write_all(bytes).map_err(to_err)?;
-        tmp.flush().map_err(to_err)?;
+        // fsync 临时文件：确保 rename 生效时数据块已落盘，
+        // 防掉电/内核崩溃时元数据先落盘而数据未落盘 → 笔记变 0 字节或截断。
+        tmp.as_file().sync_all().map_err(to_err)?;
         tmp.persist(path).map_err(|e| e.to_string())?;
+        // fsync 父目录：确保 rename 这条目录项变更本身落盘（Unix；Windows 打开目录会失败，跳过）。
+        if let Ok(dir) = fs::File::open(parent) {
+            let _ = dir.sync_all();
+        }
         Ok(())
     } else {
         Err("无效路径".to_string())
@@ -469,6 +482,19 @@ fn is_markdown_path(path: &Path) -> bool {
         .and_then(|s| s.to_str())
         .map(|ext| matches!(ext.to_lowercase().as_str(), "md" | "markdown"))
         .unwrap_or(false)
+}
+
+/// 校验写入目标位于当前 Vault 的 Notes 目录内（含子目录），防越界写。
+/// 校验父目录（写入时目标文件可能尚不存在），canonicalize 解析符号链接后再比对，
+/// 与 delete_note 的白名单策略保持一致。
+fn ensure_within_notes_dir(path: &Path) -> CommandResult<()> {
+    let parent = path.parent().ok_or_else(|| "无效路径".to_string())?;
+    let parent_canonical = parent.canonicalize().map_err(to_err)?;
+    let notes_root = notes_dir().canonicalize().map_err(to_err)?;
+    if !parent_canonical.starts_with(&notes_root) {
+        return Err("只能写入 Vault 内的文件".to_string());
+    }
+    Ok(())
 }
 
 fn system_time_to_string(time: std::time::SystemTime) -> String {

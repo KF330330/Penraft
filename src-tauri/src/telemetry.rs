@@ -85,11 +85,9 @@ fn load_or_create_device() -> (String, bool) {
         created_at: Utc::now().to_rfc3339(),
         first_version: app_version(),
     };
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
     if let Ok(json) = serde_json::to_vec_pretty(&dev) {
-        let _ = fs::write(&path, json);
+        // 原子写：防截断导致 device.json 损坏 → 重生成 device_id → 埋点设备重复计数。
+        let _ = crate::vault::atomic_write(&path, &json);
     }
     (id, true)
 }
@@ -106,14 +104,11 @@ fn read_heartbeat() -> HeartbeatFile {
 
 fn write_heartbeat(now: &str) {
     let path = heartbeat_file_path();
-    if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
-    }
     let h = HeartbeatFile {
         last_heartbeat_at: Some(now.to_string()),
     };
     if let Ok(json) = serde_json::to_vec_pretty(&h) {
-        let _ = fs::write(&path, json);
+        let _ = crate::vault::atomic_write(&path, &json);
     }
 }
 

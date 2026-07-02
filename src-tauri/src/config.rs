@@ -27,9 +27,8 @@ pub fn read_app_config() -> AppConfig {
 
 pub fn write_app_config(cfg: &AppConfig) -> CommandResult<()> {
     let p = config_path();
-    if let Some(parent) = p.parent() {
-        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
-    }
     let json = serde_json::to_string_pretty(cfg).map_err(|e| e.to_string())?;
-    std::fs::write(&p, json).map_err(|e| e.to_string())
+    // 原子写：防写盘途中进程被杀导致 config.json 截断 → read_app_config 静默回退默认，
+    // 自定义 vault_path 丢失、App 切回 ~/Documents/PenraftVault，用户误以为"笔记没了"。
+    crate::vault::atomic_write(&p, json.as_bytes())
 }

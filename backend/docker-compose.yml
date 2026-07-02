@@ -3,8 +3,10 @@ services:
     build: .
     container_name: penraft-backend
     restart: unless-stopped
+    # 只绑本机回环：仅供同机 Nginx 反代 api.penraft.com，不直接暴露公网。
+    # 原 "8787:8787" 绑 0.0.0.0，安全全靠云防火墙，防火墙误配即公网裸奔。
     ports:
-      - "8787:8787"
+      - "127.0.0.1:8787:8787"
     env_file: .env
     environment:
       - DB_PATH=/app/data/penraft.db
