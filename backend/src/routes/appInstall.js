@@ -34,7 +34,7 @@ export default async function appInstallRoutes(fastify) {
       return;
     }
     const now = nowMs();
-    insertDevice.run({
+    const info = insertDevice.run({
       device_id: deviceId,
       platform,
       os_version: sanitize(body.os_version, 64),
@@ -43,7 +43,10 @@ export default async function appInstallRoutes(fastify) {
       installed_at: now,
       last_seen_at: now,
     });
-    insertPing.run(deviceId, appVersion, now);
+    // 仅设备首次注册才记 install ping，重复 install（心跳 409 自愈补发等）不重复计入新装
+    if (info.changes === 1) {
+      insertPing.run(deviceId, appVersion, now);
+    }
     reply.code(204).send();
   });
 }

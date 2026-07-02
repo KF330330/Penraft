@@ -547,6 +547,23 @@ A pen that just works.`,
     } catch (_) { return null; }
   }
 
+  // UTM 采集：带 utm_* 进站时存 sessionStorage，本 session 内所有事件都附带（用于来源归因）
+  function getUtm() {
+    try {
+      const cached = sessionStorage.getItem('penraft_utm');
+      if (cached) return JSON.parse(cached);
+      const p = new URLSearchParams(location.search);
+      const utm = {};
+      for (const k of ['utm_source', 'utm_medium', 'utm_campaign']) {
+        const v = p.get(k);
+        if (v) utm[k] = v.slice(0, 64);
+      }
+      if (Object.keys(utm).length > 0) sessionStorage.setItem('penraft_utm', JSON.stringify(utm));
+      return utm;
+    } catch (_) { return {}; }
+  }
+  const UTM = getUtm();
+
   let queue = [];
   let flushTimer = null;
   const FLUSH_INTERVAL = 5000;
@@ -591,7 +608,7 @@ A pen that just works.`,
       page: location.pathname,
       referrer: document.referrer || null,
       session_id: getSid(),
-      meta: Object.assign({ vid: getVid(), lang: document.documentElement.lang || null }, meta || {}),
+      meta: Object.assign({ vid: getVid(), lang: document.documentElement.lang || null }, UTM, meta || {}),
     });
   }
 
@@ -599,8 +616,16 @@ A pen that just works.`,
     // 首屏 page_view
     track('view', 'page_view');
 
-    // section 曝光：同 session 同 section 只算一次
-    const seen = new Set();
+    // section 曝光：同 session 同 section 只算一次。
+    // 去重集合持久到 sessionStorage（与 sid 同生命周期），刷新页面不重复上报；storage 不可用时降级为内存去重
+    const SEEN_KEY = 'penraft_seen_sections';
+    let seen;
+    try { seen = new Set(JSON.parse(sessionStorage.getItem(SEEN_KEY) || '[]')); }
+    catch (_) { seen = new Set(); }
+    const rememberSeen = (k) => {
+      seen.add(k);
+      try { sessionStorage.setItem(SEEN_KEY, JSON.stringify(Array.from(seen))); } catch (_) { /* silent */ }
+    };
     const sid = getSid();
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
@@ -609,7 +634,7 @@ A pen that just works.`,
         if (!sectionId) continue;
         const k = sid + '|' + sectionId;
         if (seen.has(k)) continue;
-        seen.add(k);
+        rememberSeen(k);
         track('view', 'section_' + sectionId);
       }
     }, { threshold: 0.5 });

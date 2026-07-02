@@ -128,15 +128,20 @@
     // ============ 官网 tab ============
     const totalViews = sumSeries(d.web.views_series);
     const totalClicks = sumSeries(d.web.clicks_series);
+    document.getElementById('web-uv').textContent = fmt(d.web.uv || 0);
+    document.getElementById('web-sessions').textContent = fmt(d.web.sessions || 0);
     document.getElementById('web-total-views').textContent = fmt(totalViews);
     document.getElementById('web-total-clicks').textContent = fmt(totalClicks);
     document.getElementById('web-ctr').textContent = pct(totalClicks, totalViews);
 
+    const uvSeries = d.web.uv_series || [];
     const labels = d.web.views_series.map(p => p.t);
     const clickLabels = d.web.clicks_series.map(p => p.t);
-    const allLabels = Array.from(new Set([...labels, ...clickLabels])).sort();
+    const uvLabels = uvSeries.map(p => p.t);
+    const allLabels = Array.from(new Set([...labels, ...clickLabels, ...uvLabels])).sort();
     const viewMap = Object.fromEntries(d.web.views_series.map(p => [p.t, p.n]));
     const clickMap = Object.fromEntries(d.web.clicks_series.map(p => [p.t, p.n]));
+    const uvMap = Object.fromEntries(uvSeries.map(p => [p.t, p.n]));
     makeOrUpdate('chart-web-trend', {
       type: 'line',
       data: {
@@ -144,6 +149,7 @@
         datasets: [
           { label: '曝光 view', data: allLabels.map(t => viewMap[t] || 0), borderColor: '#5b8cff', backgroundColor: 'rgba(91,140,255,0.18)', fill: true, tension: 0.25, pointRadius: 2.5 },
           { label: '点击 click', data: allLabels.map(t => clickMap[t] || 0), borderColor: '#ff7a59', backgroundColor: 'rgba(255,122,89,0.10)', fill: false, tension: 0.25, pointRadius: 2.5 },
+          { label: '访客 UV', data: allLabels.map(t => uvMap[t] || 0), borderColor: '#5cd97a', backgroundColor: 'rgba(92,217,122,0.10)', fill: false, tension: 0.25, pointRadius: 2.5 },
         ],
       },
       options: baseOpts,
@@ -178,14 +184,26 @@
       options: { ...baseOpts, indexAxis: 'y' },
     });
 
+    // ============ 来源 UTM ============
+    const utm = d.web.utm_sources || [];
+    makeOrUpdate('chart-web-utm-sources', {
+      type: 'bar',
+      data: {
+        labels: utm.map(x => x.source),
+        datasets: [{ label: 'page_view 次数', data: utm.map(x => x.n), backgroundColor: '#a98cff', borderRadius: 4 }],
+      },
+      options: { ...baseOpts, indexAxis: 'y' },
+    });
+
     // ============ App tab ============
     document.getElementById('app-active').textContent = fmt(d.app.active_devices);
+    document.getElementById('app-mau').textContent = fmt(d.app.mau_devices || 0);
     document.getElementById('app-uninstalled').textContent = fmt(d.app.uninstalled_devices);
     document.getElementById('app-total').textContent = fmt(d.app.total_devices);
     makeOrUpdate('chart-app-ratio', {
       type: 'doughnut',
       data: {
-        labels: ['活跃', '已卸载'],
+        labels: ['活跃', '沉寂'],
         datasets: [{ data: [d.app.active_devices, d.app.uninstalled_devices], backgroundColor: ['#5b8cff', '#3b3f49'], borderColor: 'transparent' }],
       },
       options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'bottom', labels: { color: TEXT_COLOR, font: { size: 11 } } } } },
@@ -210,6 +228,16 @@
         datasets: [{ data: d.app.version_distribution.map(v => v.n), backgroundColor: ['#5b8cff', '#ff7a59', '#ffb547', '#5cd97a', '#a98cff', '#3b3f49'], borderColor: 'transparent' }],
       },
       options: { responsive: true, maintainAspectRatio: false, cutout: '50%', plugins: { legend: { position: 'right', labels: { color: TEXT_COLOR, font: { size: 11 } } } } },
+    });
+
+    const pf = d.app.platform_distribution || [];
+    makeOrUpdate('chart-app-platform', {
+      type: 'bar',
+      data: {
+        labels: pf.map(x => `${x.platform} / ${x.os_version}`),
+        datasets: [{ label: '设备数', data: pf.map(x => x.n), backgroundColor: '#5cd97a', borderRadius: 4 }],
+      },
+      options: { ...baseOpts, indexAxis: 'y' },
     });
   }
 
@@ -252,8 +280,9 @@
     const f = document.getElementById('from-date').value;
     const t = document.getElementById('to-date').value;
     if (!f || !t) return;
-    state.from = new Date(f + 'T00:00:00Z').toISOString();
-    state.to = new Date(t + 'T23:59:59Z').toISOString();
+    // 本地时区解析（与"今天"预设的本地零点口径一致，后端按 UTC+8 分桶）
+    state.from = new Date(f + 'T00:00:00').toISOString();
+    state.to = new Date(t + 'T23:59:59.999').toISOString();
     state.preset = 'custom'; syncUI(); writeHash(); fetchAndRender();
   });
   document.getElementById('logout-btn').addEventListener('click', logout);

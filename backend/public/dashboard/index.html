@@ -46,6 +46,8 @@
   <!-- 官网 tab -->
   <section class="tab-panel active" data-panel="web">
     <div class="bignum-row" style="margin-bottom: 14px;">
+      <div class="bignum"><div class="label">独立访客 (UV)</div><div class="value accent" id="web-uv">—</div></div>
+      <div class="bignum"><div class="label">会话数</div><div class="value" id="web-sessions">—</div></div>
       <div class="bignum"><div class="label">曝光总数</div><div class="value accent" id="web-total-views">—</div></div>
       <div class="bignum"><div class="label">点击总数</div><div class="value" id="web-total-clicks">—</div></div>
       <div class="bignum"><div class="label">点击率 (CTR)</div><div class="value muted" id="web-ctr">—</div></div>
@@ -68,6 +70,10 @@
         <h2>④ 下载点击 · 按平台 / 架构</h2>
         <canvas id="chart-web-downloads-by-platform" class="chart-md"></canvas>
       </section>
+      <section class="card">
+        <h2>⑤ 来源 · UTM（按 page_view）</h2>
+        <canvas id="chart-web-utm-sources" class="chart-md"></canvas>
+      </section>
     </div>
   </section>
 
@@ -76,7 +82,8 @@
     <section class="card devices-overview" style="margin-bottom: 14px;">
       <div class="numbers">
         <div class="bignum"><div class="label">活跃 (≤7d)</div><div class="value accent" id="app-active">—</div></div>
-        <div class="bignum"><div class="label">已卸载 (&gt;7d)</div><div class="value muted" id="app-uninstalled">—</div></div>
+        <div class="bignum"><div class="label">活跃 (≤30d)</div><div class="value accent" id="app-mau">—</div></div>
+        <div class="bignum"><div class="label">沉寂 (&gt;7d 无心跳)</div><div class="value muted" id="app-uninstalled">—</div></div>
         <div class="bignum"><div class="label">累计</div><div class="value" id="app-total">—</div></div>
       </div>
       <div class="ratio-wrap"><canvas id="chart-app-ratio" class="chart-sm"></canvas></div>
@@ -90,6 +97,10 @@
       <section class="card">
         <h2>④ 版本分布（活跃设备）</h2>
         <canvas id="chart-app-version" class="chart-md"></canvas>
+      </section>
+      <section class="card">
+        <h2>⑤ 平台 / OS 分布（活跃设备）</h2>
+        <canvas id="chart-app-platform" class="chart-md"></canvas>
       </section>
     </div>
   </section>

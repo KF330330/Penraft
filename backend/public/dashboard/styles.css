@@ -261,7 +261,7 @@ canvas { width: 100% !important; }
   .devices-overview { grid-template-columns: 1fr; }
 }
 .devices-overview .numbers {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
   align-content: start;
 }
 .devices-overview .numbers .bignum { background: var(--card-2); }
