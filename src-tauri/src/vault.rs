@@ -2,10 +2,12 @@ use crate::config::{self, AppConfig};
 use crate::models::{NoteDocument, NoteSummary, RenameResult, TabsState};
 use chrono::{DateTime, Local, Utc};
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::{Mutex, OnceLock};
 use tempfile::NamedTempFile;
 use walkdir::WalkDir;
 
@@ -35,8 +37,11 @@ pub fn save_note(path: String, content: String) -> CommandResult<NoteDocument> {
     if !is_markdown_path(&path_buf) {
         return Err("只能保存 .md 或 .markdown 文件".to_string());
     }
-    // 自动保存只应写 Vault 内笔记：限定在 Notes 目录内，防渲染层被注入后经此命令越界写任意文件。
-    ensure_within_notes_dir(&path_buf)?;
+    // 写入范围：Vault 的 Notes 目录内，或用户经合法入口（「打开方式」/命令行/tabs 恢复）
+    // 打开的外部文件精确路径。其余路径拒绝，防渲染层被注入后经此命令越界写任意文件。
+    if !is_registered_external(&path_buf) {
+        ensure_within_notes_dir(&path_buf)?;
+    }
     atomic_write(&path_buf, content.as_bytes())?;
     read_note_internal(&path_buf)
 }
@@ -182,6 +187,10 @@ pub fn load_tabs(label: String) -> CommandResult<TabsState> {
         let pb = PathBuf::from(p);
         pb.exists() && is_markdown_path(&pb)
     });
+    // 恢复的 tab 是用户上次合法打开的文件，其中 Vault 外的路径登记放行写回
+    for p in &state.paths {
+        register_external_path(Path::new(p));
+    }
     if let Some(active) = &state.active {
         if !state.paths.contains(active) {
             state.active = state.paths.first().cloned();
@@ -481,6 +490,32 @@ fn is_markdown_path(path: &Path) -> bool {
     path.extension()
         .and_then(|s| s.to_str())
         .map(|ext| matches!(ext.to_lowercase().as_str(), "md" | "markdown"))
+        .unwrap_or(false)
+}
+
+/// 用户经合法入口（macOS「打开方式」/ 命令行参数 / tabs 恢复）打开的 Vault 外文件集合。
+/// save_note 仅对这些精确路径（canonicalize 后比对）放行写回；渲染层自身无法把新路径
+/// 加进来（read_note 不登记），保持防越界写的安全边界。
+fn external_open_paths() -> &'static Mutex<HashSet<PathBuf>> {
+    static PATHS: OnceLock<Mutex<HashSet<PathBuf>>> = OnceLock::new();
+    PATHS.get_or_init(|| Mutex::new(HashSet::new()))
+}
+
+pub fn register_external_path(path: &Path) {
+    if let Ok(canonical) = path.canonicalize() {
+        if let Ok(mut set) = external_open_paths().lock() {
+            set.insert(canonical);
+        }
+    }
+}
+
+fn is_registered_external(path: &Path) -> bool {
+    let Ok(canonical) = path.canonicalize() else {
+        return false;
+    };
+    external_open_paths()
+        .lock()
+        .map(|set| set.contains(&canonical))
         .unwrap_or(false)
 }
 

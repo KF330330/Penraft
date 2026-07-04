@@ -82,6 +82,8 @@ interface OpenDoc {
   content: string;
   lastSavedContent: string;
   savingStatus: SavingStatus;
+  // 最近一次保存失败时的内容快照：同样内容不再自动重试，防 error→dirty 死循环狂弹 toast
+  lastFailedContent?: string;
 }
 
 function makeOpenDoc(doc: NoteDocument): OpenDoc {
@@ -134,6 +136,7 @@ export default function App() {
 
   const saveTimer = useRef<number | null>(null);
   const tabsSaveTimer = useRef<number | null>(null);
+  const toastTimer = useRef<number | null>(null);
   const docsRef = useRef<OpenDoc[]>([]);
   const activePathRef = useRef<string | null>(null);
   const handleCreateRef = useRef<(() => Promise<void>) | null>(null);
@@ -156,7 +159,9 @@ export default function App() {
 
   const showToast = useCallback((message: string) => {
     setToast(message);
-    window.setTimeout(() => setToast(""), 2600);
+    // 复用单一定时器：连续 toast 时取消旧的清除定时器，避免多个定时器错峰清空导致闪烁
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(""), 2600);
   }, []);
 
   const activeDoc = useMemo(
@@ -195,12 +200,13 @@ export default function App() {
               document: next,
               lastSavedContent: contentSnapshot,
               savingStatus: "saved",
+              lastFailedContent: undefined,
             }
           : { ...d, document: next },
       );
       return true;
     } catch (err) {
-      updateDoc(path, (d) => ({ ...d, savingStatus: "error" }));
+      updateDoc(path, (d) => ({ ...d, savingStatus: "error", lastFailedContent: contentSnapshot }));
       showToast(`保存失败：${String(err)}`);
       return false;
     }
@@ -288,6 +294,9 @@ export default function App() {
   useEffect(() => {
     if (!activeDoc) return;
     if (activeDoc.content === activeDoc.lastSavedContent) return;
+    // 这份内容刚保存失败过：不自动重试（否则 error→dirty 每 500ms 循环一次、toast 反复闪），
+    // 等用户继续编辑（内容变化）或切 tab 触发 flush 时再试
+    if (activeDoc.savingStatus === "error" && activeDoc.content === activeDoc.lastFailedContent) return;
     if (activeDoc.savingStatus !== "dirty") {
       updateDoc(activeDoc.document.summary.path, (d) => ({ ...d, savingStatus: "dirty" }));
     }

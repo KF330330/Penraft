@@ -218,6 +218,10 @@ fn dispatch_open_files(app: &AppHandle, paths: Vec<String>) {
     if paths.is_empty() {
         return;
     }
+    // 用户经系统入口打开的文件（可能在 Vault 外）：登记后 save_note 才放行写回原路径
+    for p in &paths {
+        vault::register_external_path(Path::new(p));
+    }
     // Always push to the queue so the frontend can drain it on bootstrap,
     // even if no listener has been attached yet.
     if let Some(state) = app.try_state::<PendingOpenFiles>() {
@@ -252,6 +256,10 @@ fn on_run_event(_app_handle: &AppHandle, _event: &tauri::RunEvent) {}
 
 pub fn run() {
     let initial_paths = collect_md_paths(std::env::args());
+    // 首次启动经命令行参数打开的文件同样登记，与 dispatch_open_files 一致
+    for p in &initial_paths {
+        vault::register_external_path(Path::new(p));
+    }
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {

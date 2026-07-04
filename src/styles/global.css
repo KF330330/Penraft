@@ -109,7 +109,9 @@ button {
 .app-shell {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  /* 用 100%（沿 html/body/#root 链）而非 100vh：根元素被设 CSS zoom 时
+     vh 不随 zoom 反向补偿，zoom>1 会把壳撑出视口、底部内容滚不到 */
+  height: 100%;
   overflow: hidden;
 }
 
