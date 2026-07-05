@@ -136,6 +136,10 @@ export default function App() {
 
   const saveTimer = useRef<number | null>(null);
   const tabsSaveTimer = useRef<number | null>(null);
+  // tabs 状态只有成功加载过才允许写回：加载失败（如 TCC 权限拒绝）时禁止覆盖磁盘上的旧清单
+  const tabsLoadOkRef = useRef(false);
+  // tabs 保存失败只提示一次，成功后复位；避免持续失败时每次切 tab 都弹 toast
+  const tabsSaveFailedRef = useRef(false);
   const toastTimer = useRef<number | null>(null);
   const docsRef = useRef<OpenDoc[]>([]);
   const activePathRef = useRef<string | null>(null);
@@ -226,6 +230,7 @@ export default function App() {
     (async () => {
       try {
         const tabsState = await loadTabs(WINDOW_LABEL);
+        tabsLoadOkRef.current = true;
         let paths = tabsState.paths;
         // 撕出窗口首次打开：URL 带 path 且本地还没 tabs-{label}.json
         if (paths.length === 0 && INITIAL_PATH) {
@@ -266,13 +271,26 @@ export default function App() {
   // Persist tabs.json when docs ordering / activePath changes
   useEffect(() => {
     if (!bootstrapped) return;
+    if (!tabsLoadOkRef.current) return;
     if (tabsSaveTimer.current) window.clearTimeout(tabsSaveTimer.current);
     tabsSaveTimer.current = window.setTimeout(() => {
       const state: TabsState = {
         paths: docsRef.current.map((d) => d.document.summary.path),
         active: activePathRef.current,
       };
-      saveTabs(WINDOW_LABEL, state).catch((err) => showToast(`Tab 状态保存失败：${String(err)}`));
+      saveTabs(WINDOW_LABEL, state)
+        .then(() => {
+          tabsSaveFailedRef.current = false;
+        })
+        .catch((err) => {
+          if (tabsSaveFailedRef.current) return;
+          tabsSaveFailedRef.current = true;
+          const msg = String(err);
+          const hint = msg.includes("Operation not permitted")
+            ? "（可能是 macOS 权限问题：系统设置 → 隐私与安全性 → 文件与文件夹 → Penraft → 允许访问文稿文件夹）"
+            : "";
+          showToast(`Tab 状态保存失败：${msg}${hint}`);
+        });
     }, 180);
     return () => {
       if (tabsSaveTimer.current) window.clearTimeout(tabsSaveTimer.current);

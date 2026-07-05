@@ -177,11 +177,12 @@ pub fn load_tabs(label: String) -> CommandResult<TabsState> {
             let _ = fs::rename(&legacy, &path);
         }
     }
-    let mut state: TabsState = if path.exists() {
-        let raw = fs::read_to_string(&path).map_err(to_err)?;
-        serde_json::from_str(&raw).unwrap_or_default()
-    } else {
-        TabsState::default()
+    let mut state: TabsState = match fs::read_to_string(&path) {
+        Ok(raw) => serde_json::from_str(&raw).unwrap_or_default(),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => TabsState::default(),
+        // 读取失败（如 TCC 权限拒绝的 EPERM）不能当"文件不存在"静默返回空状态：
+        // 前端会以空 tab 启动，且下次保存会用空状态覆盖掉磁盘上完好的旧清单。
+        Err(e) => return Err(format!("无法读取标签状态文件: {}", e)),
     };
     state.paths.retain(|p| {
         let pb = PathBuf::from(p);
